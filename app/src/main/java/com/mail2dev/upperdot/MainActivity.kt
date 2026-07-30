@@ -21,6 +21,8 @@ import com.mail2dev.upperdot.ui.add_contact.AddContactViewModel
 import com.mail2dev.upperdot.ui.auth_launchpad.AuthLaunchpadScreen
 import com.mail2dev.upperdot.ui.call_history.CallHistoryScreen
 import com.mail2dev.upperdot.ui.connections_list.ConnectionsListScreen
+import com.mail2dev.upperdot.ui.profile_detail.ClientProfileDetailScreen
+import com.mail2dev.upperdot.ui.profile_detail.ClientProfileDetailViewModel
 import com.mail2dev.upperdot.ui.theme.UpperDotTheme
 
 class MainActivity : ComponentActivity() {
@@ -109,6 +111,20 @@ fun RootNavigation() {
                         launchSingleTop = true
                     }
                 }
+            )
+        }
+
+        composable("client_profile/{contactId}") { backStackEntry ->
+            val contactId = backStackEntry.arguments?.getString("contactId") ?: ""
+            val profileViewModel: ClientProfileDetailViewModel = viewModel()
+            ClientProfileDetailScreen(
+                contactId = contactId,
+                onNavigateBack = { navController.popBackStack() },
+                onEditContact = { id ->
+                    // Navigation to edit mode
+                    navController.navigate("add_contact")
+                },
+                viewModel = profileViewModel
             )
         }
         

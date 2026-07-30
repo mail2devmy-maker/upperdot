@@ -68,11 +68,11 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   3. Added `guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava` to resolve library duplication.
   4. Added `packaging` block to exclude `INDEX.LIST` and `DEPENDENCIES` files from the final APK.
 
-### 2024-05-20 - Screen 07: Add Contact Form Wizard - Step 4: Financial Info
-- **Context/Goal:** Final step of the wizard focusing on bank account details and final persistence to Room DB.
+### 2024-05-20 - Screen 08: Client Profile Detail View
+- **Context/Goal:** Unified comprehensive view of a contact's full profile including contact, corporate, financial info, and logs.
 - **Conflicts & Alternatives Considered:**
-  - *Conflict 1: Dynamic Bank List:* Should bank accounts be a fixed list or dynamic? *Decision:* Dynamic list of `BankAccount` objects in ViewModel, allowing users to add multiple "Secure Accounts" as per SRS Screen 07 specifications.
-  - *Conflict 2: Final Validation:* Where to trigger mandatory checks? *Decision:* Step 4 "Save" FAB triggers a global validation check. If Step 1 (Full Name) is empty, user is auto-routed back to index 0 with an error state, ensuring data integrity.
-  - *Conflict 3: Bank Institution Input:* Dropdown vs Text. *Decision:* Dropdown (`StitchDropdown`) with local banking institutions (Maybank, CIMB, etc.) to ensure data consistency for the "Quick Wallet" features later.
-- **Final Decision:** Implement `AddContactFinancialScreen`. Final Save action bundles the entire Wizard State from the shared `AddContactViewModel` and enqueues a background sync to Google Drive.
-- **Impact:** `AddContactFinancialScreen.kt`, `AddContactViewModel.kt` (updated with bank setters), `MainActivity.kt` navigation.
+  - *Conflict 1: Unified Scroll vs Separate Sections:* Should notes/transactions be separate tabs? *Decision:* Unified `LazyColumn` with collapsible accordions as per user images, providing an immediate overview of history.
+  - *Conflict 2: Action Visibility:* Positioning the Edit and Delete actions. *Decision:* Placed in the `TopAppBar` as an action pair (Red Trash + Cyan Pencil) to keep the main surface dedicated to data.
+  - *Conflict 3: Data Mapping:* How to display empty fields? *Decision:* Use consistent "Icon-Label-Value" rows. If a field is empty, it will be hidden to maintain a clean "Stitch" minimalist aesthetic.
+- **Final Decision:** Implement `ClientProfileDetailScreen`. Use `LazyColumn` for the entire content. Custom `ProfileCard` and `CollapsibleSection` components using Stitch tokens (#1E1E1E surface, 24dp rounding).
+- **Impact:** `ClientProfileDetailScreen.kt`, `ClientProfileDetailViewModel.kt`, `MainActivity.kt` routes.
