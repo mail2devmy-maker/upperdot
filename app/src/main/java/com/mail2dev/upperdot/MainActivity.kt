@@ -15,6 +15,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.mail2dev.upperdot.ui.add_contact.AddContactCoreInfoScreen
 import com.mail2dev.upperdot.ui.add_contact.AddContactCorporateScreen
+import com.mail2dev.upperdot.ui.add_contact.AddContactFinancialScreen
 import com.mail2dev.upperdot.ui.add_contact.AddContactIdentityScreen
 import com.mail2dev.upperdot.ui.add_contact.AddContactViewModel
 import com.mail2dev.upperdot.ui.auth_launchpad.AuthLaunchpadScreen
@@ -88,7 +89,11 @@ fun RootNavigation() {
                     onStepSelected = { addContactViewModel.onStepSelected(it) },
                     viewModel = addContactViewModel
                 )
-                // Financial will follow
+                3 -> AddContactFinancialScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onStepSelected = { addContactViewModel.onStepSelected(it) },
+                    viewModel = addContactViewModel
+                )
                 else -> AddContactCoreInfoScreen(
                     onNavigateBack = { navController.popBackStack() },
                     onStepSelected = { addContactViewModel.onStepSelected(it) },

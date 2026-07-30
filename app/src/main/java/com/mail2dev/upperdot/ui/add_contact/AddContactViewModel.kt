@@ -104,6 +104,35 @@ class AddContactViewModel : ViewModel() {
     fun onBusinessCategoryChange(value: String) { _businessCategory.value = value }
     fun onOfficeAddressChange(value: String) { _officeAddress.value = value }
 
+    // Financial Updates
+    fun onBankNameChange(index: Int, value: String) {
+        val list = _bankAccounts.value.toMutableList()
+        if (index < list.size) {
+            list[index] = list[index].copy(bankName = value)
+            _bankAccounts.value = list
+        }
+    }
+
+    fun onBankHolderNameChange(index: Int, value: String) {
+        val list = _bankAccounts.value.toMutableList()
+        if (index < list.size) {
+            list[index] = list[index].copy(holderName = value)
+            _bankAccounts.value = list
+        }
+    }
+
+    fun onBankAccountNumberChange(index: Int, value: String) {
+        val list = _bankAccounts.value.toMutableList()
+        if (index < list.size) {
+            list[index] = list[index].copy(accountNumber = value)
+            _bankAccounts.value = list
+        }
+    }
+
+    fun addBankAccount() {
+        _bankAccounts.value = _bankAccounts.value + BankAccount()
+    }
+
     fun onStepSelected(step: Int) {
         _currentStep.value = step
     }

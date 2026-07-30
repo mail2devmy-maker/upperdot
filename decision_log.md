@@ -68,10 +68,11 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   3. Added `guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava` to resolve library duplication.
   4. Added `packaging` block to exclude `INDEX.LIST` and `DEPENDENCIES` files from the final APK.
 
-### 2024-05-20 - Screen 06: Add Contact Form Wizard - Step 3: Corporate Info
-- **Context/Goal:** Third step focusing on professional details: Company, Category, and Address.
+### 2024-05-20 - Screen 07: Add Contact Form Wizard - Step 4: Financial Info
+- **Context/Goal:** Final step of the wizard focusing on bank account details and final persistence to Room DB.
 - **Conflicts & Alternatives Considered:**
-  - *Conflict 1: Category Selection:* Static list vs free text. *Decision:* Dropdown with predefined categories (General, Client, Vendor, Partner) as per Screen 04 specs in AGENT.md, providing a standardized "Stitch" data entry feel.
-  - *Conflict 2: Layout Consistency:* Using cards vs direct layout. *Decision:* Maintain the vertical stack of `StitchTextField` inside a scrollable column, mirroring the visual rhythm of the previous steps.
-- **Final Decision:** Implement `AddContactCorporateScreen`. Shared VM state handles professional inputs. Uses `Business` (Building), `Category` (Shapes), and `Location` (Pin) icons for semantic grouping.
-- **Impact:** `AddContactCorporateScreen.kt`, `AddContactViewModel.kt`, `MainActivity.kt` routes.
+  - *Conflict 1: Dynamic Bank List:* Should bank accounts be a fixed list or dynamic? *Decision:* Dynamic list of `BankAccount` objects in ViewModel, allowing users to add multiple "Secure Accounts" as per SRS Screen 07 specifications.
+  - *Conflict 2: Final Validation:* Where to trigger mandatory checks? *Decision:* Step 4 "Save" FAB triggers a global validation check. If Step 1 (Full Name) is empty, user is auto-routed back to index 0 with an error state, ensuring data integrity.
+  - *Conflict 3: Bank Institution Input:* Dropdown vs Text. *Decision:* Dropdown (`StitchDropdown`) with local banking institutions (Maybank, CIMB, etc.) to ensure data consistency for the "Quick Wallet" features later.
+- **Final Decision:** Implement `AddContactFinancialScreen`. Final Save action bundles the entire Wizard State from the shared `AddContactViewModel` and enqueues a background sync to Google Drive.
+- **Impact:** `AddContactFinancialScreen.kt`, `AddContactViewModel.kt` (updated with bank setters), `MainActivity.kt` navigation.
