@@ -59,7 +59,7 @@ class AddContactViewModel(
     private val _companyName = MutableStateFlow("")
     val companyName: StateFlow<String> = _companyName.asStateFlow()
 
-    private val _businessCategory = MutableStateFlow("General")
+    private val _businessCategory = MutableStateFlow("Services")
     val businessCategory: StateFlow<String> = _businessCategory.asStateFlow()
 
     private val _officeAddress = MutableStateFlow("")

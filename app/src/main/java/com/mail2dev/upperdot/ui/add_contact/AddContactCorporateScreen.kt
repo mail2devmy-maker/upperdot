@@ -121,7 +121,13 @@ fun AddContactCorporateScreen(
                 // Business Category
                 StitchDropdown(
                     selectedOption = businessCategory,
-                    options = listOf("General", "Client", "Vendor", "Partner"),
+                    options = listOf(
+                        "Services",
+                        "Retail & E-commerce",
+                        "Technology & Digital",
+                        "Manufacturing & Logistics",
+                        "Food & Hospitality"
+                    ),
                     onOptionSelected = viewModel::onBusinessCategoryChange,
                     label = "Business Category",
                     leadingIcon = Icons.Default.Category,
