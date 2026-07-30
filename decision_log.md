@@ -109,6 +109,15 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   4. Updated `StitchDropdown` to support an `enabled` state and styled it to match the Pure Dark Mode theme.
   5. Mapped the selected group and tag values to the `ContactEntity` for final persistence.
 
+- **Error:** Single email field limitation in `AddContactIdentityScreen`.
+- **Cause:** Users could only enter one email address per contact, which didn't meet the requirement for a flexible CRM.
+- **Resolution:**
+  1. Updated `ContactEntity.kt` to replace `email: String` with `emails: List<String>`.
+  2. Refactored `AddContactViewModel.kt` to manage a reactive list of emails with `addEmailField()` and `removeEmailField(index)` functions.
+  3. Modified `AddContactIdentityScreen.kt` to render a dynamic loop of email fields, adding a "[ + Add Another Email ]" command and removal buttons for secondary fields.
+  4. Updated `ClientProfileDetailViewModel` and `ClientProfileDetailScreen` to support displaying multiple email addresses in the contact info card.
+  5. Ensured safe data mapping during contact preservation to the Room database.
+
 - **Error:** Missing functionality to remove added bank accounts in `AddContactFinancialScreen`.
 - **Cause:** The "Add Bank Account" feature allowed adding multiple fields but lacked a corresponding "Remove" mechanism, potentially leading to cluttered or incorrect data entry.
 - **Resolution:**

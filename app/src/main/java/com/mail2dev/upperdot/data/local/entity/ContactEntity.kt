@@ -12,7 +12,7 @@ data class ContactEntity(
     val nicknames: List<String>,
     val phoneNumbers: List<String>,
     val sanitizedPrimaryPhone: String, // For duplicate prevention
-    val email: String,
+    val emails: List<String>,
     val avatarPath: String? = null,
     
     // Step 2: Identity / Relational

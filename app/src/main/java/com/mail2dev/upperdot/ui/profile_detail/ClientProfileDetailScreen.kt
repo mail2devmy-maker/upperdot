@@ -172,8 +172,8 @@ fun ClientProfileDetailScreen(
                         profile.phoneNumbers.forEach { number ->
                             ProfileDataRow(icon = Icons.Default.Phone, label = "PHONE", value = number)
                         }
-                        if (profile.email.isNotEmpty()) {
-                            ProfileDataRow(icon = Icons.Default.Email, label = "EMAIL", value = profile.email)
+                        profile.emails.forEach { email ->
+                            ProfileDataRow(icon = Icons.Default.Email, label = "EMAIL", value = email)
                         }
                     }
                     Spacer(modifier = Modifier.height(16.dp))

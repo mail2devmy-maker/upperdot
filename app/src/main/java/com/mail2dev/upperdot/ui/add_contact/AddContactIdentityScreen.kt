@@ -32,7 +32,7 @@ fun AddContactIdentityScreen(
     onStepSelected: (Int) -> Unit,
     viewModel: AddContactViewModel
 ) {
-    val email by viewModel.email.collectAsState()
+    val emails by viewModel.emails.collectAsState()
     val socialProfiles by viewModel.socialProfiles.collectAsState()
     val groupName by viewModel.groupName.collectAsState()
     val tagName by viewModel.tagName.collectAsState()
@@ -151,12 +151,44 @@ fun AddContactIdentityScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(24.dp)
             ) {
-                // Email
-                StitchTextField(
-                    value = email,
-                    onValueChange = viewModel::onEmailChange,
-                    placeholder = "Email Address",
-                    leadingIcon = Icons.Default.Email
+                // Emails
+                emails.forEachIndexed { index, email ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        StitchTextField(
+                            value = email,
+                            onValueChange = { viewModel.onEmailChange(index, it) },
+                            placeholder = if (index == 0) "Email Address" else "Additional Email",
+                            leadingIcon = Icons.Default.Email,
+                            modifier = Modifier.weight(1f)
+                        )
+                        if (index > 0) {
+                            IconButton(
+                                onClick = { viewModel.removeEmailField(index) },
+                                modifier = Modifier.padding(start = 8.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Clear,
+                                    contentDescription = "Remove Email",
+                                    tint = Color.Gray
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
+                Text(
+                    text = "[ + Add Another Email ]",
+                    color = AccentCyan,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { viewModel.addEmailField() }
+                        .padding(vertical = 8.dp)
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))

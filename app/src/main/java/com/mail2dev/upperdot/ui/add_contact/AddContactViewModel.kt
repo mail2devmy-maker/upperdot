@@ -41,8 +41,8 @@ class AddContactViewModel(
     val phoneNumbers: StateFlow<List<String>> = _phoneNumbers.asStateFlow()
 
     // Step 2: Identity
-    private val _email = MutableStateFlow("")
-    val email: StateFlow<String> = _email.asStateFlow()
+    private val _emails = MutableStateFlow(listOf(""))
+    val emails: StateFlow<List<String>> = _emails.asStateFlow()
 
     private val _socialProfiles = MutableStateFlow(listOf(SocialProfile()))
     val socialProfiles: StateFlow<List<SocialProfile>> = _socialProfiles.asStateFlow()
@@ -101,7 +101,25 @@ class AddContactViewModel(
     }
 
     // Identity Updates
-    fun onEmailChange(value: String) { _email.value = value }
+    fun onEmailChange(index: Int, value: String) {
+        val list = _emails.value.toMutableList()
+        if (index < list.size) {
+            list[index] = value
+            _emails.value = list
+        }
+    }
+
+    fun addEmailField() {
+        _emails.value = _emails.value + ""
+    }
+
+    fun removeEmailField(index: Int) {
+        val list = _emails.value.toMutableList()
+        if (index < list.size && list.size > 1) {
+            list.removeAt(index)
+            _emails.value = list
+        }
+    }
     fun onGroupNameChange(value: String) { 
         _groupName.value = value 
         _tagName.value = "" // Reset tag when group changes
@@ -202,7 +220,7 @@ class AddContactViewModel(
                 nicknames = _nicknames.value.split(",").map { it.trim() }.filter { it.isNotEmpty() },
                 phoneNumbers = _phoneNumbers.value.filter { it.isNotEmpty() },
                 sanitizedPrimaryPhone = _phoneNumbers.value.firstOrNull()?.replace(Regex("[^0-9]"), "") ?: "",
-                email = _email.value,
+                emails = _emails.value.filter { it.isNotEmpty() },
                 groupName = _groupName.value.ifEmpty { "Unassigned" },
                 tagName = _tagName.value.ifEmpty { null },
                 socialProfiles = _socialProfiles.value.filter { it.handle.isNotEmpty() },
