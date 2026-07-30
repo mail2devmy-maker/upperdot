@@ -127,6 +127,15 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   5. Moved attachment selection state to `InsightsViewModel` to support robust deletion logic and state persistence across recompositions.
   6. Maintained the "+" add box as a persistent element at the end of the preview row.
 
+- **Error:** Static contact picker in `NewRelationshipNoteSheet` and `NewCashTransactionSheet` was inefficient for large contact lists.
+- **Cause:** Lack of search/filter functionality in the contact selection UI.
+- **Resolution:**
+  1. Implemented real-time contact search in `InsightsViewModel.kt` using `flatMapLatest` and `debounce(300)` on a new `contactSearchQuery` state.
+  2. Replaced the static `StitchDropdown` in both `NewRelationshipNoteSheet` and `NewCashTransactionSheet` with a searchable contact component.
+  3. Wired the search component to display matching `fullName` entries from the database as the user types.
+  4. Updated the state binding to ensure selecting a contact correctly links their `id` and `fullName` to the active note or transaction.
+  5. Refactored the `save` logic to use the selected contact's ID for database persistence.
+
 - **Error:** Single email field limitation in `AddContactIdentityScreen`.
 - **Cause:** Users could only enter one email address per contact, which didn't meet the requirement for a flexible CRM.
 - **Resolution:**

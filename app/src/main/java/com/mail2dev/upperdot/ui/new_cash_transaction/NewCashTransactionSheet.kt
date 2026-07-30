@@ -22,19 +22,26 @@ import com.mail2dev.upperdot.ui.components.StitchDropdown
 import com.mail2dev.upperdot.ui.components.StitchTextField
 import com.mail2dev.upperdot.ui.theme.*
 
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import com.mail2dev.upperdot.ui.insights.ContactSummary
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewCashTransactionSheet(
     onDismiss: () -> Unit,
     onSave: (String, Boolean, String, String, String) -> Unit,
-    contactNames: List<String>,
-    initialContact: String? = null
+    contactSearchQuery: String,
+    onContactSearchQueryChange: (String) -> Unit,
+    searchedContacts: List<ContactSummary>,
+    initialContact: ContactSummary? = null
 ) {
-    var selectedContact by remember { mutableStateOf(initialContact ?: "") }
+    var selectedContact by remember { mutableStateOf(initialContact) }
     var isRevenue by remember { mutableStateOf(true) }
     var title by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
     var detail by remember { mutableStateOf("") }
+    var isSearchDropdownExpanded by remember { mutableStateOf(false) }
     
     val currentDateTime = "Jul 30, 2026"
 
@@ -59,13 +66,47 @@ fun NewCashTransactionSheet(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            StitchDropdown(
-                selectedOption = if (selectedContact.isEmpty()) "Select Contact (Mandatory)" else selectedContact,
-                options = contactNames,
-                onOptionSelected = { selectedContact = it },
-                leadingIcon = Icons.Default.Person,
-                modifier = Modifier.fillMaxWidth()
-            )
+            // Searchable Contact Picker
+            Column(modifier = Modifier.fillMaxWidth()) {
+                StitchTextField(
+                    value = if (isSearchDropdownExpanded) contactSearchQuery else selectedContact?.fullName ?: "",
+                    onValueChange = {
+                        onContactSearchQueryChange(it)
+                        isSearchDropdownExpanded = true
+                    },
+                    placeholder = "Search Contact (Mandatory)",
+                    leadingIcon = Icons.Default.Person,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                if (isSearchDropdownExpanded && searchedContacts.isNotEmpty()) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 200.dp)
+                            .padding(top = 4.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = Surface)
+                    ) {
+                        LazyColumn {
+                            items(searchedContacts) { contact ->
+                                Text(
+                                    text = contact.fullName,
+                                    color = Color.White,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            selectedContact = contact
+                                            isSearchDropdownExpanded = false
+                                        }
+                                        .padding(16.dp)
+                                )
+                                HorizontalDivider(color = Color.DarkGray.copy(alpha = 0.3f))
+                            }
+                        }
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -174,7 +215,11 @@ fun NewCashTransactionSheet(
             Spacer(modifier = Modifier.height(32.dp))
 
             Button(
-                onClick = { onSave(selectedContact, isRevenue, title, amount, detail) },
+                onClick = { 
+                    selectedContact?.let { contact ->
+                        onSave(contact.id, isRevenue, title, amount, detail) 
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -183,7 +228,7 @@ fun NewCashTransactionSheet(
                     containerColor = if (isRevenue) PositiveGreen else AccentCyan,
                     contentColor = Color.Black
                 ),
-                enabled = selectedContact.isNotEmpty() && title.isNotEmpty() && amount.isNotEmpty()
+                enabled = selectedContact != null && title.isNotEmpty() && amount.isNotEmpty()
             ) {
                 Text(text = "Finalize Transaction", fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
