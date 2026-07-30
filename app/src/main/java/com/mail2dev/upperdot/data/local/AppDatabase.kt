@@ -5,9 +5,11 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.mail2dev.upperdot.data.local.converter.ComplexTypeConverters
 import com.mail2dev.upperdot.data.local.converter.ListConverter
+import com.mail2dev.upperdot.data.local.dao.BankCardDao
 import com.mail2dev.upperdot.data.local.dao.ContactDao
 import com.mail2dev.upperdot.data.local.dao.NoteDao
 import com.mail2dev.upperdot.data.local.dao.TransactionDao
+import com.mail2dev.upperdot.data.local.entity.BankCardEntity
 import com.mail2dev.upperdot.data.local.entity.ContactEntity
 import com.mail2dev.upperdot.data.local.entity.NoteEntity
 import com.mail2dev.upperdot.data.local.entity.TransactionEntity
@@ -16,7 +18,8 @@ import com.mail2dev.upperdot.data.local.entity.TransactionEntity
     entities = [
         ContactEntity::class,
         NoteEntity::class,
-        TransactionEntity::class
+        TransactionEntity::class,
+        BankCardEntity::class
     ],
     version = 1,
     exportSchema = false
@@ -26,4 +29,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun contactDao(): ContactDao
     abstract fun noteDao(): NoteDao
     abstract fun transactionDao(): TransactionDao
+    abstract fun bankCardDao(): BankCardDao
 }

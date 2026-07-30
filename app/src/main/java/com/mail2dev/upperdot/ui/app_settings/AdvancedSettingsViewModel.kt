@@ -5,14 +5,27 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+import com.mail2dev.upperdot.data.repository.BankCardRepository
+import com.mail2dev.upperdot.data.repository.ContactRepository
+import com.mail2dev.upperdot.data.repository.NoteRepository
+import com.mail2dev.upperdot.data.repository.TransactionRepository
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+
 data class DatabaseDiagnostics(
     val vaultSize: String = "0.00 MB",
     val totalAttachmentUsage: String = "0.0 MB",
-    val totalContactsCount: Int = 1,
+    val totalContactsCount: Int = 0,
     val walletCardsCount: Int = 0
 )
 
-class AdvancedSettingsViewModel : ViewModel() {
+class AdvancedSettingsViewModel(
+    private val contactRepository: ContactRepository,
+    private val noteRepository: NoteRepository,
+    private val transactionRepository: TransactionRepository,
+    private val bankCardRepository: BankCardRepository
+) : ViewModel() {
 
     private val _syncOverWifi = MutableStateFlow(true)
     val syncOverWifi: StateFlow<Boolean> = _syncOverWifi.asStateFlow()
@@ -23,8 +36,15 @@ class AdvancedSettingsViewModel : ViewModel() {
     private val _currencySymbol = MutableStateFlow("$")
     val currencySymbol: StateFlow<String> = _currencySymbol.asStateFlow()
 
-    private val _diagnostics = MutableStateFlow(DatabaseDiagnostics())
-    val diagnostics: StateFlow<DatabaseDiagnostics> = _diagnostics.asStateFlow()
+    val diagnostics: StateFlow<DatabaseDiagnostics> = combine(
+        contactRepository.contactCount,
+        bankCardRepository.cardCount
+    ) { contactCount, cardCount ->
+        DatabaseDiagnostics(
+            totalContactsCount = contactCount,
+            walletCardsCount = cardCount
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DatabaseDiagnostics())
 
     private val _showClearCacheDialog = MutableStateFlow(false)
     val showClearCacheDialog: StateFlow<Boolean> = _showClearCacheDialog.asStateFlow()

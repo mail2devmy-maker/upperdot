@@ -1,9 +1,16 @@
 package com.mail2dev.upperdot.ui.digital_wallet
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+
+import com.mail2dev.upperdot.data.local.entity.BankCardEntity
+import com.mail2dev.upperdot.data.repository.BankCardRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 
 data class BankCard(
     val id: String,
@@ -14,23 +21,14 @@ data class BankCard(
     val qrImagePath: String? = null
 )
 
-class DigitalWalletViewModel : ViewModel() {
+class DigitalWalletViewModel(private val repository: BankCardRepository) : ViewModel() {
 
     private val _isPremium = MutableStateFlow(true) // Placeholder
     val isPremium: StateFlow<Boolean> = _isPremium.asStateFlow()
 
-    private val _bankCards = MutableStateFlow<List<BankCard>>(
-        listOf(
-            BankCard(
-                id = "1",
-                bankName = "maybank",
-                accountNumber = "123456",
-                cardHolderName = "card holder name",
-                themeColor = 0xFF00C8FF
-            )
-        )
-    )
-    val bankCards: StateFlow<List<BankCard>> = _bankCards.asStateFlow()
+    val bankCards: StateFlow<List<BankCard>> = repository.allCards
+        .map { entities -> entities.map { it.toModel() } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _showAddCardSheet = MutableStateFlow(false)
     val showAddCardSheet: StateFlow<Boolean> = _showAddCardSheet.asStateFlow()
@@ -39,10 +37,13 @@ class DigitalWalletViewModel : ViewModel() {
     val showQuickWalletSheet: StateFlow<Boolean> = _showQuickWalletSheet.asStateFlow()
 
     fun onAddCardClicked(onSuccess: () -> Unit, onLimitExceeded: () -> Unit) {
-        if (!_isPremium.value && _bankCards.value.size >= 1) {
-            onLimitExceeded()
-        } else {
-            _showAddCardSheet.value = true
+        viewModelScope.launch {
+            val count = repository.cardCount.first()
+            if (!_isPremium.value && count >= 1) {
+                onLimitExceeded()
+            } else {
+                _showAddCardSheet.value = true
+            }
         }
     }
 
@@ -59,11 +60,33 @@ class DigitalWalletViewModel : ViewModel() {
     }
 
     fun saveCard(bankName: String, holderName: String, accountNumber: String, color: Long) {
-        // TODO: Save to Room
-        _showAddCardSheet.value = false
+        viewModelScope.launch(Dispatchers.IO) {
+            val entity = BankCardEntity(
+                bankName = bankName,
+                accountNumber = accountNumber,
+                cardHolderName = holderName,
+                themeColor = color
+            )
+            repository.insertCard(entity)
+            _showAddCardSheet.value = false
+        }
     }
 
     fun onDeleteCard(cardId: String) {
-        _bankCards.value = _bankCards.value.filter { it.id != cardId }
+        viewModelScope.launch(Dispatchers.IO) {
+            // Need a full entity to delete
+            repository.allCards.first().find { it.id == cardId }?.let {
+                repository.deleteCard(it)
+            }
+        }
     }
 }
+
+private fun BankCardEntity.toModel() = BankCard(
+    id = id,
+    bankName = bankName,
+    accountNumber = accountNumber,
+    cardHolderName = cardHolderName,
+    themeColor = themeColor,
+    qrImagePath = qrImagePath
+)

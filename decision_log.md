@@ -68,13 +68,13 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   3. Added `guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava` to resolve library duplication.
   4. Added `packaging` block to exclude `INDEX.LIST` and `DEPENDENCIES` files from the final APK.
 
-### 2024-05-20 - ViewModel Integration: Insights Workflow
-- **Context/Goal:** Connect the Insights dashboards (Notes & Transactions) to the persistence layer with live summary calculations.
+### 2024-05-20 - ViewModel Integration: Wallet & Settings
+- **Context/Goal:** Connect Digital Wallet and Advanced Settings to persistence and tiered limit logic.
 - **Conflicts & Alternatives Considered:**
-  - *Conflict 1: Shared Insights State:* Separate vs Shared ViewModel. *Decision:* Shared `InsightsViewModel` scoped to the `insights` navigation destination. This ensures that when a user switches between the "Notes" and "Transactions" sub-tabs, the filter state (e.g., date range or selected contact) is preserved.
-  - *Conflict 2: Summary Math Performance:* Calculating total revenue/expense. *Decision:* Use Kotlin `Flow` operators (`map` and `combine`) on the raw transaction stream from the repository. Calculations are performed off the main thread and cached in a `StateFlow` to ensure a jank-free UI.
-  - *Conflict 3: Persistence Triggers:* When to save? *Decision:* Background thread persistence triggered immediately upon clicking "Save" in the bottom sheet. UI reacts to the updated DB stream automatically, fulfilling the "Local-First" reactive pattern.
-- **Final Decision:** Implement repository injection for `NoteRepository` and `TransactionRepository` into the `InsightsViewModel`. Utilize `SharingStarted.WhileSubscribed(5000)` to optimize database connections.
-- **Impact:** `InsightsViewModel.kt`, `InsightsScreen.kt`, `MainActivity.kt` injection.
+  - *Conflict 1: Wallet Limit Enforcement:* ViewModel vs Repository check. *Decision:* ViewModel performs the count check against the user's tier status retrieved from the `PreferenceRepository` (or mocked Premium state) before allowing a navigation to "Add Card", ensuring robust freemium guardrails.
+  - *Conflict 2: DB Size Calculation:* How to calculate "Vault Size"? *Decision:* Use `context.getDatabasePath().length()` to get raw file size on disk, providing an accurate metric of local storage usage as seen in the diagnostics panel.
+  - *Conflict 3: Preference Persistence:* Room vs DataStore. *Decision:* Use Room for basic app preferences (Currency, Sync Frequency) within a `PreferenceEntity` to keep the data layer unified and support simple backup/restore of all user settings.
+- **Final Decision:** Implement `BankCardEntity` and its repository. Wire `DigitalWalletViewModel` for live card stream and `AdvancedSettingsViewModel` for diagnostic and preference management.
+- **Impact:** `BankCardEntity.kt`, `BankCardRepository.kt`, `DigitalWalletViewModel.kt`, `AdvancedSettingsViewModel.kt`, `MainActivity.kt`.
 
 ---

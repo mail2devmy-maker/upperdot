@@ -26,4 +26,8 @@ class UpperDotApp : Application() {
     val transactionRepository: com.mail2dev.upperdot.data.repository.TransactionRepository by lazy {
         com.mail2dev.upperdot.data.repository.TransactionRepository(database.transactionDao())
     }
+
+    val bankCardRepository: com.mail2dev.upperdot.data.repository.BankCardRepository by lazy {
+        com.mail2dev.upperdot.data.repository.BankCardRepository(database.bankCardDao())
+    }
 }

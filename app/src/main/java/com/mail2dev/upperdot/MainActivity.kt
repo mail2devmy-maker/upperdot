@@ -199,7 +199,13 @@ fun RootNavigation() {
         }
 
         composable("digital_wallet_management") {
-            val walletViewModel: DigitalWalletViewModel = viewModel()
+            val walletViewModel: DigitalWalletViewModel = viewModel(
+                factory = viewModelFactory {
+                    initializer {
+                        DigitalWalletViewModel(app.bankCardRepository)
+                    }
+                }
+            )
             DigitalWalletScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToPlans = { navController.navigate("plans") },
@@ -216,7 +222,18 @@ fun RootNavigation() {
         }
 
         composable("advanced_app_settings") {
-            val settingsViewModel: AdvancedSettingsViewModel = viewModel()
+            val settingsViewModel: AdvancedSettingsViewModel = viewModel(
+                factory = viewModelFactory {
+                    initializer {
+                        AdvancedSettingsViewModel(
+                            app.contactRepository,
+                            app.noteRepository,
+                            app.transactionRepository,
+                            app.bankCardRepository
+                        )
+                    }
+                }
+            )
             AdvancedSettingsScreen(
                 onNavigateBack = { navController.popBackStack() },
                 viewModel = settingsViewModel
