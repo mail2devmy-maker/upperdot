@@ -68,13 +68,13 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   3. Added `guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava` to resolve library duplication.
   4. Added `packaging` block to exclude `INDEX.LIST` and `DEPENDENCIES` files from the final APK.
 
-### 2024-05-20 - Data Layer: Contacts Room Module
-- **Context/Goal:** Implementation of the local persistence layer for connections using Android Room.
+### 2024-05-20 - Data Layer: Relationship Notes Room Module
+- **Context/Goal:** Implementation of the local persistence layer for relationship notes, attachments, and voice recordings.
 - **Conflicts & Alternatives Considered:**
-  - *Conflict 1: List Storage:* How to store comma-separated nicknames and multiple phone numbers? *Decision:* Use `@TypeConverter` to serialize/deserialize `List<String>` to a single JSON string, keeping the schema flat and simple for single-device usage.
-  - *Conflict 2: Indexing strategy:* Matching the "Smart Number Matcher". *Decision:* Add a unique index on a sanitized version of the primary phone number to prevent duplicates during VCF imports, while keeping the original formatted string in a separate column.
-  - *Conflict 3: Cascade Deletion:* What happens to notes/transactions? *Decision:* Implement `ForeignKey.CASCADE` on child tables (implemented in future modules) to ensure that deleting a contact automatically cleans up all associated historical logs as per AGENT.md section 8.
-- **Final Decision:** Implement `ContactEntity` with comprehensive fields for Identity, Corporate, and Financial info. Use UUID for `id` to ensure unique mapping before cloud sync.
-- **Impact:** `ContactEntity.kt`, `ContactDao.kt`, `ContactRepository.kt`, `AppDatabase.kt`.
+  - *Conflict 1: File Storage Strategy:* Storing raw bytes vs file paths. *Decision:* Store absolute file path strings in Room and raw binaries in the app's internal private storage as per AGENT.md section 5. This prevents database bloat and ensures high performance.
+  - *Conflict 2: Data Integrity:* What happens if a contact is deleted? *Decision:* Use `ForeignKey` with `OnDeleteStrategy.CASCADE` linked to the `ContactEntity.id`. This ensures orphans are never left in the database.
+  - *Conflict 3: Query Optimization:* How to fetch notes for a specific contact quickly? *Decision:* Add an index on the `contactId` column to optimize the common "Client Profile" history lookup.
+- **Final Decision:** Implement `NoteEntity` with support for title, content, attachment paths, and voice recording paths. Use a DAO that returns `Flow` for real-time Insight stream updates.
+- **Impact:** `NoteEntity.kt`, `NoteDao.kt`, `NoteRepository.kt`, `AppDatabase.kt` update.
 
 ---
