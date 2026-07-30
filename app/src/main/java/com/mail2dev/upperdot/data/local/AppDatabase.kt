@@ -7,13 +7,16 @@ import com.mail2dev.upperdot.data.local.converter.ComplexTypeConverters
 import com.mail2dev.upperdot.data.local.converter.ListConverter
 import com.mail2dev.upperdot.data.local.dao.ContactDao
 import com.mail2dev.upperdot.data.local.dao.NoteDao
+import com.mail2dev.upperdot.data.local.dao.TransactionDao
 import com.mail2dev.upperdot.data.local.entity.ContactEntity
 import com.mail2dev.upperdot.data.local.entity.NoteEntity
+import com.mail2dev.upperdot.data.local.entity.TransactionEntity
 
 @Database(
     entities = [
         ContactEntity::class,
-        NoteEntity::class
+        NoteEntity::class,
+        TransactionEntity::class
     ],
     version = 1,
     exportSchema = false
@@ -22,4 +25,5 @@ import com.mail2dev.upperdot.data.local.entity.NoteEntity
 abstract class AppDatabase : RoomDatabase() {
     abstract fun contactDao(): ContactDao
     abstract fun noteDao(): NoteDao
+    abstract fun transactionDao(): TransactionDao
 }

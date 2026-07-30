@@ -68,13 +68,13 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   3. Added `guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava` to resolve library duplication.
   4. Added `packaging` block to exclude `INDEX.LIST` and `DEPENDENCIES` files from the final APK.
 
-### 2024-05-20 - Data Layer: Relationship Notes Room Module
-- **Context/Goal:** Implementation of the local persistence layer for relationship notes, attachments, and voice recordings.
+### 2024-05-20 - Data Layer: Cash Transactions Room Module
+- **Context/Goal:** Implementation of the local persistence layer for financial logs and income/expense tracking.
 - **Conflicts & Alternatives Considered:**
-  - *Conflict 1: File Storage Strategy:* Storing raw bytes vs file paths. *Decision:* Store absolute file path strings in Room and raw binaries in the app's internal private storage as per AGENT.md section 5. This prevents database bloat and ensures high performance.
-  - *Conflict 2: Data Integrity:* What happens if a contact is deleted? *Decision:* Use `ForeignKey` with `OnDeleteStrategy.CASCADE` linked to the `ContactEntity.id`. This ensures orphans are never left in the database.
-  - *Conflict 3: Query Optimization:* How to fetch notes for a specific contact quickly? *Decision:* Add an index on the `contactId` column to optimize the common "Client Profile" history lookup.
-- **Final Decision:** Implement `NoteEntity` with support for title, content, attachment paths, and voice recording paths. Use a DAO that returns `Flow` for real-time Insight stream updates.
-- **Impact:** `NoteEntity.kt`, `NoteDao.kt`, `NoteRepository.kt`, `AppDatabase.kt` update.
+  - *Conflict 1: Financial Precision:* Double vs Long (Cents). *Decision:* Store amount as `Double` for simplicity in this CRM context, matching the UI layer's existing state handling while ensuring 2-decimal formatting during display.
+  - *Conflict 2: Linked Discovery:* How to search transactions by contact? *Decision:* Implemented a sub-query in the DAO to allow searching transaction logs by the linked contact's `fullName`, ensuring users can find "plumber" payments by searching the person's name.
+  - *Conflict 3: Media persistence:* Consistency with Notes. *Decision:* Mirrored the `attachmentPaths` and `voiceRecordingPath` structure from the Notes module to maintain unified file management logic.
+- **Final Decision:** Implement `TransactionEntity` with `ForeignKey.CASCADE` on `contactId`. Use `isRevenue` boolean to drive balance calculations.
+- **Impact:** `TransactionEntity.kt`, `TransactionDao.kt`, `TransactionRepository.kt`, `AppDatabase.kt` update.
 
 ---
