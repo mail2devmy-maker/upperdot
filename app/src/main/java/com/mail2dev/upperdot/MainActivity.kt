@@ -12,6 +12,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.mail2dev.upperdot.ui.auth_launchpad.AuthLaunchpadScreen
 import com.mail2dev.upperdot.ui.call_history.CallHistoryScreen
+import com.mail2dev.upperdot.ui.connections_list.ConnectionsListScreen
 import com.mail2dev.upperdot.ui.theme.UpperDotTheme
 
 class MainActivity : ComponentActivity() {
@@ -40,6 +41,22 @@ fun RootNavigation() {
                     navController.navigate("connections_list") {
                         popUpTo("auth_launchpad") { inclusive = true }
                     }
+                }
+            )
+        }
+        composable("connections_list") {
+            ConnectionsListScreen(
+                onNavigate = { route ->
+                    navController.navigate(route) {
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                onNavigateToContact = { contactId ->
+                    navController.navigate("client_profile/$contactId")
+                },
+                onNavigateToAddContact = {
+                    navController.navigate("add_contact_step1")
                 }
             )
         }

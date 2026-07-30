@@ -18,11 +18,11 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 
 ## 📑 Historical Logs
 
-### 2024-05-20 - Screen 02: Call History Screen
-- **Context/Goal:** Implementation of call history feed with permission-gated empty state and persistent bottom navigation.
+### 2024-05-20 - Screen 03: Connections List
+- **Context/Goal:** Primary dashboard for managing contacts with search, filtering, and quick actions.
 - **Conflicts & Alternatives Considered:**
-  - *Conflict 1: Permission Management:* Should permission handling be in the ViewModel or UI? *Decision:* ViewModel tracks the permission state boolean, UI triggers the request and displays the empty state card based on the boolean to keep logic testable.
-  - *Conflict 2: Bottom Navigation Implementation:* Using standard `NavigationBar` vs custom Stitch-rounded dock. *Decision:* Custom `BottomAppBar` with pill-shaped selection indicator matching Screen 02 visual specs.
-  - *Conflict 3: List vs Card:* Displaying call records as a list. *Decision:* Each call record will be a row within a scrollable list, following the "Icon-Label pairing" pattern seen in profile images.
-- **Final Decision:** Implement `CallHistoryScreen` with a `Scaffold` to host the `BottomAppBar`. Permission state determines whether to show the `EmptyCallHistoryCard` or the `CallLogList`.
-- **Impact:** `CallHistoryScreen.kt`, `CallHistoryViewModel.kt`, `MainActivity.kt` nav graph update.
+  - *Conflict 1: Search Implementation:* Real-time Room filtering vs button-triggered search. *Decision:* Real-time filtering in ViewModel using a `StateFlow` and `debounce` for performance, matching the responsive feel of a modern CRM.
+  - *Conflict 2: Card Interaction:* Handling swipe-to-dial and long-press expansion. *Decision:* Custom `SwipeToDismissBox` for the dial action (with phone icon background) and an `AnimatedVisibility` wrapper within each list item for the long-press expansion.
+  - *Conflict 3: List State Logic:* Displaying "No Contacts" vs "No Search Results". *Decision:* ViewModel will provide a sealed `UIState` (Loading, Empty, SearchEmpty, Success) to handle dynamic list overlays cleanly.
+- **Final Decision:** Implement `ConnectionsListScreen` using a `Scaffold`. Search and filters are anchored at the top below the header. The contact list uses `LazyColumn` with heavy rounding tokens (24dp) for cards.
+- **Impact:** `ConnectionsListScreen.kt`, `ConnectionsListViewModel.kt`, `MainActivity.kt` nav graph update.
