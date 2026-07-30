@@ -11,6 +11,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.mail2dev.upperdot.ui.auth_launchpad.AuthLaunchpadScreen
+import com.mail2dev.upperdot.ui.call_history.CallHistoryScreen
 import com.mail2dev.upperdot.ui.theme.UpperDotTheme
 
 class MainActivity : ComponentActivity() {
@@ -38,6 +39,15 @@ fun RootNavigation() {
                 onNavigateToDashboard = {
                     navController.navigate("connections_list") {
                         popUpTo("auth_launchpad") { inclusive = true }
+                    }
+                }
+            )
+        }
+        composable("call_history") {
+            CallHistoryScreen(
+                onNavigate = { route ->
+                    navController.navigate(route) {
+                        launchSingleTop = true
                     }
                 }
             )
