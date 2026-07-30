@@ -4,6 +4,7 @@ import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -54,7 +55,8 @@ fun StitchTextField(
     modifier: Modifier = Modifier,
     leadingIcon: ImageVector? = null,
     singleLine: Boolean = true,
-    minLines: Int = 1
+    minLines: Int = 1,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default
 ) {
     TextField(
         value = value,
@@ -78,7 +80,8 @@ fun StitchTextField(
             unfocusedTextColor = Color.White
         ),
         singleLine = singleLine,
-        minLines = minLines
+        minLines = minLines,
+        keyboardOptions = keyboardOptions
     )
 }
 

@@ -1,9 +1,15 @@
 package com.mail2dev.upperdot.ui.new_cash_transaction
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -13,29 +19,38 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.mail2dev.upperdot.ui.components.StitchDropdown
 import com.mail2dev.upperdot.ui.components.StitchTextField
-import com.mail2dev.upperdot.ui.theme.*
-
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import com.mail2dev.upperdot.ui.insights.ContactSummary
+import com.mail2dev.upperdot.ui.theme.*
+import java.text.SimpleDateFormat
+import java.util.*
+import android.media.MediaRecorder
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewCashTransactionSheet(
     onDismiss: () -> Unit,
-    onSave: (String, Boolean, String, String, String) -> Unit,
+    onSave: (String, Boolean, String, String, String, List<String>, String?) -> Unit,
     contactSearchQuery: String,
     onContactSearchQueryChange: (String) -> Unit,
     searchedContacts: List<ContactSummary>,
+    attachmentPaths: List<String>,
+    onAddAttachment: (String) -> Unit,
+    onRemoveAttachment: (Int) -> Unit,
     initialContact: ContactSummary? = null
 ) {
+    val context = LocalContext.current
     var selectedContact by remember { mutableStateOf(initialContact) }
     var isRevenue by remember { mutableStateOf(true) }
     var title by remember { mutableStateOf("") }
@@ -43,7 +58,77 @@ fun NewCashTransactionSheet(
     var detail by remember { mutableStateOf("") }
     var isSearchDropdownExpanded by remember { mutableStateOf(false) }
     
-    val currentDateTime = "Jul 30, 2026"
+    // Date Picker State
+    var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = System.currentTimeMillis()
+    )
+    val formatter = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
+    val selectedDateText = remember(datePickerState.selectedDateMillis) {
+        datePickerState.selectedDateMillis?.let { formatter.format(Date(it)) } ?: formatter.format(Date())
+    }
+
+    // Attachment State
+    val attachmentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let { onAddAttachment(it.toString()) }
+    }
+
+    // Voice Recording State
+    var voiceRecordingPath by remember { mutableStateOf<String?>(null) }
+    var isRecording by remember { mutableStateOf(false) }
+    var recorder by remember { mutableStateOf<MediaRecorder?>(null) }
+
+    fun startRecording() {
+        try {
+            val file = File(context.cacheDir, "trans_voice_${System.currentTimeMillis()}.mp3")
+            voiceRecordingPath = file.absolutePath
+            recorder = MediaRecorder().apply {
+                setAudioSource(MediaRecorder.AudioSource.MIC)
+                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                setOutputFile(file.absolutePath)
+                prepare()
+                start()
+            }
+            isRecording = true
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    fun stopRecording() {
+        try {
+            recorder?.apply {
+                stop()
+                release()
+            }
+            recorder = null
+            isRecording = false
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("OK", color = AccentCyan)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Cancel", color = Color.Gray)
+                }
+            },
+            colors = DatePickerDefaults.colors(containerColor = Surface)
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -151,7 +236,8 @@ fun NewCashTransactionSheet(
                     value = amount,
                     onValueChange = { amount = it },
                     placeholder = "Amount ($)",
-                    modifier = Modifier.weight(0.4f)
+                    modifier = Modifier.weight(0.4f),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
             }
 
@@ -173,41 +259,105 @@ fun NewCashTransactionSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Color.Black.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
+                    .clickable { showDatePicker = true }
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = TextSecondary, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(12.dp))
-                Text(text = currentDateTime, color = TextSecondary, fontSize = 14.sp)
+                Text(text = selectedDateText, color = TextSecondary, fontSize = 14.sp)
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Voice and Camera Row
+            // Voice and Attachments Section
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Receipts / Attachments (${attachmentPaths.size})",
+                    color = TextSecondary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    itemsIndexed(attachmentPaths) { index, path ->
+                        Box(modifier = Modifier.size(64.dp)) {
+                            AsyncImage(
+                                model = path,
+                                contentDescription = "Attachment $index",
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .border(1.dp, Color.DarkGray, RoundedCornerShape(12.dp)),
+                                contentScale = ContentScale.Crop
+                            )
+                            
+                            // Delete Button Overlay
+                            Surface(
+                                shape = CircleShape,
+                                color = Color.Black.copy(alpha = 0.6f),
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .align(Alignment.TopEnd)
+                                    .offset(x = 4.dp, y = (-4).dp)
+                                    .clickable { onRemoveAttachment(index) }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Remove",
+                                    tint = Color.White,
+                                    modifier = Modifier.padding(4.dp)
+                                )
+                            }
+                        }
+                    }
+                    
+                    item {
+                        // Add Button Box
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                                .border(1.dp, Color.DarkGray, RoundedCornerShape(12.dp))
+                                .clickable { attachmentLauncher.launch("image/*") },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.AddAPhoto, contentDescription = "Add Receipt", tint = AccentCyan)
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Voice Recording Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-                        .border(1.dp, Color.DarkGray, RoundedCornerShape(12.dp))
-                        .clickable { /* Trigger Camera Picker */ },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.AddAPhoto, contentDescription = "Add Photo", tint = AccentCyan)
-                }
-
-                // Voice Recording
                 Surface(
                     shape = CircleShape,
-                    color = AccentCyan.copy(alpha = 0.1f),
+                    color = if (isRecording) Color.Red.copy(alpha = 0.2f) else AccentCyan.copy(alpha = 0.1f),
                     modifier = Modifier.size(56.dp)
                 ) {
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.clickable { /* Hold to record */ }) {
-                        Icon(Icons.Default.Mic, contentDescription = "Record Memo", tint = AccentCyan)
+                    Box(
+                        contentAlignment = Alignment.Center, 
+                        modifier = Modifier.clickable { 
+                            if (isRecording) stopRecording() else startRecording()
+                        }
+                    ) {
+                        Icon(
+                            imageVector = if (isRecording) Icons.Default.Stop else Icons.Default.Mic, 
+                            contentDescription = "Record Memo", 
+                            tint = if (isRecording) Color.Red else AccentCyan
+                        )
                     }
                 }
             }
@@ -217,7 +367,7 @@ fun NewCashTransactionSheet(
             Button(
                 onClick = { 
                     selectedContact?.let { contact ->
-                        onSave(contact.id, isRevenue, title, amount, detail) 
+                        onSave(contact.id, isRevenue, title, amount, detail, attachmentPaths, voiceRecordingPath)
                     }
                 },
                 modifier = Modifier

@@ -136,6 +136,16 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   4. Updated the state binding to ensure selecting a contact correctly links their `id` and `fullName` to the active note or transaction.
   5. Refactored the `save` logic to use the selected contact's ID for database persistence.
 
+- **Error:** Incomplete functionality in `NewCashTransactionSheet` (missing Date Picker, Receipt Attachments, and Voice Recorder).
+- **Cause:** These features were not yet implemented in the cash transaction flow, leading to UX inconsistency with the relationship notes flow.
+- **Resolution:**
+  1. Updated `StitchTextField` in `StitchComponents.kt` to support `KeyboardOptions` (e.g., numeric input for amounts).
+  2. Integrated native `DatePickerDialog` into `NewCashTransactionSheet.kt`.
+  3. Implemented dynamic visual thumbnail preview grid for transaction receipts using Coil.
+  4. Activated native `MediaRecorder` for capturing transaction voice memos.
+  5. Refactored `InsightsViewModel.kt` to persist attachments and voice paths for financial logs.
+  6. Synchronized the `onSave` pipeline between the UI and ViewModel to ensure all rich media is preserved.
+
 - **Error:** Single email field limitation in `AddContactIdentityScreen`.
 - **Cause:** Users could only enter one email address per contact, which didn't meet the requirement for a flexible CRM.
 - **Resolution:**

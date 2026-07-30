@@ -193,14 +193,24 @@ class InsightsViewModel(
         }
     }
 
-    fun saveTransaction(contactId: String, isRevenue: Boolean, title: String, amount: String, detail: String) {
+    fun saveTransaction(
+        contactId: String, 
+        isRevenue: Boolean, 
+        title: String, 
+        amount: String, 
+        detail: String,
+        attachments: List<String> = emptyList(),
+        voicePath: String? = null
+    ) {
         viewModelScope.launch(Dispatchers.IO) {
             val transaction = TransactionEntity(
                 contactId = contactId,
                 title = title,
                 amount = amount.toDoubleOrNull() ?: 0.0,
                 isRevenue = isRevenue,
-                detail = detail
+                detail = detail,
+                attachmentPaths = attachments,
+                voiceRecordingPath = voicePath
             )
             transactionRepository.insertTransaction(transaction)
             _showAddTransactionSheet.value = false
