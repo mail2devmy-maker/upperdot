@@ -95,8 +95,9 @@ fun RootNavigation() {
             )
         }
 
-        composable("add_contact") {
+        composable("add_contact") { backStackEntry ->
             val addContactViewModel: AddContactViewModel = viewModel(
+                viewModelStoreOwner = backStackEntry,
                 factory = viewModelFactory {
                     initializer {
                         AddContactViewModel(app.contactRepository)
