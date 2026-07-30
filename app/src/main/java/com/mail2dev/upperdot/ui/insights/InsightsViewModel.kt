@@ -44,6 +44,9 @@ class InsightsViewModel : ViewModel() {
     private val _showAddNoteSheet = MutableStateFlow(false)
     val showAddNoteSheet: StateFlow<Boolean> = _showAddNoteSheet.asStateFlow()
 
+    private val _showAddTransactionSheet = MutableStateFlow(false)
+    val showAddTransactionSheet: StateFlow<Boolean> = _showAddTransactionSheet.asStateFlow()
+
     private val _notes = MutableStateFlow<List<NoteEntry>>(
         listOf(
             NoteEntry(
@@ -124,11 +127,20 @@ class InsightsViewModel : ViewModel() {
     }
 
     fun onAddTransactionClicked() {
-        // Trigger Bottom Sheet
+        _showAddTransactionSheet.value = true
+    }
+
+    fun dismissAddTransactionSheet() {
+        _showAddTransactionSheet.value = false
     }
 
     fun saveNote(contactName: String, title: String, content: String) {
         // TODO: Save to Room
         _showAddNoteSheet.value = false
+    }
+
+    fun saveTransaction(contactName: String, isRevenue: Boolean, title: String, amount: String, detail: String) {
+        // TODO: Save to Room
+        _showAddTransactionSheet.value = false
     }
 }

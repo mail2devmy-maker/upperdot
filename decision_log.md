@@ -68,11 +68,11 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   3. Added `guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava` to resolve library duplication.
   4. Added `packaging` block to exclude `INDEX.LIST` and `DEPENDENCIES` files from the final APK.
 
-### 2024-05-20 - Screen 11: Create Note Bottom Sheet Overlay
-- **Context/Goal:** Modal overlay for creating new relationship notes with title, content, attachments, and voice recordings.
+### 2024-05-20 - Screen 12: New Cash Transaction Bottom Sheet Overlay
+- **Context/Goal:** Modal overlay for logging cash transactions (Income/Expense) with real-time balance impact.
 - **Conflicts & Alternatives Considered:**
-  - *Conflict 1: Sheet Expansion State:* Should it be partially or fully expanded? *Decision:* Fully expanded (skip partial) as per AGENT.md requirement to ensure all fields (title, content, voice) are immediately visible without scrolling.
-  - *Conflict 2: Voice Entry Interaction:* Tap to record vs Hold to record. *Decision:* Hold-to-record as per user request, using a dedicated icon with visual feedback during active recording.
-  - *Conflict 3: Focus Management:* Auto-focus on entry. *Decision:* Auto-focus the "Note Title" field upon sheet launch to reduce friction in the "Quick CRM" workflow.
-- **Final Decision:** Implement `NewRelationshipNoteSheet` using `ModalBottomSheet`. Organize fields in a vertical stack using Stitch rounded surface tokens.
-- **Impact:** `NewRelationshipNoteSheet.kt`, `InsightsViewModel.kt` (updated with save logic).
+  - *Conflict 1: Type Switcher:* Toggle vs Tabs. *Decision:* Split Button (Binary Switcher) with high-contrast active states (Green for Revenue, Transparent/Dark for Expense) to provide immediate tactile feedback.
+  - *Conflict 2: Keyboard Management:* Standard vs Numeric. *Decision:* Forced `KeyboardType.Number` for the amount field to ensure valid decimal entries and reduce user keystrokes.
+  - *Conflict 3: Layout Split:* How to arrange Title and Amount? *Decision:* 60/40 horizontal split row as per Screen 12 visual specs in AGENT.md, optimizing vertical space for the notes/voice sections.
+- **Final Decision:** Implement `NewCashTransactionSheet`. Use shared `StitchTextField` and `StitchDropdown`. Color markers strictly tied to `PositiveGreen` and `NegativeRed` tokens.
+- **Impact:** `NewCashTransactionSheet.kt`, `InsightsViewModel.kt` (updated with transaction state), `InsightsScreen.kt`.
