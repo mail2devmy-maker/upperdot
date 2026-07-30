@@ -21,6 +21,8 @@ import com.mail2dev.upperdot.ui.add_contact.AddContactViewModel
 import com.mail2dev.upperdot.ui.auth_launchpad.AuthLaunchpadScreen
 import com.mail2dev.upperdot.ui.call_history.CallHistoryScreen
 import com.mail2dev.upperdot.ui.connections_list.ConnectionsListScreen
+import com.mail2dev.upperdot.ui.digital_wallet.DigitalWalletScreen
+import com.mail2dev.upperdot.ui.digital_wallet.DigitalWalletViewModel
 import com.mail2dev.upperdot.ui.insights.InsightsScreen
 import com.mail2dev.upperdot.ui.profile_detail.ClientProfileDetailScreen
 import com.mail2dev.upperdot.ui.profile_detail.ClientProfileDetailViewModel
@@ -157,6 +159,16 @@ fun RootNavigation() {
                     }
                 },
                 viewModel = profileSettingsViewModel
+            )
+        }
+
+        composable("digital_wallet_management") {
+            val walletViewModel: DigitalWalletViewModel = viewModel()
+            DigitalWalletScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onAddNewCard = { /* navController.navigate("new_bank_card") */ },
+                onNavigateToPlans = { navController.navigate("plans") },
+                viewModel = walletViewModel
             )
         }
     }

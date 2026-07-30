@@ -68,11 +68,11 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   3. Added `guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava` to resolve library duplication.
   4. Added `packaging` block to exclude `INDEX.LIST` and `DEPENDENCIES` files from the final APK.
 
-### 2024-05-20 - Screen 13: My Profile Settings Tab
-- **Context/Goal:** Personal hub for account management, sync status monitoring, and navigation to advanced configuration.
+### 2024-05-20 - Screen 14: Digital Wallet Management
+- **Context/Goal:** Interface for managing multiple bank cards and payment QR codes with tiered limit enforcement.
 - **Conflicts & Alternatives Considered:**
-  - *Conflict 1: Tiered Limit Tracking:* How to display the 20-item ceiling for Free users? *Decision:* Summary metrics bar will dynamically count current Room DB entries and show a warning color/icon if the user is approaching the 20-note/transaction threshold as per monetization logic.
-  - *Conflict 2: Sync Monitoring:* How to show Google Drive status? *Decision:* Dedicated "Sync Banner" within the account card showing timestamp and a manual refresh trigger to provide transparency into cloud persistence.
-  - *Conflict 3: Sign Out Placement:* Full-width button vs compact pill. *Decision:* Small red-outlined pill button positioned below the sync banner, matching the size and weight of the Premium tag to maintain visual balance within the card.
-- **Final Decision:** Implement `MyProfileSettingsScreen`. Use high-contrast card decks (#1E1E1E surface) with 24dp rounding. Integrate specialized Wallet FAB at bottom-right for Quick Wallet access.
-- **Impact:** `MyProfileSettingsScreen.kt`, `ProfileSettingsViewModel.kt`, `MainActivity.kt` routes.
+  - *Conflict 1: Card List Visualization:* Stacked overlap cards vs simple list. *Decision:* Vertical list of high-fidelity cards as per Screen 14 specs in AGENT.md, providing clear visibility of identifiers (Bank Name, Preview Number) for management.
+  - *Conflict 2: Limit Enforcement:* Where to block "Add" action? *Decision:* ViewModel checks `cardCount` against the 1-card limit for Free users. The "Add New Card" FAB will trigger an upsell dialog if the limit is reached.
+  - *Conflict 3: Tier Notification:* Persistent banner vs popup. *Decision:* Persistent Info Banner at the top of the list to educate Free users on storage limits early, matching the high-transparency design goal.
+- **Final Decision:** Implement `DigitalWalletScreen`. Use `ExtendedFloatingActionButton` for the "Add New Card" action. Integrate Edit (Cyan) and Delete (Red) action pairs for each card row.
+- **Impact:** `DigitalWalletScreen.kt`, `DigitalWalletViewModel.kt`, `MainActivity.kt` navigation.
