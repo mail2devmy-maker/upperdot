@@ -1,12 +1,12 @@
 package com.mail2dev.upperdot.ui.auth_launchpad
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -20,9 +20,23 @@ import com.mail2dev.upperdot.ui.theme.PrimaryYellow
 @Composable
 fun AuthLaunchpadScreen(
     onNavigateToDashboard: () -> Unit,
-    viewModel: AuthViewModel = viewModel()
+    viewModel: AuthViewModel
 ) {
     val showGuestWarning by viewModel.showGuestWarning.collectAsState()
+    val signInIntent by viewModel.signInIntent.collectAsState()
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { _ ->
+        viewModel.handleSignInResult(onNavigateToDashboard)
+    }
+
+    LaunchedEffect(signInIntent) {
+        signInIntent?.let {
+            launcher.launch(it)
+            viewModel.consumeSignInIntent()
+        }
+    }
 
     if (showGuestWarning) {
         AlertDialog(

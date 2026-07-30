@@ -13,6 +13,7 @@ navigationCompose = "2.9.8"
 revenuecat = "10.15.1"
 googleApiClient = "2.9.0"
 googleDrive = "v3-rev20260712-2.0.0"
+googleAuth = "21.6.0"
 ksp = "2.2.10-2.0.2"
 kotlinxSerialization = "1.11.0"
 
@@ -39,6 +40,7 @@ androidx-compose-material-icons-extended = { group = "androidx.compose.material"
 revenuecat-purchases = { group = "com.revenuecat.purchases", name = "purchases", version.ref = "revenuecat" }
 google-api-client-android = { group = "com.google.api-client", name = "google-api-client-android", version.ref = "googleApiClient" }
 google-api-services-drive = { group = "com.google.apis", name = "google-api-services-drive", version.ref = "googleDrive" }
+google-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "googleAuth" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 
 [plugins]

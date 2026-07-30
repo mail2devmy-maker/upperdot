@@ -69,7 +69,8 @@ dependencies {
     // RevenueCat
     implementation(libs.revenuecat.purchases)
 
-    // Google Drive
+    // Google Drive & Auth
+    implementation(libs.google.auth)
     implementation(libs.google.api.client.android) {
         exclude(group = "org.apache.httpcomponents")
         exclude(group = "com.google.guava", module = "listenablefuture")

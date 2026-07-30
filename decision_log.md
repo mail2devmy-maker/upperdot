@@ -68,13 +68,13 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   3. Added `guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava` to resolve library duplication.
   4. Added `packaging` block to exclude `INDEX.LIST` and `DEPENDENCIES` files from the final APK.
 
-### 2024-05-20 - ViewModel Integration: Wallet & Settings
-- **Context/Goal:** Connect Digital Wallet and Advanced Settings to persistence and tiered limit logic.
+### 2024-05-20 - Cloud Sync: Google Drive OAuth Scoping
+- **Context/Goal:** Implementation of Google Sign-In to acquire `DriveScopes.DRIVE_APPDATA` for background synchronization.
 - **Conflicts & Alternatives Considered:**
-  - *Conflict 1: Wallet Limit Enforcement:* ViewModel vs Repository check. *Decision:* ViewModel performs the count check against the user's tier status retrieved from the `PreferenceRepository` (or mocked Premium state) before allowing a navigation to "Add Card", ensuring robust freemium guardrails.
-  - *Conflict 2: DB Size Calculation:* How to calculate "Vault Size"? *Decision:* Use `context.getDatabasePath().length()` to get raw file size on disk, providing an accurate metric of local storage usage as seen in the diagnostics panel.
-  - *Conflict 3: Preference Persistence:* Room vs DataStore. *Decision:* Use Room for basic app preferences (Currency, Sync Frequency) within a `PreferenceEntity` to keep the data layer unified and support simple backup/restore of all user settings.
-- **Final Decision:** Implement `BankCardEntity` and its repository. Wire `DigitalWalletViewModel` for live card stream and `AdvancedSettingsViewModel` for diagnostic and preference management.
-- **Impact:** `BankCardEntity.kt`, `BankCardRepository.kt`, `DigitalWalletViewModel.kt`, `AdvancedSettingsViewModel.kt`, `MainActivity.kt`.
+  - *Conflict 1: OAuth Scope Level:* broad vs restricted. *Decision:* Strictly use `DRIVE_APPDATA` scope to ensure user privacy and app-specific data isolation as per Section 7 guidelines.
+  - *Conflict 2: Credential Persistence:* In-memory vs Disk. *Decision:* Use `GoogleAccountManager` for handling credential sessions, with local fallback for offline metadata display.
+  - *Conflict 3: Offline Fallback:* How to handle login without internet? *Decision:* Login requires an initial online handshake. If offline, the app provides "Try as Guest" mode which operates purely on local Room DB without cloud sync attempts.
+- **Final Decision:** Implement `GoogleAuthService` using `play-services-auth`. Connect `AuthViewModel` to handle the `ActivityResult` and token exchange.
+- **Impact:** `GoogleAuthService.kt`, `AuthViewModel.kt`, `MainActivity.kt`.
 
 ---

@@ -24,6 +24,7 @@ import com.mail2dev.upperdot.ui.add_contact.AddContactViewModel
 import com.mail2dev.upperdot.ui.app_settings.AdvancedSettingsScreen
 import com.mail2dev.upperdot.ui.app_settings.AdvancedSettingsViewModel
 import com.mail2dev.upperdot.ui.auth_launchpad.AuthLaunchpadScreen
+import com.mail2dev.upperdot.ui.auth_launchpad.AuthViewModel
 import com.mail2dev.upperdot.ui.call_history.CallHistoryScreen
 import com.mail2dev.upperdot.ui.connections_list.ConnectionsListScreen
 import com.mail2dev.upperdot.ui.connections_list.ConnectionsListViewModel
@@ -64,12 +65,20 @@ fun RootNavigation() {
         modifier = Modifier.fillMaxSize()
     ) {
         composable("auth_launchpad") {
+            val authViewModel: AuthViewModel = viewModel(
+                factory = viewModelFactory {
+                    initializer {
+                        AuthViewModel(app.googleAuthService)
+                    }
+                }
+            )
             AuthLaunchpadScreen(
                 onNavigateToDashboard = {
                     navController.navigate("connections_list") {
                         popUpTo("auth_launchpad") { inclusive = true }
                     }
-                }
+                },
+                viewModel = authViewModel
             )
         }
         composable("connections_list") {

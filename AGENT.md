@@ -466,3 +466,21 @@ For each core screen package you refactor, follow this sequence:
 2. Update the target ViewModel files to connect directly to the underlying repositories.
 3. Verify that the Jetpack Compose screens react correctly to the live repository states.
 4. Execute an automated git commit with the message format: `feat(viewmodel): wire [Feature Name] ViewModel to repository layer`.
+---
+
+## 7. Cloud Storage Engineering Rules (Google Drive REST API)
+
+You are now entering the Cloud Synchronization implementation phase. You must build out our background, silent synchronization engine targeting the user's personal Google Account space.
+
+### Architectural Rules
+1. **Hidden Folder Scope:** You must ONLY interface with the `appDataFolder` hidden directory via the explicit scope `DriveScopes.DRIVE_APPDATA`. You are strictly forbidden from requesting broad Google Drive access.
+2. **Local-First Synchronization:** The application must remain completely operational offline. Saves must write immediately to the local Room database first. Synchronizations must occur in the background without blocking the UI.
+3. **Payload Structure:** System data must be serialized into compressed JSON payloads before streaming up to Google Drive. Binary assets (attachments and voice recording logs) must be pushed as independent file streams with their unique Room string path associations retained.
+4. **Single-Instance Assumption:** Per the SRS, do not build multi-device conflict resolution engines. The last write to cloud wins.
+
+### Execution Sequence per Upload Module
+For every network or authentication service you construct, follow this sequence:
+1. Log authentication intent flows, token refresh mechanics, and network exception fallback routines inside `decision_log.md` first.
+2. Develop the necessary network infrastructure, background sync workers, and security authenticators.
+3. Hook the network triggers directly into the sync monitoring panels we built on Screen 13.
+4. Execute an automated git commit with the message format: `feat(cloud): implement Google Drive [Component Name] integration`.

@@ -30,4 +30,8 @@ class UpperDotApp : Application() {
     val bankCardRepository: com.mail2dev.upperdot.data.repository.BankCardRepository by lazy {
         com.mail2dev.upperdot.data.repository.BankCardRepository(database.bankCardDao())
     }
+
+    val googleAuthService: com.mail2dev.upperdot.data.network.GoogleAuthService by lazy {
+        com.mail2dev.upperdot.data.network.GoogleAuthService(this)
+    }
 }
