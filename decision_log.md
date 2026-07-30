@@ -68,11 +68,11 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   3. Added `guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava` to resolve library duplication.
   4. Added `packaging` block to exclude `INDEX.LIST` and `DEPENDENCIES` files from the final APK.
 
-### 2024-05-20 - Screen 09: Insights Tab - Notes Stream
-- **Context/Goal:** A centralized chronological stream of relationship notes with advanced filtering and search.
+### 2024-05-20 - Screen 10: Insights Tab - Transaction Ledger Stream
+- **Context/Goal:** Implementation of the financial ledger stream with automated balance calculation (Revenue vs Expenses).
 - **Conflicts & Alternatives Considered:**
-  - *Conflict 1: Search Scope:* Should search only match note text? *Decision:* Search scope includes Note Title, Content, and Linked Contact Name to ensure deep discoverability as per AGENT.md.
-  - *Conflict 2: Sub-Tab Navigation:* Using a separate screen vs conditional visibility. *Decision:* Shared `InsightsViewModel` managing a "selected tab" state (NOTES vs TRANSACTIONS) to allow smooth, stateful transitions between the two ledger views without losing search context.
-  - *Conflict 3: Filter UI:* Handling "Clear Filters". *Decision:* When a contact filter is active, the "All Contacts" capsule is replaced by a two-pill system: a Red "Clear Filters X" and a Cyan "Contact Name" pill, matching user-provided UI patterns.
-- **Final Decision:** Implement `InsightsScreen` with a toggleable sub-tab switcher. Note cards will use `AnimatedVisibility` for in-place expansion to show full content and attachments.
-- **Impact:** `InsightsScreen.kt`, `InsightsViewModel.kt`, `MainActivity.kt` routes.
+  - *Conflict 1: Metrics Display:* Using a single card vs separate grid. *Decision:* Metrics Grid split into 3 segments (Revenue: Green, Expenses: Red, Net: Cyan) to provide a high-contrast visual summary as per Screen 11 specs in AGENT.md.
+  - *Conflict 2: Transaction Row Design:* How to highlight the "Direction" of money? *Decision:* Use signed indicators (`+$` vs `-$`) with color tokens (`PositiveGreen` vs `NegativeRed`) and explicit text labels (REVENUE / EXPENSE) to minimize user error.
+  - *Conflict 2: Shared State:* Keeping Notes and Transactions in sync. *Decision:* Shared `InsightsViewModel` state allows maintaining date filters (From/To) across both tabs for a consistent analytical context.
+- **Final Decision:** Implement `TransactionsList` and `MetricsGrid` within `InsightsScreen.kt`. Hook into shared VM parameters. Use standard Stitch high-contrast typography for currency values.
+- **Impact:** `InsightsScreen.kt`, `InsightsViewModel.kt` (updated with balance math).

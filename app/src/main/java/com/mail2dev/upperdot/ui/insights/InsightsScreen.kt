@@ -33,6 +33,10 @@ fun InsightsScreen(
     val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedContactFilter by viewModel.selectedContactFilter.collectAsState()
     val notes by viewModel.notes.collectAsState()
+    val transactions by viewModel.transactions.collectAsState()
+    val totalRevenue by viewModel.totalRevenue.collectAsState()
+    val totalExpenses by viewModel.totalExpenses.collectAsState()
+    val netProfit by viewModel.netProfit.collectAsState()
 
     Scaffold(
         bottomBar = {
@@ -144,6 +148,36 @@ fun InsightsScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // Metrics Grid (Visible only on Transactions Tab)
+            AnimatedVisibility(visible = selectedTab == InsightTab.TRANSACTIONS) {
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        MetricCard(
+                            label = "Revenue",
+                            value = "$${String.format("%.2f", totalRevenue)}",
+                            valueColor = PositiveGreen,
+                            modifier = Modifier.weight(1f)
+                        )
+                        MetricCard(
+                            label = "Expenses",
+                            value = "$${String.format("%.2f", totalExpenses)}",
+                            valueColor = NegativeRed,
+                            modifier = Modifier.weight(1f)
+                        )
+                        MetricCard(
+                            label = "Net Profit",
+                            value = "$${String.format("%.2f", netProfit)}",
+                            valueColor = AccentCyan,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
+            }
+
             // Tab Switcher
             Row(
                 modifier = Modifier
@@ -172,8 +206,33 @@ fun InsightsScreen(
             if (selectedTab == InsightTab.NOTES) {
                 NotesList(notes = notes, onContactClick = viewModel::onContactFilterSelected)
             } else {
-                // TODO: Transactions List
+                TransactionsList(transactions = transactions, onContactClick = viewModel::onContactFilterSelected)
             }
+        }
+    }
+}
+
+@Composable
+fun MetricCard(
+    label: String,
+    value: String,
+    valueColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Surface)
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(12.dp)
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(text = label, color = TextSecondary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(text = value, color = valueColor, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -214,6 +273,126 @@ fun NotesList(
     ) {
         items(notes, key = { it.id }) { note ->
             NoteCard(note = note, onContactClick = { onContactClick(note.contactName) })
+        }
+    }
+}
+
+@Composable
+fun TransactionsList(
+    transactions: List<TransactionEntry>,
+    onContactClick: (String) -> Unit
+) {
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        items(transactions, key = { it.id }) { transaction ->
+            TransactionCard(transaction = transaction, onContactClick = { onContactClick(transaction.contactName) })
+        }
+    }
+}
+
+@Composable
+fun TransactionCard(
+    transaction: TransactionEntry,
+    onContactClick: () -> Unit
+) {
+    var isExpanded by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { isExpanded = !isExpanded },
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Surface)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        shape = CircleShape,
+                        color = Color.DarkGray,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(Icons.Default.Person, contentDescription = null, tint = Color.LightGray, modifier = Modifier.size(16.dp))
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = transaction.title,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = AccentCyan.copy(alpha = 0.1f),
+                    modifier = Modifier.clickable { onContactClick() }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Person, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(12.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(text = transaction.contactName, color = AccentCyan, fontSize = 10.sp)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = transaction.detail,
+                    color = if (isExpanded) Color.White else TextSecondary,
+                    fontSize = 14.sp,
+                    maxLines = if (isExpanded) Int.MAX_VALUE else 1,
+                    modifier = Modifier.weight(1f)
+                )
+                
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = if (transaction.isRevenue) "+$${transaction.amount}" else "-$${transaction.amount}",
+                        color = if (transaction.isRevenue) PositiveGreen else NegativeRed,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = if (transaction.isRevenue) "REVENUE" else "EXPENSE",
+                        color = if (transaction.isRevenue) PositiveGreen.copy(alpha = 0.6f) else NegativeRed.copy(alpha = 0.6f),
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = transaction.timestamp, color = TextMuted, fontSize = 10.sp)
+
+                if (transaction.attachmentCount > 0) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Description, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(14.dp))
+                        Text(text = "${transaction.attachmentCount}", color = AccentCyan, fontSize = 12.sp)
+                    }
+                }
+            }
         }
     }
 }

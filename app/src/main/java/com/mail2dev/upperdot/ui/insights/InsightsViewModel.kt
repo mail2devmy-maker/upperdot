@@ -1,9 +1,8 @@
 package com.mail2dev.upperdot.ui.insights
 
 import androidx.lifecycle.ViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.*
 
 enum class InsightTab {
     NOTES, TRANSACTIONS
@@ -56,6 +55,46 @@ class InsightsViewModel : ViewModel() {
         )
     )
     val notes: StateFlow<List<NoteEntry>> = _notes.asStateFlow()
+
+    private val _transactions = MutableStateFlow<List<TransactionEntry>>(
+        listOf(
+            TransactionEntry(
+                id = "1",
+                contactId = "test_id",
+                contactName = "test",
+                title = "payment",
+                detail = "shop 1",
+                amount = "10.00",
+                isRevenue = false,
+                timestamp = "Jul 28, 2026 • 11:28 AM",
+                attachmentCount = 1
+            ),
+            TransactionEntry(
+                id = "2",
+                contactId = "test_id",
+                contactName = "test",
+                title = "income",
+                detail = "gift",
+                amount = "20.00",
+                isRevenue = true,
+                timestamp = "Jul 22, 2026 • 12:29 AM",
+                attachmentCount = 1
+            )
+        )
+    )
+    val transactions: StateFlow<List<TransactionEntry>> = _transactions.asStateFlow()
+
+    val totalRevenue = _transactions.map { list ->
+        list.filter { it.isRevenue }.sumOf { it.amount.toDoubleOrNull() ?: 0.0 }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), 0.0)
+
+    val totalExpenses = _transactions.map { list ->
+        list.filter { !it.isRevenue }.sumOf { it.amount.toDoubleOrNull() ?: 0.0 }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), 0.0)
+
+    val netProfit = combine(totalRevenue, totalExpenses) { rev, exp ->
+        rev - exp
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), 0.0)
 
     fun onTabSelected(tab: InsightTab) {
         _selectedTab.value = tab
