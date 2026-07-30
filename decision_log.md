@@ -42,6 +42,15 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Final Decision:** Implement `ConnectionsListScreen` using a Scaffold. Search and filters are anchored at the top below the header. The contact list uses LazyColumn with heavy rounding tokens (24dp) for cards.
 - **Impact:** `ConnectionsListScreen.kt`, `ConnectionsListViewModel.kt`, `MainActivity.kt` nav graph update.
 
+### 2024-05-20 - Screen 04: Add Contact Form Wizard - Step 1: Core Info
+- **Context/Goal:** First step of the multi-tab contact creation wizard focusing on basic identification.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Tab Navigation vs Sequential Buttons:* Should user use "Next" buttons or tabs? *Decision:* Both. Tabs (ScrollableTabRow) for direct jumping and a persistent Save/Next FAB as per Stitch design guidelines to ensure flexibility.
+  - *Conflict 2: State Retention:* How to persist data across wizard steps? *Decision:* Single `AddContactViewModel` scoped to the navigation graph to retain state as user navigates between steps 1-4.
+  - *Conflict 3: Validation Trigger:* When to validate "Required" fields? *Decision:* On-the-fly visual hints (asterisks) and hard blocking on Step 4 "Save" click, with auto-routing back to Step 1 if Full Name is empty.
+- **Final Decision:** Implement `AddContactCoreInfoScreen`. Custom avatar picker UI with cyan ring. Use OutlinedTextField styled with Stitch tokens (#1E1E1E background, 16dp rounding).
+- **Impact:** `AddContactCoreInfoScreen.kt`, `AddContactViewModel.kt`, `MainActivity.kt` routes.
+
 ### 2024-05-20 - Screen 05: Add Contact Form Wizard - Step 2: Identity
 - **Context/Goal:** Second step of the wizard focusing on digital identifiers and relationship grouping.
 - **Conflicts & Alternatives Considered:**
@@ -68,6 +77,185 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   3. Added `guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava` to resolve library duplication.
   4. Added `packaging` block to exclude `INDEX.LIST` and `DEPENDENCIES` files from the final APK.
 
+### 2024-05-20 - Screen 06: Add Contact Form Wizard - Step 3: Corporate Info
+- **Context/Goal:** Third step focusing on professional details: Company, Category, and Address.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Category Selection:* Static list vs free text. *Decision:* Dropdown with predefined categories (General, Client, Vendor, Partner) as per Screen 04 specs in AGENT.md, providing a standardized "Stitch" data entry feel.
+  - *Conflict 2: Layout Consistency:* Using cards vs direct layout. *Decision:* Maintain the vertical stack of `StitchTextField` inside a scrollable column, mirroring the visual rhythm of the previous steps.
+- **Final Decision:** Implement `AddContactCorporateScreen`. Shared VM state handles professional inputs. Uses `Business` (Building), `Category` (Shapes), and `Location` (Pin) icons for semantic grouping.
+- **Impact:** `AddContactCorporateScreen.kt`, `AddContactViewModel.kt`, `MainActivity.kt` routes.
+
+### 2024-05-20 - Screen 07: Add Contact Form Wizard - Step 4: Financial Info
+- **Context/Goal:** Final step of the wizard focusing on bank account details and final persistence to Room DB.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Dynamic Bank List:* Should bank accounts be a fixed list or dynamic? *Decision:* Dynamic list of `BankAccount` objects in ViewModel, allowing users to add multiple "Secure Accounts" as per SRS Screen 07 specifications.
+  - *Conflict 2: Final Validation:* Where to trigger mandatory checks? *Decision:* Step 4 "Save" FAB triggers a global validation check. If Step 1 (Full Name) is empty, user is auto-routed back to index 0 with an error state, ensuring data integrity.
+  - *Conflict 3: Bank Institution Input:* Dropdown vs Text. *Decision:* Dropdown (`StitchDropdown`) with local banking institutions (Maybank, CIMB, etc.) to ensure data consistency for the "Quick Wallet" features later.
+- **Final Decision:** Implement `AddContactFinancialScreen`. Final Save action bundles the entire Wizard State from the shared `AddContactViewModel` and enqueues a background sync to Google Drive.
+- **Impact:** `AddContactFinancialScreen.kt`, `AddContactViewModel.kt` (updated with bank setters), `MainActivity.kt` navigation.
+
+### 2024-05-20 - Screen 08: Client Profile Detail View
+- **Context/Goal:** Unified comprehensive view of a contact's full profile including contact, corporate, financial info, and logs.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Unified Scroll vs Separate Sections:* Should notes/transactions be separate tabs? *Decision:* Unified `LazyColumn` with collapsible accordions as per user images, providing an immediate overview of history.
+  - *Conflict 2: Action Visibility:* Positioning the Edit and Delete actions. *Decision:* Placed in the `TopAppBar` as an action pair (Red Trash + Cyan Pencil) to keep the main surface dedicated to data.
+  - *Conflict 3: Data Mapping:* How to display empty fields? *Decision:* Use consistent "Icon-Label-Value" rows. If a field is empty, it will be hidden to maintain a clean "Stitch" minimalist aesthetic.
+- **Final Decision:** Implement `ClientProfileDetailScreen`. Use `LazyColumn` for the entire content. Custom `ProfileCard` and `CollapsibleSection` components using Stitch tokens (#1E1E1E surface, 24dp rounding).
+- **Impact:** `ClientProfileDetailScreen.kt`, `ClientProfileDetailViewModel.kt`, `MainActivity.kt` routes.
+
+### 2024-05-20 - Screen 09: Insights Tab - Notes Stream
+- **Context/Goal:** A centralized chronological stream of relationship notes with advanced filtering and search.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Search Scope:* Should search only match note text? *Decision:* Search scope includes Note Title, Content, and Linked Contact Name to ensure deep discoverability as per AGENT.md.
+  - *Conflict 2: Sub-Tab Navigation:* Using a separate screen vs conditional visibility. *Decision:* Shared `InsightsViewModel` managing a "selected tab" state (NOTES vs TRANSACTIONS) to allow smooth, stateful transitions between the two ledger views without losing search context.
+  - *Conflict 3: Filter UI:* Handling "Clear Filters". *Decision:* When a contact filter is active, the "All Contacts" capsule is replaced by a two-pill system: a Red "Clear Filters X" and a Cyan "Contact Name" pill, matching user-provided UI patterns.
+- **Final Decision:** Implement `InsightsScreen` with a toggleable sub-tab switcher. Note cards will use `AnimatedVisibility` for in-place expansion to show full content and attachments.
+- **Impact:** `InsightsScreen.kt`, `InsightsViewModel.kt`, `MainActivity.kt` routes.
+
+### 2024-05-20 - Screen 10: Insights Tab - Transaction Ledger Stream
+- **Context/Goal:** Implementation of the financial ledger stream with automated balance calculation (Revenue vs Expenses).
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Metrics Display:* Using a single card vs separate grid. *Decision:* Metrics Grid split into 3 segments (Revenue: Green, Expenses: Red, Net: Cyan) to provide a high-contrast visual summary as per Screen 11 specs in AGENT.md.
+  - *Conflict 2: Transaction Row Design:* How to highlight the "Direction" of money? *Decision:* Use signed indicators (`+$` vs `-$`) with color tokens (`PositiveGreen` vs `NegativeRed`) and explicit text labels (REVENUE / EXPENSE) to minimize user error.
+  - *Conflict 2: Shared State:* Keeping Notes and Transactions in sync. *Decision:* Shared `InsightsViewModel` state allows maintaining date filters (From/To) across both tabs for a consistent analytical context.
+- **Final Decision:** Implement `TransactionsList` and `MetricsGrid` within `InsightsScreen.kt`. Hook into shared VM parameters. Use standard Stitch high-contrast typography for currency values.
+- **Impact:** `InsightsScreen.kt`, `InsightsViewModel.kt` (updated with balance math).
+
+### 2024-05-20 - Screen 11: Create Note Bottom Sheet Overlay
+- **Context/Goal:** Modal overlay for creating new relationship notes with title, content, attachments, and voice recordings.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Sheet Expansion State:* Should it be partially or fully expanded? *Decision:* Fully expanded (skip partial) as per AGENT.md requirement to ensure all fields (title, content, voice) are immediately visible without scrolling.
+  - *Conflict 2: Voice Entry Interaction:* Tap to record vs Hold to record. *Decision:* Hold-to-record as per user request, using a dedicated icon with visual feedback during active recording.
+  - *Conflict 3: Focus Management:* Auto-focus on entry. *Decision:* Auto-focus the "Note Title" field upon sheet launch to reduce friction in the "Quick CRM" workflow.
+- **Final Decision:** Implement `NewRelationshipNoteSheet` using `ModalBottomSheet`. Organize fields in a vertical stack using Stitch rounded surface tokens.
+- **Impact:** `NewRelationshipNoteSheet.kt`, `InsightsViewModel.kt` (updated with save logic).
+
+### 2024-05-20 - Screen 12: New Cash Transaction Bottom Sheet Overlay
+- **Context/Goal:** Modal overlay for logging cash transactions (Income/Expense) with real-time balance impact.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Type Switcher:* Toggle vs Tabs. *Decision:* Split Button (Binary Switcher) with high-contrast active states (Green for Revenue, Transparent/Dark for Expense) to provide immediate tactile feedback.
+  - *Conflict 2: Keyboard Management:* Standard vs Numeric. *Decision:* Forced `KeyboardType.Number` for the amount field to ensure valid decimal entries and reduce user keystrokes.
+  - *Conflict 3: Layout Split:* How to arrange Title and Amount? *Decision:* 60/40 horizontal split row as per Screen 12 visual specs in AGENT.md, optimizing vertical space for the notes/voice sections.
+- **Final Decision:** Implement `NewCashTransactionSheet`. Use shared `StitchTextField` and `StitchDropdown`. Color markers strictly tied to `PositiveGreen` and `NegativeRed` tokens.
+- **Impact:** `NewCashTransactionSheet.kt`, `InsightsViewModel.kt` (updated with transaction state), `InsightsScreen.kt`.
+
+### 2024-05-20 - Screen 13: My Profile Settings Tab
+- **Context/Goal:** Personal hub for account management, sync status monitoring, and navigation to advanced configuration.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Tiered Limit Tracking:* How to display the 20-item ceiling for Free users? *Decision:* Summary metrics bar will dynamically count current Room DB entries and show a warning color/icon if the user is approaching the 20-note/transaction threshold as per monetization logic.
+  - *Conflict 2: Sync Monitoring:* How to show Google Drive status? *Decision:* Dedicated "Sync Banner" within the account card showing timestamp and a manual refresh trigger to provide transparency into cloud persistence.
+  - *Conflict 3: Sign Out Placement:* Full-width button vs compact pill. *Decision:* Small red-outlined pill button positioned below the sync banner, matching the size and weight of the Premium tag to maintain visual balance within the card.
+- **Final Decision:** Implement `MyProfileSettingsScreen`. Use high-contrast card decks (#1E1E1E surface) with 24dp rounding. Integrate specialized Wallet FAB at bottom-right for Quick Wallet access.
+- **Impact:** `MyProfileSettingsScreen.kt`, `ProfileSettingsViewModel.kt`, `MainActivity.kt` routes.
+
+### 2024-05-20 - Screen 14: Digital Wallet Management
+- **Context/Goal:** Interface for managing multiple bank cards and payment QR codes with tiered limit enforcement.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Card List Visualization:* Stacked overlap cards vs simple list. *Decision:* Vertical list of high-fidelity cards as per Screen 14 specs in AGENT.md, providing clear visibility of identifiers (Bank Name, Preview Number) for management.
+  - *Conflict 2: Limit Enforcement:* Where to block "Add" action? *Decision:* ViewModel checks `cardCount` against the 1-card limit for Free users. The "Add New Card" FAB will trigger an upsell dialog if the limit is reached.
+  - *Conflict 3: Tier Notification:* Persistent banner vs popup. *Decision:* Persistent Info Banner at the top of the list to educate Free users on storage limits early, matching the high-transparency design goal.
+- **Final Decision:** Implement `DigitalWalletScreen`. Use `ExtendedFloatingActionButton` for the "Add New Card" action. Integrate Edit (Cyan) and Delete (Red) action pairs for each card row.
+- **Impact:** `DigitalWalletScreen.kt`, `DigitalWalletViewModel.kt`, `MainActivity.kt` navigation.
+
+### 2024-05-20 - Screen 15: Add New Card Bottom Sheet Overlay
+- **Context/Goal:** Modal interface for adding or editing bank cards with theme customization and QR attachment.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Color Picker UI:* Slider vs Tokens. *Decision:* Row of 6 color circles (Stitch Palette) to ensure high-contrast accessibility and visual consistency with the card deck.
+  - *Conflict 2: Field Prioritization:* Managing account number vs IBAN vs SWIFT. *Decision:* Standardized `StitchTextField` inputs with "Optional" labels for BIC/SWIFT, prioritizing local bank names and holder names as per Screen 15 visual specs.
+  - *Conflict 3: Validation Logic:* When to enable "Save"? *Decision:* "Save Card" button remains disabled until mandatory fields (Bank Name, Holder Name, Account Number) are non-empty, matching the "Secure Account" validation pattern.
+- **Final Decision:** Implement `NewBankCardSheet` using `ModalBottomSheet`. Leverage `StitchDropdown` for bank selection and `LazyRow` for the color picker.
+- **Impact:** `NewBankCardSheet.kt`, `DigitalWalletViewModel.kt` (updated with card state), `DigitalWalletScreen.kt`.
+
+### 2024-05-20 - Screen 16: Relationship Hierarchy Manager
+- **Context/Goal:** Interface for managing nested relational groups and sub-tags (e.g., Favorites -> High Priority).
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Nested List UI:* Infinite depth vs fixed 2-level. *Decision:* Fixed 2-level (Group -> Tag) as per AGENT.md clarification to ensure mutual exclusivity and maintain list performance.
+  - *Conflict 2: Expansion State Persistence:* Map vs boolean. *Decision:* Use a `Set<String>` in ViewModel to track expanded group IDs, ensuring expansion states are preserved during list recompositions and configuration changes.
+  - *Conflict 3: Inline Editing:* Dedicated screen vs AlertDialog. *Decision:* Inline `AlertDialog` for renaming and adding sub-tags to minimize navigation depth, matching the "In-Place Configuration" subtitle requirement.
+- **Final Decision:** Implement `RelationshipHierarchyScreen`. Use `LazyColumn` for groups with indented child rows for tags. Integrate warning dialogs for group deletion (showing contact impact count).
+- **Impact:** `RelationshipHierarchyScreen.kt`, `RelationshipHierarchyViewModel.kt`, `MainActivity.kt` routes.
+
+### 2024-05-20 - Screen 17: Advanced App Settings
+- **Context/Goal:** Configuration hub for data management, sync preferences, and global localization.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Backup Format:* SQL vs JSON. *Decision:* Serialized JSON as per AGENT.md to ensure compatibility with Google account context and ease of encryption/decryption for cross-device manual restores.
+  - *Conflict 2: VCF Conflict UI:* Global setting vs per-contact. *Decision:* Global "Conflict Resolution" dropdown within the settings screen to establish a default behavior for large batch imports.
+  - *Conflict 3: Diagnostic Visibility:* Real-time vs periodic. *Decision:* Real-time read-only metrics (File size, count) displayed in a distinct footer section to provide immediate visibility into local storage health.
+- **Final Decision:** Implement `AdvancedSettingsScreen` with grouped list items. Use specialized `Switch` and `Dropdown` components matching Stitch tokens. Purple header text for data management as per SRS.
+- **Impact:** `AdvancedSettingsScreen.kt`, `AdvancedSettingsViewModel.kt`, `MainActivity.kt` routes.
+
+### 2024-05-20 - Screen 18: Quick Wallet Overlay
+- **Context/Goal:** A high-speed horizontal pager overlay for swiping through payment cards and displaying QR codes.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Interaction Physics:* Standard vs snappy pager. *Decision:* Snap-to-page horizontal pager as per Screen 18 specs, ensuring focus remains on a single card's QR for easy scanning.
+  - *Conflict 2: QR Scanability:* Static image vs interactive. *Decision:* Tapping the QR expands it to fill-width and triggers a local brightness boost (simulated in logic) to maximize scanner success rates.
+  - *Conflict 3: Copy Action:* Notification vs Toast. *Decision:* Clipboard copy with immediate toast confirmation for the account number pill, matching the "Quick Wallet" utility requirement.
+- **Final Decision:** Implement `QuickWalletOverlaySheet`. Leverage `HorizontalPager` with the shared `DigitalWalletViewModel` state. Use Stitch tokens for the prominent white QR container.
+- **Impact:** `QuickWalletOverlaySheet.kt`, `MyProfileSettingsScreen.kt` trigger, `MainActivity.kt`.
+
+### 2024-05-20 - Data Layer: Contacts Room Module
+- **Context/Goal:** Implementation of the local persistence layer for connections using Android Room.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: List Storage:* How to store comma-separated nicknames and multiple phone numbers? *Decision:* Use `@TypeConverter` to serialize/deserialize `List<String>` to a single JSON string, keeping the schema flat and simple for single-device usage.
+  - *Conflict 2: Indexing strategy:* Matching the "Smart Number Matcher". *Decision:* Add a unique index on a sanitized version of the primary phone number to prevent duplicates during VCF imports, while keeping the original formatted string in a separate column.
+  - *Conflict 3: Cascade Deletion:* What happens to notes/transactions? *Decision:* Implement `ForeignKey.CASCADE` on child tables (implemented in future modules) to ensure that deleting a contact automatically cleans up all associated historical logs as per AGENT.md section 8.
+- **Final Decision:** Implement `ContactEntity` with comprehensive fields for Identity, Corporate, and Financial info. Use UUID for `id` to ensure unique mapping before cloud sync.
+- **Impact:** `ContactEntity.kt`, `ContactDao.kt`, `ContactRepository.kt`, `AppDatabase.kt`.
+
+### 2024-05-20 - Data Layer: Relationship Notes Room Module
+- **Context/Goal:** Implementation of the local persistence layer for relationship notes, attachments, and voice recordings.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: File Storage Strategy:* Storing raw bytes vs file paths. *Decision:* Store absolute file path strings in Room and raw binaries in the app's internal private storage as per AGENT.md section 5. This prevents database bloat and ensures high performance.
+  - *Conflict 2: Data Integrity:* What happens if a contact is deleted? *Decision:* Use `ForeignKey` with `OnDeleteStrategy.CASCADE` linked to the `ContactEntity.id`. This ensures orphans are never left in the database.
+  - *Conflict 3: Query Optimization:* How to fetch notes for a specific contact quickly? *Decision:* Add an index on the `contactId` column to optimize the common "Client Profile" history lookup.
+- **Final Decision:** Implement `NoteEntity` with support for title, content, attachment paths, and voice recording paths. Use a DAO that returns `Flow` for real-time Insight stream updates.
+- **Impact:** `NoteEntity.kt`, `NoteDao.kt`, `NoteRepository.kt`, `AppDatabase.kt` update.
+
+### 2024-05-20 - Data Layer: Cash Transactions Room Module
+- **Context/Goal:** Implementation of the local persistence layer for financial logs and income/expense tracking.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Financial Precision:* Double vs Long (Cents). *Decision:* Store amount as `Double` for simplicity in this CRM context, matching the UI layer's existing state handling while ensuring 2-decimal formatting during display.
+  - *Conflict 2: Linked Discovery:* How to search transactions by contact? *Decision:* Implemented a sub-query in the DAO to allow searching transaction logs by the linked contact's `fullName`, ensuring users can find "plumber" payments by searching the person's name.
+  - *Conflict 3: Media persistence:* Consistency with Notes. *Decision:* Mirrored the `attachmentPaths` and `voiceRecordingPath` structure from the Notes module to maintain unified file management logic.
+- **Final Decision:** Implement `TransactionEntity` with `ForeignKey.CASCADE` on `contactId`. Use `isRevenue` boolean to drive balance calculations.
+- **Impact:** `TransactionEntity.kt`, `TransactionDao.kt`, `TransactionRepository.kt`, `AppDatabase.kt` update.
+
+### 2024-05-20 - ViewModel Integration: Contacts Workflow
+- **Context/Goal:** Connect the Connections List and Add Contact Wizard to the Room persistence layer via ContactRepository.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: UI State Wrapping:* Should we stream raw entities? *Decision:* Use a sealed interface `ConnectionsUIState` (Loading, Empty, Success) to handle the empty directory state as per SRS Screen 03 requirements.
+  - *Conflict 2: Wizard State Mapping:* Mapping complex Wizard state to Entity. *Decision:* Centralized `saveContact` logic in `AddContactViewModel` that handles the conversion of UI lists (nicknames, social, banks) into a single `ContactEntity`, including number sanitization for the Smart Matcher.
+  - *Conflict 3: Real-time Search:* Flow vs suspended calls. *Decision:* Transform the Repository `Flow` using `flatMapLatest` based on the `searchQuery` StateFlow to provide instantaneous UI updates as the user types.
+- **Final Decision:** Inject `ContactRepository` into ViewModels. Use `viewModelScope.launch(Dispatchers.IO)` for data writes. Ensure `ConnectionsListViewModel` reacts to live DB updates.
+- **Impact:** `ConnectionsListViewModel.kt`, `AddContactViewModel.kt`, `MainActivity.kt` injection.
+
+### 2024-05-20 - ViewModel Integration: Insights Workflow
+- **Context/Goal:** Connect the Insights dashboards (Notes & Transactions) to the persistence layer with live summary calculations.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Shared Insights State:* Separate vs Shared ViewModel. *Decision:* Shared `InsightsViewModel` scoped to the `insights` navigation destination. This ensures that when a user switches between the "Notes" and "Transactions" sub-tabs, the filter state (e.g., date range or selected contact) is preserved.
+  - *Conflict 2: Summary Math Performance:* Calculating total revenue/expense. *Decision:* Use Kotlin `Flow` operators (`map` and `combine`) on the raw transaction stream from the repository. Calculations are performed off the main thread and cached in a `StateFlow` to ensure a jank-free UI.
+  - *Conflict 3: Persistence Triggers:* When to save? *Decision:* Background thread persistence triggered immediately upon clicking "Save" in the bottom sheet. UI reacts to the updated DB stream automatically, fulfilling the "Local-First" reactive pattern.
+- **Final Decision:** Implement repository injection for `NoteRepository` and `TransactionRepository` into the `InsightsViewModel`. Utilize `SharingStarted.WhileSubscribed(5000)` to optimize database connections.
+- **Impact:** `InsightsViewModel.kt`, `InsightsScreen.kt`, `MainActivity.kt` injection.
+
+### 2024-05-20 - ViewModel Integration: Wallet & Settings
+- **Context/Goal:** Connect Digital Wallet and Advanced Settings to persistence and tiered limit logic.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Wallet Limit Enforcement:* ViewModel vs Repository check. *Decision:* ViewModel performs the count check against the user's tier status retrieved from the `PreferenceRepository` (or mocked Premium state) before allowing a navigation to "Add Card", ensuring robust freemium guardrails.
+  - *Conflict 2: DB Size Calculation:* How to calculate "Vault Size"? *Decision:* Use `context.getDatabasePath().length()` to get raw file size on disk, providing an accurate metric of local storage usage as seen in the diagnostics panel.
+  - *Conflict 3: Preference Persistence:* Room vs DataStore. *Decision:* Use Room for basic app preferences (Currency, Sync Frequency) within a `PreferenceEntity` to keep the data layer unified and support simple backup/restore of all user settings.
+- **Final Decision:** Implement `BankCardEntity` and its repository. Wire `DigitalWalletViewModel` for live card stream and `AdvancedSettingsViewModel` for diagnostic and preference management.
+- **Impact:** `BankCardEntity.kt`, `BankCardRepository.kt`, `DigitalWalletViewModel.kt`, `AdvancedSettingsViewModel.kt`, `MainActivity.kt`.
+
+### 2024-05-20 - Cloud Sync: Google Drive OAuth Scoping
+- **Context/Goal:** Implementation of Google Sign-In to acquire `DriveScopes.DRIVE_APPDATA` for background synchronization.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: OAuth Scope Level:* broad vs restricted. *Decision:* Strictly use `DRIVE_APPDATA` scope to ensure user privacy and app-specific data isolation as per Section 7 guidelines.
+  - *Conflict 2: Credential Persistence:* In-memory vs Disk. *Decision:* Use `GoogleAccountManager` for handling credential sessions, with local fallback for offline metadata display.
+  - *Conflict 3: Offline Fallback:* How to handle login without internet? *Decision:* Login requires an initial online handshake. If offline, the app provides "Try as Guest" mode which operates purely on local Room DB without cloud sync attempts.
+- **Final Decision:** Implement `GoogleAuthService` using `play-services-auth`. Connect `AuthViewModel` to handle the `ActivityResult` and token exchange.
+- **Impact:** `GoogleAuthService.kt`, `AuthViewModel.kt`, `MainActivity.kt`.
+
 ### 2024-05-20 - Cloud Sync: Background Synchronization Engine
 - **Context/Goal:** Implementation of background sync using WorkManager to push local records and binary assets to Google Drive.
 - **Conflicts & Alternatives Considered:**
@@ -77,4 +265,12 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Final Decision:** Implement `DriveSyncWorker` using `CoroutineWorker`. Use exponential backoff for retries. Status updates are broadcast via `WorkInfo` observed in the Profile ViewModel.
 - **Impact:** `DriveSyncWorker.kt`, `AdvancedSettingsViewModel.kt` (sync scheduling), `MainActivity.kt`.
 
----
+### 2024-05-20 - Final Project-Wide Quality & Architecture Audit
+- **Context/Goal:** Final validation of the complete project architecture, UI registration, and data layer integrity.
+- **Audit Checklist Results:**
+  - *Full Build:* Successful. Verified zero compilation errors and stable dependency resolution for Room, WorkManager, and Google Auth.
+  - *Navigation Registry:* Confirmed all 18 screen contexts (10 top-level routes, 4 wizard steps, and 4 modal overlays) are properly registered and reachable.
+  - *Data Scoping:* Verified that shared ViewModels (AddContact, Insights) are correctly scoped to backstack entries to prevent state loss during sub-navigation.
+  - *Theme Integrity:* Confirmed zero hardcoded color violations; all components strictly inherit from the Stitch Dark Theme tokens.
+- **Final Decision:** Architecture validated as complete and SRS-compliant. Ready for deployment preparation.
+- **Impact:** Project baseline established.
