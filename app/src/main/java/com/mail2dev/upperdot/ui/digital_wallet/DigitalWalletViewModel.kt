@@ -35,6 +35,9 @@ class DigitalWalletViewModel : ViewModel() {
     private val _showAddCardSheet = MutableStateFlow(false)
     val showAddCardSheet: StateFlow<Boolean> = _showAddCardSheet.asStateFlow()
 
+    private val _showQuickWalletSheet = MutableStateFlow(false)
+    val showQuickWalletSheet: StateFlow<Boolean> = _showQuickWalletSheet.asStateFlow()
+
     fun onAddCardClicked(onSuccess: () -> Unit, onLimitExceeded: () -> Unit) {
         if (!_isPremium.value && _bankCards.value.size >= 1) {
             onLimitExceeded()
@@ -45,6 +48,14 @@ class DigitalWalletViewModel : ViewModel() {
 
     fun dismissAddCardSheet() {
         _showAddCardSheet.value = false
+    }
+
+    fun onQuickWalletRequested() {
+        _showQuickWalletSheet.value = true
+    }
+
+    fun dismissQuickWalletSheet() {
+        _showQuickWalletSheet.value = false
     }
 
     fun saveCard(bankName: String, holderName: String, accountNumber: String, color: Long) {

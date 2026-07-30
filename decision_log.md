@@ -68,11 +68,13 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   3. Added `guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava` to resolve library duplication.
   4. Added `packaging` block to exclude `INDEX.LIST` and `DEPENDENCIES` files from the final APK.
 
-### 2024-05-20 - Screen 17: Advanced App Settings
-- **Context/Goal:** Configuration hub for data management, sync preferences, and global localization.
+### 2024-05-20 - Screen 18: Quick Wallet Overlay
+- **Context/Goal:** A high-speed horizontal pager overlay for swiping through payment cards and displaying QR codes.
 - **Conflicts & Alternatives Considered:**
-  - *Conflict 1: Backup Format:* SQL vs JSON. *Decision:* Serialized JSON as per AGENT.md to ensure compatibility with Google account context and ease of encryption/decryption for cross-device manual restores.
-  - *Conflict 2: VCF Conflict UI:* Global setting vs per-contact. *Decision:* Global "Conflict Resolution" dropdown within the settings screen to establish a default behavior for large batch imports.
-  - *Conflict 3: Diagnostic Visibility:* Real-time vs periodic. *Decision:* Real-time read-only metrics (File size, count) displayed in a distinct footer section to provide immediate visibility into local storage health.
-- **Final Decision:** Implement `AdvancedSettingsScreen` with grouped list items. Use specialized `Switch` and `Dropdown` components matching Stitch tokens. Purple header text for data management as per SRS.
-- **Impact:** `AdvancedSettingsScreen.kt`, `AdvancedSettingsViewModel.kt`, `MainActivity.kt` routes.
+  - *Conflict 1: Interaction Physics:* Standard vs snappy pager. *Decision:* Snap-to-page horizontal pager as per Screen 18 specs, ensuring focus remains on a single card's QR for easy scanning.
+  - *Conflict 2: QR Scanability:* Static image vs interactive. *Decision:* Tapping the QR expands it to fill-width and triggers a local brightness boost (simulated in logic) to maximize scanner success rates.
+  - *Conflict 3: Copy Action:* Notification vs Toast. *Decision:* Clipboard copy with immediate toast confirmation for the account number pill, matching the "Quick Wallet" utility requirement.
+- **Final Decision:** Implement `QuickWalletOverlaySheet`. Leverage `HorizontalPager` with the shared `DigitalWalletViewModel` state. Use Stitch tokens for the prominent white QR container.
+- **Impact:** `QuickWalletOverlaySheet.kt`, `MyProfileSettingsScreen.kt` trigger, `MainActivity.kt`.
+
+---

@@ -23,15 +23,30 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mail2dev.upperdot.ui.components.UpperDotBottomNavigation
+import com.mail2dev.upperdot.ui.digital_wallet.DigitalWalletViewModel
 import com.mail2dev.upperdot.ui.theme.*
+import com.mail2dev.upperdot.ui.wallet_overlay.QuickWalletOverlaySheet
 
 @Composable
 fun MyProfileSettingsScreen(
     onNavigate: (String) -> Unit,
     onSignOut: () -> Unit,
-    viewModel: ProfileSettingsViewModel = viewModel()
+    viewModel: ProfileSettingsViewModel = viewModel(),
+    walletViewModel: DigitalWalletViewModel = viewModel()
 ) {
     val userSummary by viewModel.userSummary.collectAsState()
+    val bankCards by walletViewModel.bankCards.collectAsState()
+    val showQuickWallet by walletViewModel.showQuickWalletSheet.collectAsState()
+
+    if (showQuickWallet) {
+        QuickWalletOverlaySheet(
+            onDismiss = walletViewModel::dismissQuickWalletSheet,
+            onNavigateToManagement = { onNavigate("digital_wallet_management") },
+            onNavigateToPlans = { onNavigate("plans") },
+            bankCards = bankCards,
+            isPremium = userSummary.isPremium
+        )
+    }
 
     Scaffold(
         bottomBar = {
@@ -42,7 +57,7 @@ fun MyProfileSettingsScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { /* Open Quick Wallet Overlay */ },
+                onClick = { walletViewModel.onQuickWalletRequested() },
                 containerColor = Color.Black,
                 contentColor = AccentCyan,
                 shape = CircleShape,
