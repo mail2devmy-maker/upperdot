@@ -61,6 +61,21 @@ class InsightsViewModel(
     private val _showAddTransactionSheet = MutableStateFlow(false)
     val showAddTransactionSheet: StateFlow<Boolean> = _showAddTransactionSheet.asStateFlow()
 
+    private val _contactSearchQuery = MutableStateFlow("")
+    val contactSearchQuery: StateFlow<String> = _contactSearchQuery.asStateFlow()
+
+    val searchedContacts: StateFlow<List<ContactSummary>> = _contactSearchQuery
+        .debounce(300)
+        .flatMapLatest { query ->
+            if (query.isEmpty()) {
+                contactRepository.allContacts
+            } else {
+                contactRepository.searchContacts(query)
+            }
+        }.map { entities ->
+            entities.map { it.toSummary() }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     // Temporary state for new note
     private val _selectedAttachments = MutableStateFlow<List<String>>(emptyList())
     val selectedAttachments: StateFlow<List<String>> = _selectedAttachments.asStateFlow()
@@ -133,6 +148,10 @@ class InsightsViewModel(
         _selectedContactFilter.value = contactName
     }
 
+    fun onContactSearchQueryChanged(query: String) {
+        _contactSearchQuery.value = query
+    }
+
     fun clearFilters() {
         _selectedContactFilter.value = null
     }
@@ -154,16 +173,15 @@ class InsightsViewModel(
     }
 
     fun saveNote(
-        contactName: String, 
+        contactId: String,
         title: String, 
         content: String, 
         attachments: List<String> = emptyList(), 
         voicePath: String? = null
     ) {
         viewModelScope.launch(Dispatchers.IO) {
-            // Note: In real app, resolve contactName to contactId
             val note = NoteEntity(
-                contactId = "test_id", // Placeholder
+                contactId = contactId,
                 title = title,
                 content = content,
                 attachmentPaths = attachments,
@@ -171,13 +189,14 @@ class InsightsViewModel(
             )
             noteRepository.insertNote(note)
             _showAddNoteSheet.value = false
+            _contactSearchQuery.value = ""
         }
     }
 
-    fun saveTransaction(contactName: String, isRevenue: Boolean, title: String, amount: String, detail: String) {
+    fun saveTransaction(contactId: String, isRevenue: Boolean, title: String, amount: String, detail: String) {
         viewModelScope.launch(Dispatchers.IO) {
             val transaction = TransactionEntity(
-                contactId = "test_id", // Placeholder
+                contactId = contactId,
                 title = title,
                 amount = amount.toDoubleOrNull() ?: 0.0,
                 isRevenue = isRevenue,
@@ -185,9 +204,20 @@ class InsightsViewModel(
             )
             transactionRepository.insertTransaction(transaction)
             _showAddTransactionSheet.value = false
+            _contactSearchQuery.value = ""
         }
     }
 }
+
+data class ContactSummary(
+    val id: String,
+    val fullName: String
+)
+
+private fun com.mail2dev.upperdot.data.local.entity.ContactEntity.toSummary() = ContactSummary(
+    id = id.toString(),
+    fullName = fullName
+)
 
 private fun NoteEntity.toEntry() = NoteEntry(
     id = id,

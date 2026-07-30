@@ -43,6 +43,8 @@ fun InsightsScreen(
     val showAddTransactionSheet by viewModel.showAddTransactionSheet.collectAsState()
     val contactNames by viewModel.contactNames.collectAsState()
     val selectedAttachments by viewModel.selectedAttachments.collectAsState()
+    val contactSearchQuery by viewModel.contactSearchQuery.collectAsState()
+    val searchedContacts by viewModel.searchedContacts.collectAsState()
 
     if (showAddNoteSheet) {
         NewRelationshipNoteSheet(
@@ -50,11 +52,13 @@ fun InsightsScreen(
                 viewModel.dismissAddNoteSheet()
                 viewModel.clearTemporaryNoteState()
             },
-            onSave = { contact, title, content, attachments, voice -> 
-                viewModel.saveNote(contact, title, content, attachments, voice) 
+            onSave = { contactId, title, content, attachments, voice -> 
+                viewModel.saveNote(contactId, title, content, attachments, voice) 
                 viewModel.clearTemporaryNoteState()
             },
-            contactNames = contactNames,
+            contactSearchQuery = contactSearchQuery,
+            onContactSearchQueryChange = viewModel::onContactSearchQueryChanged,
+            searchedContacts = searchedContacts,
             attachmentPaths = selectedAttachments,
             onAddAttachment = viewModel::addAttachmentPath,
             onRemoveAttachment = viewModel::removeAttachmentPath
@@ -64,10 +68,12 @@ fun InsightsScreen(
     if (showAddTransactionSheet) {
         NewCashTransactionSheet(
             onDismiss = viewModel::dismissAddTransactionSheet,
-            onSave = { contact, isRevenue, title, amount, detail -> 
-                viewModel.saveTransaction(contact, isRevenue, title, amount, detail) 
+            onSave = { contactId, isRevenue, title, amount, detail -> 
+                viewModel.saveTransaction(contactId, isRevenue, title, amount, detail) 
             },
-            contactNames = contactNames
+            contactSearchQuery = contactSearchQuery,
+            onContactSearchQueryChange = viewModel::onContactSearchQueryChanged,
+            searchedContacts = searchedContacts
         )
     }
 

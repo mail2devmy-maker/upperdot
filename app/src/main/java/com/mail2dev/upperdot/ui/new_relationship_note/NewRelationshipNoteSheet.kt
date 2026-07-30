@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mail2dev.upperdot.ui.components.StitchDropdown
 import com.mail2dev.upperdot.ui.components.StitchTextField
+import com.mail2dev.upperdot.ui.insights.ContactSummary
 import com.mail2dev.upperdot.ui.theme.AccentCyan
 import com.mail2dev.upperdot.ui.theme.Surface
 import com.mail2dev.upperdot.ui.theme.TextSecondary
@@ -34,21 +35,27 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import coil.compose.AsyncImage
 
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewRelationshipNoteSheet(
     onDismiss: () -> Unit,
     onSave: (String, String, String, List<String>, String?) -> Unit,
-    contactNames: List<String>,
+    contactSearchQuery: String,
+    onContactSearchQueryChange: (String) -> Unit,
+    searchedContacts: List<ContactSummary>,
     attachmentPaths: List<String>,
     onAddAttachment: (String) -> Unit,
     onRemoveAttachment: (Int) -> Unit,
-    initialContact: String? = null
+    initialContact: ContactSummary? = null
 ) {
     val context = LocalContext.current
-    var selectedContact by remember { mutableStateOf(initialContact ?: "") }
+    var selectedContact by remember { mutableStateOf(initialContact) }
     var title by remember { mutableStateOf("") }
     var content by remember { mutableStateOf("") }
+    var isSearchDropdownExpanded by remember { mutableStateOf(false) }
     
     // Date Picker State
     var showDatePicker by remember { mutableStateOf(false) }
@@ -143,13 +150,47 @@ fun NewRelationshipNoteSheet(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            StitchDropdown(
-                selectedOption = if (selectedContact.isEmpty()) "Select Contact (Mandatory)" else selectedContact,
-                options = contactNames,
-                onOptionSelected = { selectedContact = it },
-                leadingIcon = Icons.Default.Person,
-                modifier = Modifier.fillMaxWidth()
-            )
+            // Searchable Contact Picker
+            Column(modifier = Modifier.fillMaxWidth()) {
+                StitchTextField(
+                    value = if (isSearchDropdownExpanded) contactSearchQuery else selectedContact?.fullName ?: "",
+                    onValueChange = {
+                        onContactSearchQueryChange(it)
+                        isSearchDropdownExpanded = true
+                    },
+                    placeholder = "Search Contact (Mandatory)",
+                    leadingIcon = Icons.Default.Person,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                if (isSearchDropdownExpanded && searchedContacts.isNotEmpty()) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 200.dp)
+                            .padding(top = 4.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = Surface)
+                    ) {
+                        LazyColumn {
+                            items(searchedContacts) { contact ->
+                                Text(
+                                    text = contact.fullName,
+                                    color = Color.White,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            selectedContact = contact
+                                            isSearchDropdownExpanded = false
+                                        }
+                                        .padding(16.dp)
+                                )
+                                HorizontalDivider(color = Color.DarkGray.copy(alpha = 0.3f))
+                            }
+                        }
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -284,7 +325,11 @@ fun NewRelationshipNoteSheet(
             Spacer(modifier = Modifier.height(32.dp))
 
             Button(
-                onClick = { onSave(selectedContact, title, content, attachmentPaths, voiceRecordingPath) },
+                onClick = { 
+                    selectedContact?.let { contact ->
+                        onSave(contact.id, title, content, attachmentPaths, voiceRecordingPath) 
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -293,7 +338,7 @@ fun NewRelationshipNoteSheet(
                     containerColor = AccentCyan,
                     contentColor = Color.Black
                 ),
-                enabled = selectedContact.isNotEmpty() && title.isNotEmpty()
+                enabled = selectedContact != null && title.isNotEmpty()
             ) {
                 Text(text = "Save Relationship Note", fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
