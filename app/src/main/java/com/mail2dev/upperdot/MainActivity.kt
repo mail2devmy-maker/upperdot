@@ -191,6 +191,13 @@ fun RootNavigation() {
 
         composable("my_profile") {
             val profileSettingsViewModel: ProfileSettingsViewModel = viewModel()
+            val walletViewModel: DigitalWalletViewModel = viewModel(
+                factory = viewModelFactory {
+                    initializer {
+                        DigitalWalletViewModel(app.bankCardRepository)
+                    }
+                }
+            )
             MyProfileSettingsScreen(
                 onNavigate = { route ->
                     navController.navigate(route) {
@@ -203,7 +210,8 @@ fun RootNavigation() {
                         popUpTo(0) { inclusive = true }
                     }
                 },
-                viewModel = profileSettingsViewModel
+                viewModel = profileSettingsViewModel,
+                walletViewModel = walletViewModel
             )
         }
 

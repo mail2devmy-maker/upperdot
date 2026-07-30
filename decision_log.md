@@ -81,6 +81,13 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Cause:** Custom `Application` class (`UpperDotApp.kt`) was implemented but not registered in the system manifest.
 - **Resolution:** Manually added `android:name=".UpperDotApp"` to the `<application>` tag in `AndroidManifest.xml` to correctly initialize the project's repository singletons.
 
+- **Error:** `RuntimeException: Cannot create an instance of class... DigitalWalletViewModel` when navigating to the Profile Tab.
+- **Cause:** `DigitalWalletViewModel` was being instantiated using the default parameter-less `viewModel()` constructor inside `MyProfileSettingsScreen.kt`. However, the ViewModel requires a `BankCardRepository` dependency, which is provided via a factory in `MainActivity.kt`.
+- **Resolution:**
+  1. Updated `MainActivity.kt` to correctly instantiate `DigitalWalletViewModel` using a `viewModelFactory` that provides the `bankCardRepository` from the application context.
+  2. Passed this factory-initialized `walletViewModel` instance into `MyProfileSettingsScreen`.
+  3. Modified `MyProfileSettingsScreen.kt` signature to remove the default `viewModel()` initialization for `walletViewModel`, ensuring it is explicitly provided by the caller (MainActivity) and avoiding runtime crashes.
+
 ### 2024-05-20 - Screen 06: Add Contact Form Wizard - Step 3: Corporate Info
 - **Context/Goal:** Third step focusing on professional details: Company, Category, and Address.
 - **Conflicts & Alternatives Considered:**

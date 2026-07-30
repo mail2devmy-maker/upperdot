@@ -31,8 +31,8 @@ import com.mail2dev.upperdot.ui.wallet_overlay.QuickWalletOverlaySheet
 fun MyProfileSettingsScreen(
     onNavigate: (String) -> Unit,
     onSignOut: () -> Unit,
-    viewModel: ProfileSettingsViewModel = viewModel(),
-    walletViewModel: DigitalWalletViewModel = viewModel()
+    viewModel: ProfileSettingsViewModel,
+    walletViewModel: DigitalWalletViewModel
 ) {
     val userSummary by viewModel.userSummary.collectAsState()
     val bankCards by walletViewModel.bankCards.collectAsState()
