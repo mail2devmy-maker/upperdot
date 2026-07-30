@@ -331,7 +331,7 @@ fun ContactCard(
             ) {
                 Column {
                     Spacer(modifier = Modifier.height(16.dp))
-                    Divider(color = Color.DarkGray.copy(alpha = 0.5f))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     Spacer(modifier = Modifier.height(16.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),

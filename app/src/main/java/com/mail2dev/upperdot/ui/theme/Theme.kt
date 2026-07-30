@@ -25,7 +25,8 @@ private val DarkColorScheme = darkColorScheme(
     onError = Color.White,
     surfaceVariant = Surface,
     onSurfaceVariant = TextSecondary,
-    outline = DividerColor
+    outline = DividerColor,
+    outlineVariant = DividerColor
 )
 
 @Composable
