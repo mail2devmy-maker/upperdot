@@ -9,7 +9,7 @@ class ContactRepository(private val contactDao: ContactDao) {
     val allContacts: Flow<List<ContactEntity>> = contactDao.getAllContacts()
     val contactCount: Flow<Int> = contactDao.getContactCount()
 
-    suspend fun getContactById(id: String): ContactEntity? = contactDao.getContactById(id)
+    suspend fun getContactById(id: Long): ContactEntity? = contactDao.getContactById(id)
     
     suspend fun getContactByPhone(sanitizedPhone: String): ContactEntity? = contactDao.getContactByPhone(sanitizedPhone)
 

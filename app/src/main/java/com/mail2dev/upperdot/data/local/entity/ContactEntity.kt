@@ -5,14 +5,13 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.mail2dev.upperdot.ui.add_contact.BankAccount
 import com.mail2dev.upperdot.ui.add_contact.SocialProfile
-import java.util.UUID
 
 @Entity(
     tableName = "contacts",
     indices = [Index(value = ["sanitizedPrimaryPhone"], unique = true)]
 )
 data class ContactEntity(
-    @PrimaryKey val id: String = UUID.randomUUID().toString(),
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val fullName: String,
     val nicknames: List<String>,
     val phoneNumbers: List<String>,

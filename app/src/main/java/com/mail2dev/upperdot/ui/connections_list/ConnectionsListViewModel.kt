@@ -76,7 +76,7 @@ class ConnectionsListViewModel(private val repository: ContactRepository) : View
 }
 
 private fun ContactEntity.toSummary() = ContactSummary(
-    id = id,
+    id = id.toString(),
     fullName = fullName,
     nicknames = nicknames,
     primaryPhone = sanitizedPrimaryPhone,
