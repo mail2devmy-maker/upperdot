@@ -27,7 +27,7 @@ import com.mail2dev.upperdot.ui.theme.*
 @Composable
 fun RelationshipHierarchyScreen(
     onNavigateBack: () -> Unit,
-    viewModel: RelationshipHierarchyViewModel = viewModel()
+    viewModel: RelationshipHierarchyViewModel
 ) {
     val groups by viewModel.groups.collectAsState()
     val expandedGroups by viewModel.expandedGroups.collectAsState()

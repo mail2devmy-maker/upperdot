@@ -89,13 +89,14 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   3. Updated `MainActivity.kt` to provide `ContactRepository` during `InsightsViewModel` initialization.
   4. Updated `InsightsScreen.kt` to collect `contactNames` and pass it to both `NewRelationshipNoteSheet` and `NewCashTransactionSheet`, ensuring live data binding for the contact selector.
 
-- **Error:** `RelationshipHierarchyScreen` interactions (plus, pencil, trash) were non-functional and expansion was visually inconsistent.
-- **Cause:** `RelationshipHierarchyViewModel` lacked implementation for state mutations (adding, renaming, deleting), and the UI layer lacked the necessary dialogs to capture user input.
+- **Error:** `RelationshipHierarchyScreen` interactions (plus, pencil, trash) were non-functional and expansion was visually inconsistent. Additionally, the group contact count badges were hardcoded and incorrect.
+- **Cause:** `RelationshipHierarchyViewModel` lacked implementation for state mutations, and the UI layer lacked dialogs. The contact counts were static values in a hardcoded list.
 - **Resolution:**
-  1. Refactored `RelationshipHierarchyViewModel` to use reactive state mutations for all hierarchy operations (Add Tag, Rename Group/Tag, Delete Group/Tag) using `MutableStateFlow`.
-  2. Implemented `AlertDialog` components in `RelationshipHierarchyScreen` to handle "Add Tag", "Rename Group", and "Rename Tag" user flows.
-  3. Wired all action buttons (Plus, Edit, Delete) to their respective ViewModel functions, ensuring the UI reacts instantly to hierarchy changes.
-  4. Fixed the expansion logic to be fully dynamic across all groups.
+  1. Refactored `RelationshipHierarchyViewModel` to use reactive state mutations for all hierarchy operations.
+  2. Implemented `AlertDialog` components in `RelationshipHierarchyScreen` for "Add Tag", "Rename Group", and "Rename Tag" flows.
+  3. Injected `ContactRepository` into `RelationshipHierarchyViewModel` and implemented a `combine` operator to dynamically calculate the `contactCount` for each group based on the live database.
+  4. Updated `MainActivity.kt` and `RelationshipHierarchyScreen.kt` to support the new repository injection.
+  5. Wired all action buttons to their respective ViewModel functions, ensuring the UI reacts instantly to changes.
 
 - **Error:** `RuntimeException: Cannot create an instance of class... DigitalWalletViewModel` when navigating to the Profile Tab.
 - **Cause:** `DigitalWalletViewModel` was being instantiated using the default parameter-less `viewModel()` constructor inside `MyProfileSettingsScreen.kt`. However, the ViewModel requires a `BankCardRepository` dependency, which is provided via a factory in `MainActivity.kt`.

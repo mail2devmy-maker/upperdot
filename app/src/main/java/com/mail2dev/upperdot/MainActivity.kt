@@ -235,7 +235,13 @@ fun RootNavigation() {
         }
 
         composable("manage_custom_groups") {
-            val hierarchyViewModel: RelationshipHierarchyViewModel = viewModel()
+            val hierarchyViewModel: RelationshipHierarchyViewModel = viewModel(
+                factory = viewModelFactory {
+                    initializer {
+                        RelationshipHierarchyViewModel(app.contactRepository)
+                    }
+                }
+            )
             RelationshipHierarchyScreen(
                 onNavigateBack = { navController.popBackStack() },
                 viewModel = hierarchyViewModel
