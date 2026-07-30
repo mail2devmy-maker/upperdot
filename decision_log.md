@@ -93,8 +93,12 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Resolution:** Wrapped the `onSuccess()` callback invocation inside a `withContext(Dispatchers.Main)` block in `AddContactViewModel.kt`. This ensures that any navigation logic passed from the UI (like `navController.popBackStack()`) is executed safely on the main thread after the background database operation completes.
 
 - **Error:** New contacts overwriting previous ones during creation.
-- **Cause:** `ContactEntity.kt` was using a `String` ID with `UUID.randomUUID().toString()` as default. While generally unique, the user reported overwriting behavior which indicated a collision or misuse of IDs. Additionally, the unique index on `sanitizedPrimaryPhone` with `OnConflictStrategy.REPLACE` could cause overwrites if the same phone number was reused.
-- **Resolution:** Updated `ContactEntity.kt` to use a `Long` primary key with auto-generation enabled: `@PrimaryKey(autoGenerate = true) val id: Long = 0`. Explicitly passed `id = 0L` in the `ContactEntity` constructor inside `AddContactViewModel.kt` to ensure Room correctly triggers auto-generation for every new insertion, preventing overwrites. Updated `ContactDao`, `ContactRepository`, and `ConnectionsListViewModel` to handle the `Long` ID type.
+- **Cause:** `ContactEntity.kt` originally had a unique index on `sanitizedPrimaryPhone` with `OnConflictStrategy.REPLACE`. This caused collisions when multiple contacts had empty phone numbers or shared the same primary number.
+- **Resolution:**
+  1. Updated `ContactEntity.kt` to use a `Long` primary key with auto-generation: `@PrimaryKey(autoGenerate = true) val id: Long = 0`.
+  2. Removed the `@Index(value = ["sanitizedPrimaryPhone"], unique = true)` constraint from the `@Entity` definition to allow non-unique phone numbers.
+  3. Explicitly passed `id = 0L` in `AddContactViewModel.kt` to ensure Room triggers unique ID generation for every new insertion.
+  4. Updated `ContactDao`, `ContactRepository`, and `ConnectionsListViewModel` to handle the `Long` ID type.
 
 ### 2024-05-20 - Screen 06: Add Contact Form Wizard - Step 3: Corporate Info
 - **Context/Goal:** Third step focusing on professional details: Company, Category, and Address.

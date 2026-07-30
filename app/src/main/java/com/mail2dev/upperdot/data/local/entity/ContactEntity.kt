@@ -1,15 +1,11 @@
 package com.mail2dev.upperdot.data.local.entity
 
 import androidx.room.Entity
-import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.mail2dev.upperdot.ui.add_contact.BankAccount
 import com.mail2dev.upperdot.ui.add_contact.SocialProfile
 
-@Entity(
-    tableName = "contacts",
-    indices = [Index(value = ["sanitizedPrimaryPhone"], unique = true)]
-)
+@Entity(tableName = "contacts")
 data class ContactEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val fullName: String,
