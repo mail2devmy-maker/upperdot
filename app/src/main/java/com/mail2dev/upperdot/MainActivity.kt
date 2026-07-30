@@ -21,6 +21,7 @@ import com.mail2dev.upperdot.ui.add_contact.AddContactViewModel
 import com.mail2dev.upperdot.ui.auth_launchpad.AuthLaunchpadScreen
 import com.mail2dev.upperdot.ui.call_history.CallHistoryScreen
 import com.mail2dev.upperdot.ui.connections_list.ConnectionsListScreen
+import com.mail2dev.upperdot.ui.insights.InsightsScreen
 import com.mail2dev.upperdot.ui.profile_detail.ClientProfileDetailScreen
 import com.mail2dev.upperdot.ui.profile_detail.ClientProfileDetailViewModel
 import com.mail2dev.upperdot.ui.theme.UpperDotTheme
@@ -129,7 +130,14 @@ fun RootNavigation() {
         }
         
         composable("insights") {
-            // TODO: Implement InsightsScreen
+            InsightsScreen(
+                onNavigate = { route ->
+                    navController.navigate(route) {
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
+            )
         }
 
         composable("my_profile") {

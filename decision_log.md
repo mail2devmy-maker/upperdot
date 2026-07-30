@@ -68,11 +68,11 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   3. Added `guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava` to resolve library duplication.
   4. Added `packaging` block to exclude `INDEX.LIST` and `DEPENDENCIES` files from the final APK.
 
-### 2024-05-20 - Screen 08: Client Profile Detail View
-- **Context/Goal:** Unified comprehensive view of a contact's full profile including contact, corporate, financial info, and logs.
+### 2024-05-20 - Screen 09: Insights Tab - Notes Stream
+- **Context/Goal:** A centralized chronological stream of relationship notes with advanced filtering and search.
 - **Conflicts & Alternatives Considered:**
-  - *Conflict 1: Unified Scroll vs Separate Sections:* Should notes/transactions be separate tabs? *Decision:* Unified `LazyColumn` with collapsible accordions as per user images, providing an immediate overview of history.
-  - *Conflict 2: Action Visibility:* Positioning the Edit and Delete actions. *Decision:* Placed in the `TopAppBar` as an action pair (Red Trash + Cyan Pencil) to keep the main surface dedicated to data.
-  - *Conflict 3: Data Mapping:* How to display empty fields? *Decision:* Use consistent "Icon-Label-Value" rows. If a field is empty, it will be hidden to maintain a clean "Stitch" minimalist aesthetic.
-- **Final Decision:** Implement `ClientProfileDetailScreen`. Use `LazyColumn` for the entire content. Custom `ProfileCard` and `CollapsibleSection` components using Stitch tokens (#1E1E1E surface, 24dp rounding).
-- **Impact:** `ClientProfileDetailScreen.kt`, `ClientProfileDetailViewModel.kt`, `MainActivity.kt` routes.
+  - *Conflict 1: Search Scope:* Should search only match note text? *Decision:* Search scope includes Note Title, Content, and Linked Contact Name to ensure deep discoverability as per AGENT.md.
+  - *Conflict 2: Sub-Tab Navigation:* Using a separate screen vs conditional visibility. *Decision:* Shared `InsightsViewModel` managing a "selected tab" state (NOTES vs TRANSACTIONS) to allow smooth, stateful transitions between the two ledger views without losing search context.
+  - *Conflict 3: Filter UI:* Handling "Clear Filters". *Decision:* When a contact filter is active, the "All Contacts" capsule is replaced by a two-pill system: a Red "Clear Filters X" and a Cyan "Contact Name" pill, matching user-provided UI patterns.
+- **Final Decision:** Implement `InsightsScreen` with a toggleable sub-tab switcher. Note cards will use `AnimatedVisibility` for in-place expansion to show full content and attachments.
+- **Impact:** `InsightsScreen.kt`, `InsightsViewModel.kt`, `MainActivity.kt` routes.
