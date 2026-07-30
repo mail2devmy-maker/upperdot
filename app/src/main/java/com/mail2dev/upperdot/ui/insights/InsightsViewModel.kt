@@ -41,6 +41,9 @@ class InsightsViewModel : ViewModel() {
     private val _selectedContactFilter = MutableStateFlow<String?>(null)
     val selectedContactFilter: StateFlow<String?> = _selectedContactFilter.asStateFlow()
 
+    private val _showAddNoteSheet = MutableStateFlow(false)
+    val showAddNoteSheet: StateFlow<Boolean> = _showAddNoteSheet.asStateFlow()
+
     private val _notes = MutableStateFlow<List<NoteEntry>>(
         listOf(
             NoteEntry(
@@ -113,10 +116,19 @@ class InsightsViewModel : ViewModel() {
     }
 
     fun onAddNoteClicked() {
-        // Trigger Bottom Sheet
+        _showAddNoteSheet.value = true
+    }
+
+    fun dismissAddNoteSheet() {
+        _showAddNoteSheet.value = false
     }
 
     fun onAddTransactionClicked() {
         // Trigger Bottom Sheet
+    }
+
+    fun saveNote(contactName: String, title: String, content: String) {
+        // TODO: Save to Room
+        _showAddNoteSheet.value = false
     }
 }

@@ -68,11 +68,11 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   3. Added `guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava` to resolve library duplication.
   4. Added `packaging` block to exclude `INDEX.LIST` and `DEPENDENCIES` files from the final APK.
 
-### 2024-05-20 - Screen 10: Insights Tab - Transaction Ledger Stream
-- **Context/Goal:** Implementation of the financial ledger stream with automated balance calculation (Revenue vs Expenses).
+### 2024-05-20 - Screen 11: Create Note Bottom Sheet Overlay
+- **Context/Goal:** Modal overlay for creating new relationship notes with title, content, attachments, and voice recordings.
 - **Conflicts & Alternatives Considered:**
-  - *Conflict 1: Metrics Display:* Using a single card vs separate grid. *Decision:* Metrics Grid split into 3 segments (Revenue: Green, Expenses: Red, Net: Cyan) to provide a high-contrast visual summary as per Screen 11 specs in AGENT.md.
-  - *Conflict 2: Transaction Row Design:* How to highlight the "Direction" of money? *Decision:* Use signed indicators (`+$` vs `-$`) with color tokens (`PositiveGreen` vs `NegativeRed`) and explicit text labels (REVENUE / EXPENSE) to minimize user error.
-  - *Conflict 2: Shared State:* Keeping Notes and Transactions in sync. *Decision:* Shared `InsightsViewModel` state allows maintaining date filters (From/To) across both tabs for a consistent analytical context.
-- **Final Decision:** Implement `TransactionsList` and `MetricsGrid` within `InsightsScreen.kt`. Hook into shared VM parameters. Use standard Stitch high-contrast typography for currency values.
-- **Impact:** `InsightsScreen.kt`, `InsightsViewModel.kt` (updated with balance math).
+  - *Conflict 1: Sheet Expansion State:* Should it be partially or fully expanded? *Decision:* Fully expanded (skip partial) as per AGENT.md requirement to ensure all fields (title, content, voice) are immediately visible without scrolling.
+  - *Conflict 2: Voice Entry Interaction:* Tap to record vs Hold to record. *Decision:* Hold-to-record as per user request, using a dedicated icon with visual feedback during active recording.
+  - *Conflict 3: Focus Management:* Auto-focus on entry. *Decision:* Auto-focus the "Note Title" field upon sheet launch to reduce friction in the "Quick CRM" workflow.
+- **Final Decision:** Implement `NewRelationshipNoteSheet` using `ModalBottomSheet`. Organize fields in a vertical stack using Stitch rounded surface tokens.
+- **Impact:** `NewRelationshipNoteSheet.kt`, `InsightsViewModel.kt` (updated with save logic).

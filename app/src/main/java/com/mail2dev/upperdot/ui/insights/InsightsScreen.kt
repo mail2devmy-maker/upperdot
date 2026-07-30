@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mail2dev.upperdot.ui.components.FilterCapsule
 import com.mail2dev.upperdot.ui.components.UpperDotBottomNavigation
+import com.mail2dev.upperdot.ui.new_relationship_note.NewRelationshipNoteSheet
 import com.mail2dev.upperdot.ui.theme.*
 
 @Composable
@@ -37,6 +38,15 @@ fun InsightsScreen(
     val totalRevenue by viewModel.totalRevenue.collectAsState()
     val totalExpenses by viewModel.totalExpenses.collectAsState()
     val netProfit by viewModel.netProfit.collectAsState()
+    val showAddNoteSheet by viewModel.showAddNoteSheet.collectAsState()
+
+    if (showAddNoteSheet) {
+        NewRelationshipNoteSheet(
+            onDismiss = viewModel::dismissAddNoteSheet,
+            onSave = { contact, title, content -> viewModel.saveNote(contact, title, content) },
+            contactNames = listOf("test", "Ali", "Kamal") // Placeholder
+        )
+    }
 
     Scaffold(
         bottomBar = {
