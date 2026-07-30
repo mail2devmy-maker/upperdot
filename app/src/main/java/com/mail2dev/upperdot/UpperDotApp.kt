@@ -18,4 +18,12 @@ class UpperDotApp : Application() {
     val contactRepository: ContactRepository by lazy {
         ContactRepository(database.contactDao())
     }
+
+    val noteRepository: com.mail2dev.upperdot.data.repository.NoteRepository by lazy {
+        com.mail2dev.upperdot.data.repository.NoteRepository(database.noteDao())
+    }
+
+    val transactionRepository: com.mail2dev.upperdot.data.repository.TransactionRepository by lazy {
+        com.mail2dev.upperdot.data.repository.TransactionRepository(database.transactionDao())
+    }
 }

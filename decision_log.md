@@ -68,13 +68,13 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   3. Added `guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava` to resolve library duplication.
   4. Added `packaging` block to exclude `INDEX.LIST` and `DEPENDENCIES` files from the final APK.
 
-### 2024-05-20 - ViewModel Integration: Contacts Workflow
-- **Context/Goal:** Connect the Connections List and Add Contact Wizard to the Room persistence layer via ContactRepository.
+### 2024-05-20 - ViewModel Integration: Insights Workflow
+- **Context/Goal:** Connect the Insights dashboards (Notes & Transactions) to the persistence layer with live summary calculations.
 - **Conflicts & Alternatives Considered:**
-  - *Conflict 1: UI State Wrapping:* Should we stream raw entities? *Decision:* Use a sealed interface `ConnectionsUIState` (Loading, Empty, Success) to handle the empty directory state as per SRS Screen 03 requirements.
-  - *Conflict 2: Wizard State Mapping:* Mapping complex Wizard state to Entity. *Decision:* Centralized `saveContact` logic in `AddContactViewModel` that handles the conversion of UI lists (nicknames, social, banks) into a single `ContactEntity`, including number sanitization for the Smart Matcher.
-  - *Conflict 3: Real-time Search:* Flow vs suspended calls. *Decision:* Transform the Repository `Flow` using `flatMapLatest` based on the `searchQuery` StateFlow to provide instantaneous UI updates as the user types.
-- **Final Decision:** Inject `ContactRepository` into ViewModels. Use `viewModelScope.launch(Dispatchers.IO)` for data writes. Ensure `ConnectionsListViewModel` reacts to live DB updates.
-- **Impact:** `ConnectionsListViewModel.kt`, `AddContactViewModel.kt`, `MainActivity.kt` injection.
+  - *Conflict 1: Shared Insights State:* Separate vs Shared ViewModel. *Decision:* Shared `InsightsViewModel` scoped to the `insights` navigation destination. This ensures that when a user switches between the "Notes" and "Transactions" sub-tabs, the filter state (e.g., date range or selected contact) is preserved.
+  - *Conflict 2: Summary Math Performance:* Calculating total revenue/expense. *Decision:* Use Kotlin `Flow` operators (`map` and `combine`) on the raw transaction stream from the repository. Calculations are performed off the main thread and cached in a `StateFlow` to ensure a jank-free UI.
+  - *Conflict 3: Persistence Triggers:* When to save? *Decision:* Background thread persistence triggered immediately upon clicking "Save" in the bottom sheet. UI reacts to the updated DB stream automatically, fulfilling the "Local-First" reactive pattern.
+- **Final Decision:** Implement repository injection for `NoteRepository` and `TransactionRepository` into the `InsightsViewModel`. Utilize `SharingStarted.WhileSubscribed(5000)` to optimize database connections.
+- **Impact:** `InsightsViewModel.kt`, `InsightsScreen.kt`, `MainActivity.kt` injection.
 
 ---

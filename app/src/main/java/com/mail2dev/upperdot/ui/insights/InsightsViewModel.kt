@@ -2,7 +2,15 @@ package com.mail2dev.upperdot.ui.insights
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mail2dev.upperdot.data.local.entity.NoteEntity
+import com.mail2dev.upperdot.data.local.entity.TransactionEntity
+import com.mail2dev.upperdot.data.repository.NoteRepository
+import com.mail2dev.upperdot.data.repository.TransactionRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import java.util.Locale
 
 enum class InsightTab {
     NOTES, TRANSACTIONS
@@ -30,7 +38,11 @@ data class TransactionEntry(
     val attachmentCount: Int = 0
 )
 
-class InsightsViewModel : ViewModel() {
+@OptIn(ExperimentalCoroutinesApi::class)
+class InsightsViewModel(
+    private val noteRepository: NoteRepository,
+    private val transactionRepository: TransactionRepository
+) : ViewModel() {
 
     private val _selectedTab = MutableStateFlow(InsightTab.NOTES)
     val selectedTab: StateFlow<InsightTab> = _selectedTab.asStateFlow()
@@ -47,60 +59,41 @@ class InsightsViewModel : ViewModel() {
     private val _showAddTransactionSheet = MutableStateFlow(false)
     val showAddTransactionSheet: StateFlow<Boolean> = _showAddTransactionSheet.asStateFlow()
 
-    private val _notes = MutableStateFlow<List<NoteEntry>>(
-        listOf(
-            NoteEntry(
-                id = "1",
-                contactId = "test_id",
-                contactName = "test",
-                title = "test note",
-                content = "note content",
-                timestamp = "Jul 28, 2026 • 02:28 AM",
-                attachmentCount = 1
-            )
-        )
-    )
-    val notes: StateFlow<List<NoteEntry>> = _notes.asStateFlow()
+    val notes: StateFlow<List<NoteEntry>> = combine(_searchQuery, _selectedContactFilter) { query, filter ->
+        query to filter
+    }.flatMapLatest { (query, _) ->
+        if (query.isEmpty()) {
+            noteRepository.allNotes
+        } else {
+            noteRepository.searchNotes(query)
+        }
+    }.map { entities -> 
+        entities.map { it.toEntry() } 
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    private val _transactions = MutableStateFlow<List<TransactionEntry>>(
-        listOf(
-            TransactionEntry(
-                id = "1",
-                contactId = "test_id",
-                contactName = "test",
-                title = "payment",
-                detail = "shop 1",
-                amount = "10.00",
-                isRevenue = false,
-                timestamp = "Jul 28, 2026 • 11:28 AM",
-                attachmentCount = 1
-            ),
-            TransactionEntry(
-                id = "2",
-                contactId = "test_id",
-                contactName = "test",
-                title = "income",
-                detail = "gift",
-                amount = "20.00",
-                isRevenue = true,
-                timestamp = "Jul 22, 2026 • 12:29 AM",
-                attachmentCount = 1
-            )
-        )
-    )
-    val transactions: StateFlow<List<TransactionEntry>> = _transactions.asStateFlow()
+    val transactions: StateFlow<List<TransactionEntry>> = combine(_searchQuery, _selectedContactFilter) { query, filter ->
+        query to filter
+    }.flatMapLatest { (query, _) ->
+        if (query.isEmpty()) {
+            transactionRepository.allTransactions
+        } else {
+            transactionRepository.searchTransactions(query)
+        }
+    }.map { entities ->
+        entities.map { it.toEntry() }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val totalRevenue = _transactions.map { list ->
+    val totalRevenue = transactions.map { list ->
         list.filter { it.isRevenue }.sumOf { it.amount.toDoubleOrNull() ?: 0.0 }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), 0.0)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
-    val totalExpenses = _transactions.map { list ->
+    val totalExpenses = transactions.map { list ->
         list.filter { !it.isRevenue }.sumOf { it.amount.toDoubleOrNull() ?: 0.0 }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), 0.0)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
     val netProfit = combine(totalRevenue, totalExpenses) { rev, exp ->
         rev - exp
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), 0.0)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
     fun onTabSelected(tab: InsightTab) {
         _selectedTab.value = tab
@@ -135,12 +128,51 @@ class InsightsViewModel : ViewModel() {
     }
 
     fun saveNote(contactName: String, title: String, content: String) {
-        // TODO: Save to Room
-        _showAddNoteSheet.value = false
+        viewModelScope.launch(Dispatchers.IO) {
+            // Note: In real app, resolve contactName to contactId
+            val note = NoteEntity(
+                contactId = "test_id", // Placeholder
+                title = title,
+                content = content
+            )
+            noteRepository.insertNote(note)
+            _showAddNoteSheet.value = false
+        }
     }
 
     fun saveTransaction(contactName: String, isRevenue: Boolean, title: String, amount: String, detail: String) {
-        // TODO: Save to Room
-        _showAddTransactionSheet.value = false
+        viewModelScope.launch(Dispatchers.IO) {
+            val transaction = TransactionEntity(
+                contactId = "test_id", // Placeholder
+                title = title,
+                amount = amount.toDoubleOrNull() ?: 0.0,
+                isRevenue = isRevenue,
+                detail = detail
+            )
+            transactionRepository.insertTransaction(transaction)
+            _showAddTransactionSheet.value = false
+        }
     }
 }
+
+private fun NoteEntity.toEntry() = NoteEntry(
+    id = id,
+    contactId = contactId,
+    contactName = "test", // Resolver needed
+    title = title,
+    content = content,
+    timestamp = "Jul 28, 2026 • 02:28 AM", // Formatter needed
+    attachmentCount = attachmentPaths.size
+)
+
+private fun TransactionEntity.toEntry() = TransactionEntry(
+    id = id,
+    contactId = contactId,
+    contactName = "test", // Resolver needed
+    title = title,
+    detail = detail,
+    amount = String.format(Locale.getDefault(), "%.2f", amount),
+    isRevenue = isRevenue,
+    timestamp = "Jul 28, 2026 • 11:28 AM", // Formatter needed
+    attachmentCount = attachmentPaths.size
+)

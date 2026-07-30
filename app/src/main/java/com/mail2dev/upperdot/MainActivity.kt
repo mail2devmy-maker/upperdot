@@ -29,7 +29,9 @@ import com.mail2dev.upperdot.ui.connections_list.ConnectionsListScreen
 import com.mail2dev.upperdot.ui.connections_list.ConnectionsListViewModel
 import com.mail2dev.upperdot.ui.digital_wallet.DigitalWalletScreen
 import com.mail2dev.upperdot.ui.digital_wallet.DigitalWalletViewModel
+import com.mail2dev.upperdot.ui.insights.InsightTab
 import com.mail2dev.upperdot.ui.insights.InsightsScreen
+import com.mail2dev.upperdot.ui.insights.InsightsViewModel
 import com.mail2dev.upperdot.ui.profile_detail.ClientProfileDetailScreen
 import com.mail2dev.upperdot.ui.profile_detail.ClientProfileDetailViewModel
 import com.mail2dev.upperdot.ui.profile_settings.MyProfileSettingsScreen
@@ -160,13 +162,21 @@ fun RootNavigation() {
         }
         
         composable("insights") {
+            val insightsViewModel: InsightsViewModel = viewModel(
+                factory = viewModelFactory {
+                    initializer {
+                        InsightsViewModel(app.noteRepository, app.transactionRepository)
+                    }
+                }
+            )
             InsightsScreen(
                 onNavigate = { route ->
                     navController.navigate(route) {
                         launchSingleTop = true
                         restoreState = true
                     }
-                }
+                },
+                viewModel = insightsViewModel
             )
         }
 
