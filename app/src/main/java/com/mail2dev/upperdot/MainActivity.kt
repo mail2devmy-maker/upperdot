@@ -65,16 +65,16 @@ fun RootNavigation() {
         }
 
         composable("add_contact") {
-            val viewModel: AddContactViewModel = viewModel()
+            val addContactViewModel: AddContactViewModel = viewModel()
             AddContactCoreInfoScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onStepSelected = { step ->
-                    // Logic to navigate between steps will be added here
-                    viewModel.onStepSelected(step)
+                    addContactViewModel.onStepSelected(step)
                 },
-                viewModel = viewModel
+                viewModel = addContactViewModel
             )
         }
+        
         composable("call_history") {
             CallHistoryScreen(
                 onNavigate = { route ->
@@ -84,15 +84,11 @@ fun RootNavigation() {
                 }
             )
         }
-        composable("connections_list") {
-            // TODO: Implement ConnectionsListScreen
-        }
-        composable("call_history") {
-            // TODO: Implement CallHistoryScreen
-        }
+        
         composable("insights") {
             // TODO: Implement InsightsScreen
         }
+
         composable("my_profile") {
             // TODO: Implement MyProfileScreen
         }
