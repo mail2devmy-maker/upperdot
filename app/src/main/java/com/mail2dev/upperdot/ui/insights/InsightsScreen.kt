@@ -41,12 +41,13 @@ fun InsightsScreen(
     val netProfit by viewModel.netProfit.collectAsState()
     val showAddNoteSheet by viewModel.showAddNoteSheet.collectAsState()
     val showAddTransactionSheet by viewModel.showAddTransactionSheet.collectAsState()
+    val contactNames by viewModel.contactNames.collectAsState()
 
     if (showAddNoteSheet) {
         NewRelationshipNoteSheet(
             onDismiss = viewModel::dismissAddNoteSheet,
             onSave = { contact, title, content -> viewModel.saveNote(contact, title, content) },
-            contactNames = listOf("test", "Ali", "Kamal") // Placeholder
+            contactNames = contactNames
         )
     }
 
@@ -56,7 +57,7 @@ fun InsightsScreen(
             onSave = { contact, isRevenue, title, amount, detail -> 
                 viewModel.saveTransaction(contact, isRevenue, title, amount, detail) 
             },
-            contactNames = listOf("test", "Ali", "Kamal") // Placeholder
+            contactNames = contactNames
         )
     }
 

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mail2dev.upperdot.data.local.entity.NoteEntity
 import com.mail2dev.upperdot.data.local.entity.TransactionEntity
+import com.mail2dev.upperdot.data.repository.ContactRepository
 import com.mail2dev.upperdot.data.repository.NoteRepository
 import com.mail2dev.upperdot.data.repository.TransactionRepository
 import kotlinx.coroutines.Dispatchers
@@ -40,6 +41,7 @@ data class TransactionEntry(
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class InsightsViewModel(
+    private val contactRepository: ContactRepository,
     private val noteRepository: NoteRepository,
     private val transactionRepository: TransactionRepository
 ) : ViewModel() {
@@ -58,6 +60,10 @@ class InsightsViewModel(
 
     private val _showAddTransactionSheet = MutableStateFlow(false)
     val showAddTransactionSheet: StateFlow<Boolean> = _showAddTransactionSheet.asStateFlow()
+
+    val contactNames: StateFlow<List<String>> = contactRepository.allContacts
+        .map { contacts -> contacts.map { it.fullName } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val notes: StateFlow<List<NoteEntry>> = combine(_searchQuery, _selectedContactFilter) { query, filter ->
         query to filter

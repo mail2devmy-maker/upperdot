@@ -81,6 +81,14 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Cause:** Custom `Application` class (`UpperDotApp.kt`) was implemented but not registered in the system manifest.
 - **Resolution:** Manually added `android:name=".UpperDotApp"` to the `<application>` tag in `AndroidManifest.xml` to correctly initialize the project's repository singletons.
 
+- **Error:** `Select Contact` dropdown in `NewRelationshipNoteSheet` loading hardcoded dummy names instead of live repository contacts.
+- **Cause:** `InsightsViewModel` was not connected to `ContactRepository`, and `InsightsScreen.kt` was passing a hardcoded list of strings to the bottom sheets.
+- **Resolution:** 
+  1. Injected `ContactRepository` into `InsightsViewModel`.
+  2. Exposed a `contactNames` StateFlow in `InsightsViewModel` that maps the full names of all saved contacts.
+  3. Updated `MainActivity.kt` to provide `ContactRepository` during `InsightsViewModel` initialization.
+  4. Updated `InsightsScreen.kt` to collect `contactNames` and pass it to both `NewRelationshipNoteSheet` and `NewCashTransactionSheet`, ensuring live data binding for the contact selector.
+
 - **Error:** `RuntimeException: Cannot create an instance of class... DigitalWalletViewModel` when navigating to the Profile Tab.
 - **Cause:** `DigitalWalletViewModel` was being instantiated using the default parameter-less `viewModel()` constructor inside `MyProfileSettingsScreen.kt`. However, the ViewModel requires a `BankCardRepository` dependency, which is provided via a factory in `MainActivity.kt`.
 - **Resolution:**

@@ -174,7 +174,11 @@ fun RootNavigation() {
             val insightsViewModel: InsightsViewModel = viewModel(
                 factory = viewModelFactory {
                     initializer {
-                        InsightsViewModel(app.noteRepository, app.transactionRepository)
+                        InsightsViewModel(
+                            app.contactRepository,
+                            app.noteRepository,
+                            app.transactionRepository
+                        )
                     }
                 }
             )
