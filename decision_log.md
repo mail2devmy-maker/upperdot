@@ -68,13 +68,13 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   3. Added `guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava` to resolve library duplication.
   4. Added `packaging` block to exclude `INDEX.LIST` and `DEPENDENCIES` files from the final APK.
 
-### 2024-05-20 - Cloud Sync: Google Drive OAuth Scoping
-- **Context/Goal:** Implementation of Google Sign-In to acquire `DriveScopes.DRIVE_APPDATA` for background synchronization.
+### 2024-05-20 - Cloud Sync: Background Synchronization Engine
+- **Context/Goal:** Implementation of background sync using WorkManager to push local records and binary assets to Google Drive.
 - **Conflicts & Alternatives Considered:**
-  - *Conflict 1: OAuth Scope Level:* broad vs restricted. *Decision:* Strictly use `DRIVE_APPDATA` scope to ensure user privacy and app-specific data isolation as per Section 7 guidelines.
-  - *Conflict 2: Credential Persistence:* In-memory vs Disk. *Decision:* Use `GoogleAccountManager` for handling credential sessions, with local fallback for offline metadata display.
-  - *Conflict 3: Offline Fallback:* How to handle login without internet? *Decision:* Login requires an initial online handshake. If offline, the app provides "Try as Guest" mode which operates purely on local Room DB without cloud sync attempts.
-- **Final Decision:** Implement `GoogleAuthService` using `play-services-auth`. Connect `AuthViewModel` to handle the `ActivityResult` and token exchange.
-- **Impact:** `GoogleAuthService.kt`, `AuthViewModel.kt`, `MainActivity.kt`.
+  - *Conflict 1: Sync Triggering:* Immediate vs Scheduled. *Decision:* Both. `PeriodicWorkRequest` (default 1h-24h as per settings) for background consistency, and immediate `OneTimeWorkRequest` triggered upon manual refresh or significant data saves.
+  - *Conflict 2: Network Constraints:* Metered vs Wi-Fi. *Decision:* Wi-Fi gating is dynamically applied to the `WorkRequest` constraints based on the `Sync Over Wi-Fi Only` setting in the Advanced App Settings.
+  - *Conflict 3: Payload Structure:* Full DB vs Incremental. *Decision:* Full JSON serialization of non-synced Room records for metadata. Binary assets (attachments/voice) are pushed as independent file streams with unique identifiers to minimize payload size during retries.
+- **Final Decision:** Implement `DriveSyncWorker` using `CoroutineWorker`. Use exponential backoff for retries. Status updates are broadcast via `WorkInfo` observed in the Profile ViewModel.
+- **Impact:** `DriveSyncWorker.kt`, `AdvancedSettingsViewModel.kt` (sync scheduling), `MainActivity.kt`.
 
 ---

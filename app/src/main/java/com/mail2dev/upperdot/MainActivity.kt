@@ -238,7 +238,8 @@ fun RootNavigation() {
                             app.contactRepository,
                             app.noteRepository,
                             app.transactionRepository,
-                            app.bankCardRepository
+                            app.bankCardRepository,
+                            app.syncManager
                         )
                     }
                 }

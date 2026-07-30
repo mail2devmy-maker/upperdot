@@ -5,13 +5,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+import com.mail2dev.upperdot.data.sync.SyncManager
 import com.mail2dev.upperdot.data.repository.BankCardRepository
 import com.mail2dev.upperdot.data.repository.ContactRepository
 import com.mail2dev.upperdot.data.repository.NoteRepository
 import com.mail2dev.upperdot.data.repository.TransactionRepository
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 
 data class DatabaseDiagnostics(
     val vaultSize: String = "0.00 MB",
@@ -24,7 +24,8 @@ class AdvancedSettingsViewModel(
     private val contactRepository: ContactRepository,
     private val noteRepository: NoteRepository,
     private val transactionRepository: TransactionRepository,
-    private val bankCardRepository: BankCardRepository
+    private val bankCardRepository: BankCardRepository,
+    private val syncManager: SyncManager
 ) : ViewModel() {
 
     private val _syncOverWifi = MutableStateFlow(true)
@@ -51,10 +52,23 @@ class AdvancedSettingsViewModel(
 
     fun toggleSyncOverWifi(enabled: Boolean) {
         _syncOverWifi.value = enabled
+        updateSyncSchedule()
     }
 
     fun onSyncFrequencySelected(frequency: String) {
         _syncFrequency.value = frequency
+        updateSyncSchedule()
+    }
+
+    private fun updateSyncSchedule() {
+        val interval = when (_syncFrequency.value) {
+            "1h" -> 1L
+            "6h" -> 6L
+            "12h" -> 12L
+            "24h" -> 24L
+            else -> return
+        }
+        syncManager.schedulePeriodicSync(interval, _syncOverWifi.value)
     }
 
     fun onCurrencySelected(symbol: String) {

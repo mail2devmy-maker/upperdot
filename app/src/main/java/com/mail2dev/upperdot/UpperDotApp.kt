@@ -34,4 +34,8 @@ class UpperDotApp : Application() {
     val googleAuthService: com.mail2dev.upperdot.data.network.GoogleAuthService by lazy {
         com.mail2dev.upperdot.data.network.GoogleAuthService(this)
     }
+
+    val syncManager: com.mail2dev.upperdot.data.sync.SyncManager by lazy {
+        com.mail2dev.upperdot.data.sync.SyncManager(this)
+    }
 }
