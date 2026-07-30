@@ -24,6 +24,8 @@ import com.mail2dev.upperdot.ui.connections_list.ConnectionsListScreen
 import com.mail2dev.upperdot.ui.insights.InsightsScreen
 import com.mail2dev.upperdot.ui.profile_detail.ClientProfileDetailScreen
 import com.mail2dev.upperdot.ui.profile_detail.ClientProfileDetailViewModel
+import com.mail2dev.upperdot.ui.profile_settings.MyProfileSettingsScreen
+import com.mail2dev.upperdot.ui.profile_settings.ProfileSettingsViewModel
 import com.mail2dev.upperdot.ui.theme.UpperDotTheme
 
 class MainActivity : ComponentActivity() {
@@ -141,7 +143,21 @@ fun RootNavigation() {
         }
 
         composable("my_profile") {
-            // TODO: Implement MyProfileScreen
+            val profileSettingsViewModel: ProfileSettingsViewModel = viewModel()
+            MyProfileSettingsScreen(
+                onNavigate = { route ->
+                    navController.navigate(route) {
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                onSignOut = {
+                    navController.navigate("auth_launchpad") {
+                        popUpTo(0) { inclusive = true }
+                    }
+                },
+                viewModel = profileSettingsViewModel
+            )
         }
     }
 }

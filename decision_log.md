@@ -68,11 +68,11 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   3. Added `guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava` to resolve library duplication.
   4. Added `packaging` block to exclude `INDEX.LIST` and `DEPENDENCIES` files from the final APK.
 
-### 2024-05-20 - Screen 12: New Cash Transaction Bottom Sheet Overlay
-- **Context/Goal:** Modal overlay for logging cash transactions (Income/Expense) with real-time balance impact.
+### 2024-05-20 - Screen 13: My Profile Settings Tab
+- **Context/Goal:** Personal hub for account management, sync status monitoring, and navigation to advanced configuration.
 - **Conflicts & Alternatives Considered:**
-  - *Conflict 1: Type Switcher:* Toggle vs Tabs. *Decision:* Split Button (Binary Switcher) with high-contrast active states (Green for Revenue, Transparent/Dark for Expense) to provide immediate tactile feedback.
-  - *Conflict 2: Keyboard Management:* Standard vs Numeric. *Decision:* Forced `KeyboardType.Number` for the amount field to ensure valid decimal entries and reduce user keystrokes.
-  - *Conflict 3: Layout Split:* How to arrange Title and Amount? *Decision:* 60/40 horizontal split row as per Screen 12 visual specs in AGENT.md, optimizing vertical space for the notes/voice sections.
-- **Final Decision:** Implement `NewCashTransactionSheet`. Use shared `StitchTextField` and `StitchDropdown`. Color markers strictly tied to `PositiveGreen` and `NegativeRed` tokens.
-- **Impact:** `NewCashTransactionSheet.kt`, `InsightsViewModel.kt` (updated with transaction state), `InsightsScreen.kt`.
+  - *Conflict 1: Tiered Limit Tracking:* How to display the 20-item ceiling for Free users? *Decision:* Summary metrics bar will dynamically count current Room DB entries and show a warning color/icon if the user is approaching the 20-note/transaction threshold as per monetization logic.
+  - *Conflict 2: Sync Monitoring:* How to show Google Drive status? *Decision:* Dedicated "Sync Banner" within the account card showing timestamp and a manual refresh trigger to provide transparency into cloud persistence.
+  - *Conflict 3: Sign Out Placement:* Full-width button vs compact pill. *Decision:* Small red-outlined pill button positioned below the sync banner, matching the size and weight of the Premium tag to maintain visual balance within the card.
+- **Final Decision:** Implement `MyProfileSettingsScreen`. Use high-contrast card decks (#1E1E1E surface) with 24dp rounding. Integrate specialized Wallet FAB at bottom-right for Quick Wallet access.
+- **Impact:** `MyProfileSettingsScreen.kt`, `ProfileSettingsViewModel.kt`, `MainActivity.kt` routes.
