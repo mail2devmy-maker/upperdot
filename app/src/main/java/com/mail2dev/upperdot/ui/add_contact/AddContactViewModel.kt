@@ -160,6 +160,14 @@ class AddContactViewModel(
         _bankAccounts.value = _bankAccounts.value + BankAccount()
     }
 
+    fun removeBankAccount(index: Int) {
+        val list = _bankAccounts.value.toMutableList()
+        if (index < list.size && list.size > 1) {
+            list.removeAt(index)
+            _bankAccounts.value = list
+        }
+    }
+
     fun onStepSelected(step: Int) {
         _currentStep.value = step
     }

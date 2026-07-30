@@ -109,6 +109,13 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   4. Updated `StitchDropdown` to support an `enabled` state and styled it to match the Pure Dark Mode theme.
   5. Mapped the selected group and tag values to the `ContactEntity` for final persistence.
 
+- **Error:** Missing functionality to remove added bank accounts in `AddContactFinancialScreen`.
+- **Cause:** The "Add Bank Account" feature allowed adding multiple fields but lacked a corresponding "Remove" mechanism, potentially leading to cluttered or incorrect data entry.
+- **Resolution:**
+  1. Implemented `removeBankAccount(index)` in `AddContactViewModel.kt` to safely drop specific entries from the reactive list.
+  2. Modified `AddContactFinancialScreen.kt` to include a `Close` IconButton on bank account cards (for index > 0).
+  3. Styled the removal action with a subtle grey icon to maintain high-contrast minimalist aesthetics while providing essential control.
+
 - **Error:** `RuntimeException: Cannot create an instance of class... DigitalWalletViewModel` when navigating to the Profile Tab.
 - **Cause:** `DigitalWalletViewModel` was being instantiated using the default parameter-less `viewModel()` constructor inside `MyProfileSettingsScreen.kt`. However, the ViewModel requires a `BankCardRepository` dependency, which is provided via a factory in `MainActivity.kt`.
 - **Resolution:**

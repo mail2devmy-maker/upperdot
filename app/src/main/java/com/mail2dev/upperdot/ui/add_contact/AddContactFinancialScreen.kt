@@ -130,12 +130,31 @@ fun AddContactFinancialScreen(
                         Column(
                             modifier = Modifier.padding(16.dp)
                         ) {
-                            Text(
-                                text = "SECURE ACCOUNT",
-                                color = AccentCyan,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "SECURE ACCOUNT",
+                                    color = AccentCyan,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                if (index > 0) {
+                                    IconButton(
+                                        onClick = { viewModel.removeBankAccount(index) },
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Close,
+                                            contentDescription = "Remove Account",
+                                            tint = Color.Gray,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
+                            }
                             
                             Spacer(modifier = Modifier.height(12.dp))
 
