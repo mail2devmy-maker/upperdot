@@ -61,6 +61,26 @@ class InsightsViewModel(
     private val _showAddTransactionSheet = MutableStateFlow(false)
     val showAddTransactionSheet: StateFlow<Boolean> = _showAddTransactionSheet.asStateFlow()
 
+    // Temporary state for new note
+    private val _selectedAttachments = MutableStateFlow<List<String>>(emptyList())
+    val selectedAttachments: StateFlow<List<String>> = _selectedAttachments.asStateFlow()
+
+    fun addAttachmentPath(path: String) {
+        _selectedAttachments.value = _selectedAttachments.value + path
+    }
+
+    fun removeAttachmentPath(index: Int) {
+        val list = _selectedAttachments.value.toMutableList()
+        if (index < list.size) {
+            list.removeAt(index)
+            _selectedAttachments.value = list
+        }
+    }
+
+    fun clearTemporaryNoteState() {
+        _selectedAttachments.value = emptyList()
+    }
+
     val contactNames: StateFlow<List<String>> = contactRepository.allContacts
         .map { contacts -> contacts.map { it.fullName } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())

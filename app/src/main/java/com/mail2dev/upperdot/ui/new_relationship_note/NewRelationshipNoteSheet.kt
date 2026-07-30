@@ -14,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -29,12 +30,19 @@ import java.util.*
 import android.media.MediaRecorder
 import java.io.File
 
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import coil.compose.AsyncImage
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewRelationshipNoteSheet(
     onDismiss: () -> Unit,
     onSave: (String, String, String, List<String>, String?) -> Unit,
     contactNames: List<String>,
+    attachmentPaths: List<String>,
+    onAddAttachment: (String) -> Unit,
+    onRemoveAttachment: (Int) -> Unit,
     initialContact: String? = null
 ) {
     val context = LocalContext.current
@@ -53,11 +61,10 @@ fun NewRelationshipNoteSheet(
     }
 
     // Attachment State
-    var attachmentPaths by remember { mutableStateOf(listOf<String>()) }
     val attachmentLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
-        uri?.let { attachmentPaths = attachmentPaths + it.toString() }
+        uri?.let { onAddAttachment(it.toString()) }
     }
 
     // Voice Recording State
@@ -182,28 +189,78 @@ fun NewRelationshipNoteSheet(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Voice and Attachments Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(text = "Attachments (${attachmentPaths.size})", color = TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-                            .border(1.dp, Color.DarkGray, RoundedCornerShape(12.dp))
-                            .clickable { attachmentLauncher.launch("image/*") },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = "Add Attachment", tint = AccentCyan)
+            // Voice and Attachments Section
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Attachments (${attachmentPaths.size})",
+                    color = TextSecondary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    itemsIndexed(attachmentPaths) { index, path ->
+                        Box(modifier = Modifier.size(64.dp)) {
+                            AsyncImage(
+                                model = path,
+                                contentDescription = "Attachment $index",
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .border(1.dp, Color.DarkGray, RoundedCornerShape(12.dp)),
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                            )
+                            
+                            // Delete Button Overlay
+                            Surface(
+                                shape = CircleShape,
+                                color = Color.Black.copy(alpha = 0.6f),
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .align(Alignment.TopEnd)
+                                    .offset(x = 4.dp, y = (-4).dp)
+                                    .clickable { onRemoveAttachment(index) }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Remove",
+                                    tint = Color.White,
+                                    modifier = Modifier.padding(4.dp)
+                                )
+                            }
+                        }
+                    }
+                    
+                    item {
+                        // Add Button Box
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                                .border(1.dp, Color.DarkGray, RoundedCornerShape(12.dp))
+                                .clickable { attachmentLauncher.launch("image/*") },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "Add Attachment", tint = AccentCyan)
+                        }
                     }
                 }
+            }
 
-                // Voice Recording Component
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Voice Recording Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Surface(
                     shape = CircleShape,
                     color = if (isRecording) Color.Red.copy(alpha = 0.2f) else AccentCyan.copy(alpha = 0.1f),

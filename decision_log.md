@@ -117,6 +117,16 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   3. Integrated native `MediaRecorder` for voice memo capture, saving audio files to the app's internal cache directory.
   4. Updated `InsightsViewModel` and `NewRelationshipNoteSheet` state pipeline to handle and persist attachment paths and voice recording locations.
 
+- **Error:** Attachment section in `NewRelationshipNoteSheet` only displayed a count string without visual previews.
+- **Cause:** Lack of a dynamic list/grid component to render selected image URI paths as thumbnails.
+- **Resolution:**
+  1. Integrated **Coil library** (`coil-compose`) for asynchronous image loading.
+  2. Implemented a horizontal `LazyRow` Visual Thumbnail Preview Grid.
+  3. Rendered selected images as 64dp x 64dp squares with 12dp rounded corners using `AsyncImage`.
+  4. Added a circular delete button overlay on each thumbnail to allow users to remove specific attachments.
+  5. Moved attachment selection state to `InsightsViewModel` to support robust deletion logic and state persistence across recompositions.
+  6. Maintained the "+" add box as a persistent element at the end of the preview row.
+
 - **Error:** Single email field limitation in `AddContactIdentityScreen`.
 - **Cause:** Users could only enter one email address per contact, which didn't meet the requirement for a flexible CRM.
 - **Resolution:**

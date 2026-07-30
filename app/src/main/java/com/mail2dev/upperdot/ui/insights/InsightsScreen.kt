@@ -42,14 +42,22 @@ fun InsightsScreen(
     val showAddNoteSheet by viewModel.showAddNoteSheet.collectAsState()
     val showAddTransactionSheet by viewModel.showAddTransactionSheet.collectAsState()
     val contactNames by viewModel.contactNames.collectAsState()
+    val selectedAttachments by viewModel.selectedAttachments.collectAsState()
 
     if (showAddNoteSheet) {
         NewRelationshipNoteSheet(
-            onDismiss = viewModel::dismissAddNoteSheet,
+            onDismiss = {
+                viewModel.dismissAddNoteSheet()
+                viewModel.clearTemporaryNoteState()
+            },
             onSave = { contact, title, content, attachments, voice -> 
                 viewModel.saveNote(contact, title, content, attachments, voice) 
+                viewModel.clearTemporaryNoteState()
             },
-            contactNames = contactNames
+            contactNames = contactNames,
+            attachmentPaths = selectedAttachments,
+            onAddAttachment = viewModel::addAttachmentPath,
+            onRemoveAttachment = viewModel::removeAttachmentPath
         )
     }
 
