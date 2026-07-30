@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.mail2dev.upperdot.ui.auth_launchpad.AuthLaunchpadScreen
 import com.mail2dev.upperdot.ui.theme.UpperDotTheme
 
 class MainActivity : ComponentActivity() {
@@ -33,7 +34,13 @@ fun RootNavigation() {
         modifier = Modifier.fillMaxSize()
     ) {
         composable("auth_launchpad") {
-            // TODO: Implement AuthLaunchpadScreen
+            AuthLaunchpadScreen(
+                onNavigateToDashboard = {
+                    navController.navigate("connections_list") {
+                        popUpTo("auth_launchpad") { inclusive = true }
+                    }
+                }
+            )
         }
         composable("connections_list") {
             // TODO: Implement ConnectionsListScreen

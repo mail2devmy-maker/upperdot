@@ -419,3 +419,12 @@
   * **Action: Swipe Left / Right on Card Area** ➔ Updates pager index state to navigate saved payment cards. **For Free users, swipes to a "Premium Only" upgrade prompt after the first card which navigates to "Free vs Premium Plan" screen.**
   * **Action: Click Top Gear Icon** ➔ Dismisses overlay ➔ Navigates to `digital_wallet_management`.
   * **Action: Click Account Number Capsule** ➔ Copies to clipboard.
+
+## 4. Automated Developer Workflow and Version Control Rules
+
+You have permission to use the integrated terminal to manage version control and architectural logging. For every screen you build from Screen 01 to Screen 18, you must execute this strict sequence:
+
+1. Before writing any code, open decision_log.md at the project root and append a new log entry tracking the UI layout conflicts, design decisions, and state alternatives considered for the target screen.
+2. Develop the necessary Composable functions using Jetpack Compose and establish corresponding MVVM ViewModel architectures following your specific Stitch Dark Theme parameters.
+3. Once the screen features are ready and fully compileable, execute an automated git commit from the terminal using the clear description format feat(ui): implement Screen XX - Screen Name layout.
+4. Ensure git status remains entirely clean before requesting user confirmation to proceed onto the subsequent screen setup.
