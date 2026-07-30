@@ -5,11 +5,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class SocialProfile(
     val platform: String = "WhatsApp",
     val handle: String = ""
 )
 
+@Serializable
 data class BankAccount(
     val bankName: String = "Maybank",
     val holderName: String = "",

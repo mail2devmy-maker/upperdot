@@ -68,13 +68,13 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   3. Added `guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava` to resolve library duplication.
   4. Added `packaging` block to exclude `INDEX.LIST` and `DEPENDENCIES` files from the final APK.
 
-### 2024-05-20 - Screen 18: Quick Wallet Overlay
-- **Context/Goal:** A high-speed horizontal pager overlay for swiping through payment cards and displaying QR codes.
+### 2024-05-20 - Data Layer: Contacts Room Module
+- **Context/Goal:** Implementation of the local persistence layer for connections using Android Room.
 - **Conflicts & Alternatives Considered:**
-  - *Conflict 1: Interaction Physics:* Standard vs snappy pager. *Decision:* Snap-to-page horizontal pager as per Screen 18 specs, ensuring focus remains on a single card's QR for easy scanning.
-  - *Conflict 2: QR Scanability:* Static image vs interactive. *Decision:* Tapping the QR expands it to fill-width and triggers a local brightness boost (simulated in logic) to maximize scanner success rates.
-  - *Conflict 3: Copy Action:* Notification vs Toast. *Decision:* Clipboard copy with immediate toast confirmation for the account number pill, matching the "Quick Wallet" utility requirement.
-- **Final Decision:** Implement `QuickWalletOverlaySheet`. Leverage `HorizontalPager` with the shared `DigitalWalletViewModel` state. Use Stitch tokens for the prominent white QR container.
-- **Impact:** `QuickWalletOverlaySheet.kt`, `MyProfileSettingsScreen.kt` trigger, `MainActivity.kt`.
+  - *Conflict 1: List Storage:* How to store comma-separated nicknames and multiple phone numbers? *Decision:* Use `@TypeConverter` to serialize/deserialize `List<String>` to a single JSON string, keeping the schema flat and simple for single-device usage.
+  - *Conflict 2: Indexing strategy:* Matching the "Smart Number Matcher". *Decision:* Add a unique index on a sanitized version of the primary phone number to prevent duplicates during VCF imports, while keeping the original formatted string in a separate column.
+  - *Conflict 3: Cascade Deletion:* What happens to notes/transactions? *Decision:* Implement `ForeignKey.CASCADE` on child tables (implemented in future modules) to ensure that deleting a contact automatically cleans up all associated historical logs as per AGENT.md section 8.
+- **Final Decision:** Implement `ContactEntity` with comprehensive fields for Identity, Corporate, and Financial info. Use UUID for `id` to ensure unique mapping before cloud sync.
+- **Impact:** `ContactEntity.kt`, `ContactDao.kt`, `ContactRepository.kt`, `AppDatabase.kt`.
 
 ---

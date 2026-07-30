@@ -430,3 +430,21 @@ You have permission to use the integrated terminal to manage version control and
 4. Ensure git status remains entirely clean before requesting user confirmation to proceed onto the subsequent screen setup.
 
 5. **Error Resolution Tracking Rule:** If your code introduces a compilation error or build failure, you must document it in `decision_log.md` under a subsection called "### ⚠️ Build Errors & Resolutions". State what caused the error (e.g., duplicate overloads, missing imports) and exactly how you refactored the code to fix it before proceeding.
+---
+
+## 5. Local Storage Engineering Rules (Room Database)
+
+You are now entering the Data Layer implementation phase. You must build out our local-first single source of truth database framework using Android Room Components.
+
+### Architectural Rules
+1. **Entities & Schemas:** Create decoupled `@Entity` classes for Contacts, Notes, Transactions, and BankCards matching your Clean Architecture Data Layer parameters.
+2. **Type Converters:** Implement `@TypeConverter` functions for complex data elements (e.g., custom lists, object mappings, or UUID/LocalDateTime parsing to strings).
+3. **Data Access Objects (DAOs):** All DAO queries must return asynchronous streams using Kotlin Coroutines `Flow` for reactive, real-time UI updates across our screens.
+4. **File Storage Paths:** For attachments, photos, and voice recordings, do not store raw binary blobs inside Room. Store the raw binaries inside the app's internal private storage cache directory, and save the absolute file path strings as text inside the database table columns.
+
+### Execution Sequence per Entity
+For every database entity module you construct, you must adhere to the execution loop:
+1. Log table design conflicts, indexing optimization decisions, and cascade delete options inside `decision_log.md` first.
+2. Develop the Entity, DAO interfaces, and testing schemas.
+3. Hook the raw Repository layer implementations directly up into our pre-existing screen ViewModels.
+4. Execute an automated git commit with the message format: `feat(data): implement Room [Module Name] database schema and DAO`.
