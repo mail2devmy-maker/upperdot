@@ -1,5 +1,7 @@
 package com.mail2dev.upperdot.ui.new_relationship_note
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -21,21 +24,96 @@ import com.mail2dev.upperdot.ui.components.StitchTextField
 import com.mail2dev.upperdot.ui.theme.AccentCyan
 import com.mail2dev.upperdot.ui.theme.Surface
 import com.mail2dev.upperdot.ui.theme.TextSecondary
+import java.text.SimpleDateFormat
+import java.util.*
+import android.media.MediaRecorder
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewRelationshipNoteSheet(
     onDismiss: () -> Unit,
-    onSave: (String, String, String) -> Unit,
+    onSave: (String, String, String, List<String>, String?) -> Unit,
     contactNames: List<String>,
     initialContact: String? = null
 ) {
+    val context = LocalContext.current
     var selectedContact by remember { mutableStateOf(initialContact ?: "") }
     var title by remember { mutableStateOf("") }
     var content by remember { mutableStateOf("") }
     
-    // In a real app, these would come from the ViewModel
-    val currentDateTime = "Jul 30, 2026 • 12:51 AM"
+    // Date Picker State
+    var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = System.currentTimeMillis()
+    )
+    val formatter = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
+    val selectedDateText = remember(datePickerState.selectedDateMillis) {
+        datePickerState.selectedDateMillis?.let { formatter.format(Date(it)) } ?: formatter.format(Date())
+    }
+
+    // Attachment State
+    var attachmentPaths by remember { mutableStateOf(listOf<String>()) }
+    val attachmentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let { attachmentPaths = attachmentPaths + it.toString() }
+    }
+
+    // Voice Recording State
+    var voiceRecordingPath by remember { mutableStateOf<String?>(null) }
+    var isRecording by remember { mutableStateOf(false) }
+    var recorder by remember { mutableStateOf<MediaRecorder?>(null) }
+
+    fun startRecording() {
+        try {
+            val file = File(context.cacheDir, "voice_note_${System.currentTimeMillis()}.mp3")
+            voiceRecordingPath = file.absolutePath
+            recorder = MediaRecorder().apply {
+                setAudioSource(MediaRecorder.AudioSource.MIC)
+                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                setOutputFile(file.absolutePath)
+                prepare()
+                start()
+            }
+            isRecording = true
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    fun stopRecording() {
+        try {
+            recorder?.apply {
+                stop()
+                release()
+            }
+            recorder = null
+            isRecording = false
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("OK", color = AccentCyan)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Cancel", color = Color.Gray)
+                }
+            },
+            colors = DatePickerDefaults.colors(containerColor = Surface)
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -93,12 +171,13 @@ fun NewRelationshipNoteSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Color.Black.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
+                    .clickable { showDatePicker = true }
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(Icons.Default.CalendarToday, contentDescription = null, tint = TextSecondary, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(12.dp))
-                Text(text = currentDateTime, color = TextSecondary, fontSize = 14.sp)
+                Text(text = selectedDateText, color = TextSecondary, fontSize = 14.sp)
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -110,14 +189,14 @@ fun NewRelationshipNoteSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text(text = "Attachments", color = TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text(text = "Attachments (${attachmentPaths.size})", color = TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(8.dp))
                     Box(
                         modifier = Modifier
                             .size(48.dp)
                             .background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
                             .border(1.dp, Color.DarkGray, RoundedCornerShape(12.dp))
-                            .clickable { /* Trigger Picker */ },
+                            .clickable { attachmentLauncher.launch("image/*") },
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(Icons.Default.Add, contentDescription = "Add Attachment", tint = AccentCyan)
@@ -127,11 +206,20 @@ fun NewRelationshipNoteSheet(
                 // Voice Recording Component
                 Surface(
                     shape = CircleShape,
-                    color = AccentCyan.copy(alpha = 0.1f),
+                    color = if (isRecording) Color.Red.copy(alpha = 0.2f) else AccentCyan.copy(alpha = 0.1f),
                     modifier = Modifier.size(56.dp)
                 ) {
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.clickable { /* Handle Hold to Record */ }) {
-                        Icon(Icons.Default.Mic, contentDescription = "Record Voice", tint = AccentCyan)
+                    Box(
+                        contentAlignment = Alignment.Center, 
+                        modifier = Modifier.clickable { 
+                            if (isRecording) stopRecording() else startRecording()
+                        }
+                    ) {
+                        Icon(
+                            imageVector = if (isRecording) Icons.Default.Stop else Icons.Default.Mic, 
+                            contentDescription = "Record Voice", 
+                            tint = if (isRecording) Color.Red else AccentCyan
+                        )
                     }
                 }
             }
@@ -139,7 +227,7 @@ fun NewRelationshipNoteSheet(
             Spacer(modifier = Modifier.height(32.dp))
 
             Button(
-                onClick = { onSave(selectedContact, title, content) },
+                onClick = { onSave(selectedContact, title, content, attachmentPaths, voiceRecordingPath) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),

@@ -46,7 +46,9 @@ fun InsightsScreen(
     if (showAddNoteSheet) {
         NewRelationshipNoteSheet(
             onDismiss = viewModel::dismissAddNoteSheet,
-            onSave = { contact, title, content -> viewModel.saveNote(contact, title, content) },
+            onSave = { contact, title, content, attachments, voice -> 
+                viewModel.saveNote(contact, title, content, attachments, voice) 
+            },
             contactNames = contactNames
         )
     }

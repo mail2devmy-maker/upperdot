@@ -133,13 +133,21 @@ class InsightsViewModel(
         _showAddTransactionSheet.value = false
     }
 
-    fun saveNote(contactName: String, title: String, content: String) {
+    fun saveNote(
+        contactName: String, 
+        title: String, 
+        content: String, 
+        attachments: List<String> = emptyList(), 
+        voicePath: String? = null
+    ) {
         viewModelScope.launch(Dispatchers.IO) {
             // Note: In real app, resolve contactName to contactId
             val note = NoteEntity(
                 contactId = "test_id", // Placeholder
                 title = title,
-                content = content
+                content = content,
+                attachmentPaths = attachments,
+                voiceRecordingPath = voicePath
             )
             noteRepository.insertNote(note)
             _showAddNoteSheet.value = false

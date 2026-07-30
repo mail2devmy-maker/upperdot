@@ -109,6 +109,14 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   4. Updated `StitchDropdown` to support an `enabled` state and styled it to match the Pure Dark Mode theme.
   5. Mapped the selected group and tag values to the `ContactEntity` for final persistence.
 
+- **Error:** Frozen UI features (Date Picker, Attachments, Voice Recorder) in `NewRelationshipNoteSheet`.
+- **Cause:** These features were implemented as UI stubs without any functional backend or native system integration.
+- **Resolution:**
+  1. Integrated Material 3 `DatePickerDialog` to allow users to select custom note timestamps.
+  2. Implemented `rememberLauncherForActivityResult` with `GetContent()` to enable local photo selection for attachments.
+  3. Integrated native `MediaRecorder` for voice memo capture, saving audio files to the app's internal cache directory.
+  4. Updated `InsightsViewModel` and `NewRelationshipNoteSheet` state pipeline to handle and persist attachment paths and voice recording locations.
+
 - **Error:** Single email field limitation in `AddContactIdentityScreen`.
 - **Cause:** Users could only enter one email address per contact, which didn't meet the requirement for a flexible CRM.
 - **Resolution:**
