@@ -99,6 +99,11 @@ class AddContactViewModel : ViewModel() {
         _socialProfiles.value = _socialProfiles.value + SocialProfile()
     }
 
+    // Corporate Updates
+    fun onCompanyNameChange(value: String) { _companyName.value = value }
+    fun onBusinessCategoryChange(value: String) { _businessCategory.value = value }
+    fun onOfficeAddressChange(value: String) { _officeAddress.value = value }
+
     fun onStepSelected(step: Int) {
         _currentStep.value = step
     }

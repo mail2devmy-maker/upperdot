@@ -1,18 +1,14 @@
 package com.mail2dev.upperdot.ui.add_contact
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -20,18 +16,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mail2dev.upperdot.ui.theme.AccentCyan
 import com.mail2dev.upperdot.ui.theme.Surface
-import com.mail2dev.upperdot.ui.theme.TextSecondary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddContactIdentityScreen(
+fun AddContactCorporateScreen(
     onNavigateBack: () -> Unit,
     onStepSelected: (Int) -> Unit,
     viewModel: AddContactViewModel
 ) {
-    val email by viewModel.email.collectAsState()
-    val socialProfiles by viewModel.socialProfiles.collectAsState()
-    val subTag by viewModel.subTag.collectAsState()
+    val companyName by viewModel.companyName.collectAsState()
+    val businessCategory by viewModel.businessCategory.collectAsState()
+    val officeAddress by viewModel.officeAddress.collectAsState()
     val currentStep by viewModel.currentStep.collectAsState()
     val showDiscardDialog by viewModel.showDiscardDialog.collectAsState()
 
@@ -110,76 +105,34 @@ fun AddContactIdentityScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(24.dp)
             ) {
-                // Email
+                // Company Name
                 StitchTextField(
-                    value = email,
-                    onValueChange = viewModel::onEmailChange,
-                    placeholder = "Email Address",
-                    leadingIcon = Icons.Default.Email
+                    value = companyName,
+                    onValueChange = viewModel::onCompanyNameChange,
+                    placeholder = "Company Name",
+                    leadingIcon = Icons.Default.Business
                 )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-                // Social Profiles Section
-                Text(
-                    text = "SOCIAL PROFILES",
-                    color = AccentCyan,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
+                // Business Category
+                StitchDropdown(
+                    selectedOption = businessCategory,
+                    options = listOf("General", "Client", "Vendor", "Partner"),
+                    onOptionSelected = viewModel::onBusinessCategoryChange,
+                    label = "Business Category",
+                    leadingIcon = Icons.Default.Category,
+                    modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-                socialProfiles.forEachIndexed { index, profile ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        StitchDropdown(
-                            selectedOption = profile.platform,
-                            options = listOf("Facebook", "Instagram", "X", "TikTok", "YouTube", "Shopee", "Lazada", "Custom"),
-                            onOptionSelected = { viewModel.onSocialPlatformChange(index, it) },
-                            modifier = Modifier.weight(0.4f)
-                        )
-                        StitchTextField(
-                            value = profile.handle,
-                            onValueChange = { viewModel.onSocialHandleChange(index, it) },
-                            placeholder = "URL / Handle",
-                            modifier = Modifier.weight(0.6f)
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
-                }
-
-                Text(
-                    text = "[ + Add Social Profile ]",
-                    color = AccentCyan,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier
-                        .clickable { viewModel.addSocialProfile() }
-                        .padding(vertical = 8.dp)
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                // Relationship Group Section
-                Text(
-                    text = "RELATIONSHIP GROUP",
-                    color = Color.White,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
+                // Physical Office Address
                 StitchTextField(
-                    value = subTag,
-                    onValueChange = viewModel::onSubTagChange,
-                    placeholder = "Custom Sub-tag (Optional)",
-                    leadingIcon = Icons.Default.Tag
+                    value = officeAddress,
+                    onValueChange = viewModel::onOfficeAddressChange,
+                    placeholder = "Physical Office Address",
+                    leadingIcon = Icons.Default.LocationOn
                 )
             }
         }

@@ -94,13 +94,15 @@ fun StitchTextField(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SocialPlatformDropdown(
-    selectedPlatform: String,
-    onPlatformSelected: (String) -> Unit,
+fun StitchDropdown(
+    selectedOption: String,
+    options: List<String>,
+    onOptionSelected: (String) -> Unit,
+    label: String? = null,
+    leadingIcon: ImageVector? = null,
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val platforms = listOf("Facebook", "Instagram", "X", "TikTok", "YouTube", "Shopee", "Lazada", "Custom")
 
     ExposedDropdownMenuBox(
         expanded = expanded,
@@ -108,14 +110,19 @@ fun SocialPlatformDropdown(
         modifier = modifier
     ) {
         TextField(
-            value = selectedPlatform,
+            value = selectedOption,
             onValueChange = {},
             readOnly = true,
+            label = label?.let { { Text(it, color = TextSecondary) } },
+            leadingIcon = leadingIcon?.let {
+                { Icon(it, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(20.dp)) }
+            },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             shape = RoundedCornerShape(16.dp),
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = Surface,
                 unfocusedContainerColor = Surface,
+                disabledContainerColor = Surface,
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
                 focusedTextColor = Color.White,
@@ -129,11 +136,11 @@ fun SocialPlatformDropdown(
             onDismissRequest = { expanded = false },
             modifier = Modifier.background(Surface)
         ) {
-            platforms.forEach { platform ->
+            options.forEach { option ->
                 DropdownMenuItem(
-                    text = { Text(platform, color = Color.White) },
+                    text = { Text(option, color = Color.White) },
                     onClick = {
-                        onPlatformSelected(platform)
+                        onOptionSelected(option)
                         expanded = false
                     }
                 )

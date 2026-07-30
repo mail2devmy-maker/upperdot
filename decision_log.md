@@ -67,3 +67,11 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   2. Updated `compileSdk` to 37 in `app/build.gradle.kts`.
   3. Added `guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava` to resolve library duplication.
   4. Added `packaging` block to exclude `INDEX.LIST` and `DEPENDENCIES` files from the final APK.
+
+### 2024-05-20 - Screen 06: Add Contact Form Wizard - Step 3: Corporate Info
+- **Context/Goal:** Third step focusing on professional details: Company, Category, and Address.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Category Selection:* Static list vs free text. *Decision:* Dropdown with predefined categories (General, Client, Vendor, Partner) as per Screen 04 specs in AGENT.md, providing a standardized "Stitch" data entry feel.
+  - *Conflict 2: Layout Consistency:* Using cards vs direct layout. *Decision:* Maintain the vertical stack of `StitchTextField` inside a scrollable column, mirroring the visual rhythm of the previous steps.
+- **Final Decision:** Implement `AddContactCorporateScreen`. Shared VM state handles professional inputs. Uses `Business` (Building), `Category` (Shapes), and `Location` (Pin) icons for semantic grouping.
+- **Impact:** `AddContactCorporateScreen.kt`, `AddContactViewModel.kt`, `MainActivity.kt` routes.
