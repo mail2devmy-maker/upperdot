@@ -88,6 +88,10 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   2. Passed this factory-initialized `walletViewModel` instance into `MyProfileSettingsScreen`.
   3. Modified `MyProfileSettingsScreen.kt` signature to remove the default `viewModel()` initialization for `walletViewModel`, ensuring it is explicitly provided by the caller (MainActivity) and avoiding runtime crashes.
 
+- **Error:** `java.lang.IllegalStateException: Method setCurrentState must be called on the main thread` when saving a contact.
+- **Cause:** In `AddContactViewModel.kt`, the `saveContact` method was launching a coroutine on `Dispatchers.IO` to perform database writes. Upon completion, it was invoking the `onSuccess` callback (which triggered UI navigation) while still on the background thread. Navigation and UI updates in Android must occur on the Main thread.
+- **Resolution:** Wrapped the `onSuccess()` callback invocation inside a `withContext(Dispatchers.Main)` block in `AddContactViewModel.kt`. This ensures that any navigation logic passed from the UI (like `navController.popBackStack()`) is executed safely on the main thread after the background database operation completes.
+
 ### 2024-05-20 - Screen 06: Add Contact Form Wizard - Step 3: Corporate Info
 - **Context/Goal:** Third step focusing on professional details: Company, Category, and Address.
 - **Conflicts & Alternatives Considered:**

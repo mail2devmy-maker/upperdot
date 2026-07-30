@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -175,7 +176,9 @@ class AddContactViewModel(private val repository: ContactRepository) : ViewModel
                 bankAccounts = _bankAccounts.value.filter { it.accountNumber.isNotEmpty() }
             )
             repository.insertContact(entity)
-            onSuccess()
+            withContext(Dispatchers.Main) {
+                onSuccess()
+            }
         }
     }
 }
