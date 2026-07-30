@@ -42,11 +42,11 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Final Decision:** Implement `ConnectionsListScreen` using a Scaffold. Search and filters are anchored at the top below the header. The contact list uses LazyColumn with heavy rounding tokens (24dp) for cards.
 - **Impact:** `ConnectionsListScreen.kt`, `ConnectionsListViewModel.kt`, `MainActivity.kt` nav graph update.
 
-### 2024-05-20 - Screen 04: Add Contact Form Wizard - Step 1: Core Info
-- **Context/Goal:** First step of the multi-tab contact creation wizard focusing on basic identification.
+### 2024-05-20 - Screen 05: Add Contact Form Wizard - Step 2: Identity
+- **Context/Goal:** Second step of the wizard focusing on digital identifiers and relationship grouping.
 - **Conflicts & Alternatives Considered:**
-  - *Conflict 1: Tab Navigation vs Sequential Buttons:* Should user use "Next" buttons or tabs? *Decision:* Both. Tabs (ScrollableTabRow) for direct jumping and a persistent Save/Next FAB as per Stitch design guidelines to ensure flexibility.
-  - *Conflict 2: State Retention:* How to persist data across wizard steps? *Decision:* Single `AddContactViewModel` scoped to the navigation graph to retain state as user navigates between steps 1-4.
-  - *Conflict 3: Validation Trigger:* When to validate "Required" fields? *Decision:* On-the-fly visual hints (asterisks) and hard blocking on Step 4 "Save" click, with auto-routing back to Step 1 if Full Name is empty.
-- **Final Decision:** Implement `AddContactCoreInfoScreen`. Custom avatar picker UI with cyan ring. Use OutlinedTextField styled with Stitch tokens (#1E1E1E background, 16dp rounding).
-- **Impact:** `AddContactCoreInfoScreen.kt`, `AddContactViewModel.kt`, `MainActivity.kt` routes.
+  - *Conflict 1: Social Profile State:* How to manage a dynamic list of social platforms? *Decision:* Use a data class `SocialProfile` with platform and handle fields. ViewModel manages a `List<SocialProfile>` to allow multiple entries.
+  - *Conflict 2: Dropdown UI:* Standard Material dropdown vs custom Stitch capsule. *Decision:* Custom `ExposedDropdownMenuBox` styled to match our `StitchTextField` rounded surface tokens for visual consistency.
+  - *Conflict 3: Field Grouping:* How to separate Email, Social, and Tags? *Decision:* Use clear Section Headers in AccentCyan with vertical spacing, maintaining the "Stitch" vertical form flow.
+- **Final Decision:** Implement `AddContactIdentityScreen`. Maintain shared VM state. Utilize `PrimaryYellow` for the "X" Close and `AccentCyan` for active tab/headers.
+- **Impact:** `AddContactIdentityScreen.kt`, `AddContactViewModel.kt` (updated with setters), `MainActivity.kt` routes.

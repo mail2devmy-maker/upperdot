@@ -75,6 +75,30 @@ class AddContactViewModel : ViewModel() {
         _phoneNumbers.value = _phoneNumbers.value + ""
     }
 
+    // Identity Updates
+    fun onEmailChange(value: String) { _email.value = value }
+    fun onSubTagChange(value: String) { _subTag.value = value }
+    
+    fun onSocialPlatformChange(index: Int, platform: String) {
+        val list = _socialProfiles.value.toMutableList()
+        if (index < list.size) {
+            list[index] = list[index].copy(platform = platform)
+            _socialProfiles.value = list
+        }
+    }
+
+    fun onSocialHandleChange(index: Int, handle: String) {
+        val list = _socialProfiles.value.toMutableList()
+        if (index < list.size) {
+            list[index] = list[index].copy(handle = handle)
+            _socialProfiles.value = list
+        }
+    }
+
+    fun addSocialProfile() {
+        _socialProfiles.value = _socialProfiles.value + SocialProfile()
+    }
+
     fun onStepSelected(step: Int) {
         _currentStep.value = step
     }

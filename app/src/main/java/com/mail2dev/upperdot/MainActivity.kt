@@ -6,12 +6,15 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.mail2dev.upperdot.ui.add_contact.AddContactCoreInfoScreen
+import com.mail2dev.upperdot.ui.add_contact.AddContactIdentityScreen
 import com.mail2dev.upperdot.ui.add_contact.AddContactViewModel
 import com.mail2dev.upperdot.ui.auth_launchpad.AuthLaunchpadScreen
 import com.mail2dev.upperdot.ui.call_history.CallHistoryScreen
@@ -66,13 +69,26 @@ fun RootNavigation() {
 
         composable("add_contact") {
             val addContactViewModel: AddContactViewModel = viewModel()
-            AddContactCoreInfoScreen(
-                onNavigateBack = { navController.popBackStack() },
-                onStepSelected = { step ->
-                    addContactViewModel.onStepSelected(step)
-                },
-                viewModel = addContactViewModel
-            )
+            val currentStep by addContactViewModel.currentStep.collectAsState()
+            
+            when (currentStep) {
+                0 -> AddContactCoreInfoScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onStepSelected = { addContactViewModel.onStepSelected(it) },
+                    viewModel = addContactViewModel
+                )
+                1 -> AddContactIdentityScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onStepSelected = { addContactViewModel.onStepSelected(it) },
+                    viewModel = addContactViewModel
+                )
+                // Corporate and Financial will follow
+                else -> AddContactCoreInfoScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onStepSelected = { addContactViewModel.onStepSelected(it) },
+                    viewModel = addContactViewModel
+                )
+            }
         }
         
         composable("call_history") {

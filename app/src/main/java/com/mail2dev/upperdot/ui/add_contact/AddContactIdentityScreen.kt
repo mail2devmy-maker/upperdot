@@ -14,10 +14,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mail2dev.upperdot.ui.theme.AccentCyan
@@ -26,14 +24,14 @@ import com.mail2dev.upperdot.ui.theme.TextSecondary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddContactCoreInfoScreen(
+fun AddContactIdentityScreen(
     onNavigateBack: () -> Unit,
     onStepSelected: (Int) -> Unit,
     viewModel: AddContactViewModel
 ) {
-    val fullName by viewModel.fullName.collectAsState()
-    val nicknames by viewModel.nicknames.collectAsState()
-    val phoneNumbers by viewModel.phoneNumbers.collectAsState()
+    val email by viewModel.email.collectAsState()
+    val socialProfiles by viewModel.socialProfiles.collectAsState()
+    val subTag by viewModel.subTag.collectAsState()
     val currentStep by viewModel.currentStep.collectAsState()
     val showDiscardDialog by viewModel.showDiscardDialog.collectAsState()
 
@@ -110,68 +108,77 @@ fun AddContactCoreInfoScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .padding(24.dp)
             ) {
-                // Avatar Picker
-                Box(
-                    modifier = Modifier
-                        .size(100.dp)
-                        .border(2.dp, AccentCyan, CircleShape)
-                        .padding(4.dp)
-                        .clip(CircleShape)
-                        .background(Surface)
-                        .clickable { /* Trigger Image Picker */ },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.AddAPhoto,
-                        contentDescription = "Add Photo",
-                        tint = AccentCyan,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(48.dp))
-
-                // Form Fields
+                // Email
                 StitchTextField(
-                    value = fullName,
-                    onValueChange = viewModel::onFullNameChange,
-                    placeholder = "Full Name (Required)",
-                    leadingIcon = Icons.Default.Person
+                    value = email,
+                    onValueChange = viewModel::onEmailChange,
+                    placeholder = "Email Address",
+                    leadingIcon = Icons.Default.Email
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // Social Profiles Section
+                Text(
+                    text = "SOCIAL PROFILES",
+                    color = AccentCyan,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                StitchTextField(
-                    value = nicknames,
-                    onValueChange = viewModel::onNicknamesChange,
-                    placeholder = "Nicknames (Comma Separated)",
-                    leadingIcon = Icons.Default.Label
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                phoneNumbers.forEachIndexed { index, number ->
-                    StitchTextField(
-                        value = number,
-                        onValueChange = { viewModel.onPhoneNumberChange(index, it) },
-                        placeholder = if (index == 0) "Primary Phone Number" else "Additional Number",
-                        leadingIcon = Icons.Default.Phone
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
+                socialProfiles.forEachIndexed { index, profile ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        SocialPlatformDropdown(
+                            selectedPlatform = profile.platform,
+                            onPlatformSelected = { viewModel.onSocialPlatformChange(index, it) },
+                            modifier = Modifier.weight(0.4f)
+                        )
+                        StitchTextField(
+                            value = profile.handle,
+                            onValueChange = { viewModel.onSocialHandleChange(index, it) },
+                            placeholder = "URL / Handle",
+                            modifier = Modifier.weight(0.6f)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
 
                 Text(
-                    text = "[ + Add Another Number ]",
+                    text = "[ + Add Social Profile ]",
                     color = AccentCyan,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { viewModel.addPhoneNumber() }
+                        .clickable { viewModel.addSocialProfile() }
                         .padding(vertical = 8.dp)
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // Relationship Group Section
+                Text(
+                    text = "RELATIONSHIP GROUP",
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                StitchTextField(
+                    value = subTag,
+                    onValueChange = viewModel::onSubTagChange,
+                    placeholder = "Custom Sub-tag (Optional)",
+                    leadingIcon = Icons.Default.Tag
                 )
             }
         }
