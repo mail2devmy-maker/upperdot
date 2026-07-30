@@ -68,12 +68,15 @@ fun InsightsScreen(
     if (showAddTransactionSheet) {
         NewCashTransactionSheet(
             onDismiss = viewModel::dismissAddTransactionSheet,
-            onSave = { contactId, isRevenue, title, amount, detail -> 
-                viewModel.saveTransaction(contactId, isRevenue, title, amount, detail) 
+            onSave = { contactId, isRevenue, title, amount, detail, attachments, voice -> 
+                viewModel.saveTransaction(contactId, isRevenue, title, amount, detail, attachments, voice) 
             },
             contactSearchQuery = contactSearchQuery,
             onContactSearchQueryChange = viewModel::onContactSearchQueryChanged,
-            searchedContacts = searchedContacts
+            searchedContacts = searchedContacts,
+            attachmentPaths = selectedAttachments,
+            onAddAttachment = viewModel::addAttachmentPath,
+            onRemoveAttachment = viewModel::removeAttachmentPath
         )
     }
 
