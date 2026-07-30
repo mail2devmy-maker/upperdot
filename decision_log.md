@@ -98,6 +98,17 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   4. Updated `MainActivity.kt` and `RelationshipHierarchyScreen.kt` to support the new repository injection.
   5. Wired all action buttons to their respective ViewModel functions, ensuring the UI reacts instantly to changes.
 
+- **Error:** Generic text field for "RELATIONSHIP GROUP" in `AddContactIdentityScreen` made it difficult for users to pick from the established hierarchy.
+- **Cause:** Step 2 of the wizard was disconnected from the hierarchy data managed in the `manage_custom_groups` section.
+- **Resolution:**
+  1. Created a shared `HierarchyRepository` to centralize group and tag management.
+  2. Updated `UpperDotApp`, `RelationshipHierarchyViewModel`, and `AddContactViewModel` to utilize the shared repository.
+  3. Refactored `AddContactIdentityScreen` to use two dependent `StitchDropdown` components:
+     - Dropdown 1 (Group): Loads live groups with an inline "[ + Create New Group ]" action.
+     - Dropdown 2 (Tag): Dynamically populates with tags based on the selected group and remains disabled if no group is chosen.
+  4. Updated `StitchDropdown` to support an `enabled` state and styled it to match the Pure Dark Mode theme.
+  5. Mapped the selected group and tag values to the `ContactEntity` for final persistence.
+
 - **Error:** `RuntimeException: Cannot create an instance of class... DigitalWalletViewModel` when navigating to the Profile Tab.
 - **Cause:** `DigitalWalletViewModel` was being instantiated using the default parameter-less `viewModel()` constructor inside `MyProfileSettingsScreen.kt`. However, the ViewModel requires a `BankCardRepository` dependency, which is provided via a factory in `MainActivity.kt`.
 - **Resolution:**

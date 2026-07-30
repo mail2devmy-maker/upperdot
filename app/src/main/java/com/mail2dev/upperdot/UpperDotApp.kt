@@ -19,6 +19,10 @@ class UpperDotApp : Application() {
         ContactRepository(database.contactDao())
     }
 
+    val hierarchyRepository: com.mail2dev.upperdot.data.repository.HierarchyRepository by lazy {
+        com.mail2dev.upperdot.data.repository.HierarchyRepository()
+    }
+
     val noteRepository: com.mail2dev.upperdot.data.repository.NoteRepository by lazy {
         com.mail2dev.upperdot.data.repository.NoteRepository(database.noteDao())
     }

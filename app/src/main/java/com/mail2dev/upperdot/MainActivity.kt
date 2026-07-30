@@ -111,7 +111,7 @@ fun RootNavigation() {
                 viewModelStoreOwner = backStackEntry,
                 factory = viewModelFactory {
                     initializer {
-                        AddContactViewModel(app.contactRepository)
+                        AddContactViewModel(app.contactRepository, app.hierarchyRepository)
                     }
                 }
             )
@@ -238,7 +238,7 @@ fun RootNavigation() {
             val hierarchyViewModel: RelationshipHierarchyViewModel = viewModel(
                 factory = viewModelFactory {
                     initializer {
-                        RelationshipHierarchyViewModel(app.contactRepository)
+                        RelationshipHierarchyViewModel(app.contactRepository, app.hierarchyRepository)
                     }
                 }
             )

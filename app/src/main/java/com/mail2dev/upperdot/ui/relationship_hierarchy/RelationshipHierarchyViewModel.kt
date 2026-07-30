@@ -3,6 +3,7 @@ package com.mail2dev.upperdot.ui.relationship_hierarchy
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mail2dev.upperdot.data.repository.ContactRepository
+import com.mail2dev.upperdot.data.repository.HierarchyRepository
 import kotlinx.coroutines.flow.*
 
 data class HierarchyTag(
@@ -17,31 +18,15 @@ data class HierarchyGroup(
     val tags: List<HierarchyTag> = emptyList()
 )
 
-class RelationshipHierarchyViewModel(private val contactRepository: ContactRepository) : ViewModel() {
+class RelationshipHierarchyViewModel(
+    private val contactRepository: ContactRepository,
+    private val hierarchyRepository: HierarchyRepository
+) : ViewModel() {
 
     private val _expandedGroups = MutableStateFlow<Set<String>>(emptySet())
     val expandedGroups: StateFlow<Set<String>> = _expandedGroups.asStateFlow()
 
-    private val _baseGroups = MutableStateFlow<List<HierarchyGroup>>(
-        listOf(
-            HierarchyGroup(
-                id = "fav",
-                name = "Favorites",
-                contactCount = 0,
-                tags = listOf(
-                    HierarchyTag("hp", "High Priority"),
-                    HierarchyTag("fq", "Frequent"),
-                    HierarchyTag("nt", "new tag under favorite")
-                )
-            ),
-            HierarchyGroup(id = "fam", name = "Family", contactCount = 0),
-            HierarchyGroup(id = "wrk", name = "Work", contactCount = 0),
-            HierarchyGroup(id = "ven", name = "Vendor", contactCount = 0),
-            HierarchyGroup(id = "una", name = "Unassigned", contactCount = 0)
-        )
-    )
-
-    val groups: StateFlow<List<HierarchyGroup>> = combine(_baseGroups, contactRepository.allContacts) { base, contacts ->
+    val groups: StateFlow<List<HierarchyGroup>> = combine(hierarchyRepository.groups, contactRepository.allContacts) { base, contacts ->
         base.map { group ->
             group.copy(contactCount = contacts.count { it.groupName == group.name })
         }
@@ -57,52 +42,23 @@ class RelationshipHierarchyViewModel(private val contactRepository: ContactRepos
     }
 
     fun onAddTag(groupId: String, tagName: String) {
-        val currentGroups = _baseGroups.value.toMutableList()
-        val groupIndex = currentGroups.indexOfFirst { it.id == groupId }
-        if (groupIndex != -1) {
-            val group = currentGroups[groupIndex]
-            val newTag = HierarchyTag(id = System.currentTimeMillis().toString(), name = tagName)
-            currentGroups[groupIndex] = group.copy(tags = group.tags + newTag)
-            _baseGroups.value = currentGroups
-        }
+        hierarchyRepository.addTag(groupId, tagName)
     }
 
     fun onRenameGroup(groupId: String, newName: String) {
-        val currentGroups = _baseGroups.value.toMutableList()
-        val groupIndex = currentGroups.indexOfFirst { it.id == groupId }
-        if (groupIndex != -1) {
-            currentGroups[groupIndex] = currentGroups[groupIndex].copy(name = newName)
-            _baseGroups.value = currentGroups
-        }
+        hierarchyRepository.renameGroup(groupId, newName)
     }
 
     fun onDeleteGroup(groupId: String) {
-        _baseGroups.value = _baseGroups.value.filter { it.id != groupId }
+        hierarchyRepository.deleteGroup(groupId)
         _expandedGroups.value = _expandedGroups.value - groupId
     }
 
     fun onRenameTag(groupId: String, tagId: String, newName: String) {
-        val currentGroups = _baseGroups.value.toMutableList()
-        val groupIndex = currentGroups.indexOfFirst { it.id == groupId }
-        if (groupIndex != -1) {
-            val group = currentGroups[groupIndex]
-            val currentTags = group.tags.toMutableList()
-            val tagIndex = currentTags.indexOfFirst { it.id == tagId }
-            if (tagIndex != -1) {
-                currentTags[tagIndex] = currentTags[tagIndex].copy(name = newName)
-                currentGroups[groupIndex] = group.copy(tags = currentTags)
-                _baseGroups.value = currentGroups
-            }
-        }
+        hierarchyRepository.renameTag(groupId, tagId, newName)
     }
 
     fun onDeleteTag(groupId: String, tagId: String) {
-        val currentGroups = _baseGroups.value.toMutableList()
-        val groupIndex = currentGroups.indexOfFirst { it.id == groupId }
-        if (groupIndex != -1) {
-            val group = currentGroups[groupIndex]
-            currentGroups[groupIndex] = group.copy(tags = group.tags.filter { it.id != tagId })
-            _baseGroups.value = currentGroups
-        }
+        hierarchyRepository.deleteTag(groupId, tagId)
     }
 }

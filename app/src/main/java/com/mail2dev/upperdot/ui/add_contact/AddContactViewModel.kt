@@ -4,10 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mail2dev.upperdot.data.local.entity.ContactEntity
 import com.mail2dev.upperdot.data.repository.ContactRepository
+import com.mail2dev.upperdot.data.repository.HierarchyRepository
+import com.mail2dev.upperdot.ui.relationship_hierarchy.HierarchyGroup
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -25,7 +25,10 @@ data class BankAccount(
     val accountNumber: String = ""
 )
 
-class AddContactViewModel(private val repository: ContactRepository) : ViewModel() {
+class AddContactViewModel(
+    private val repository: ContactRepository,
+    private val hierarchyRepository: HierarchyRepository
+) : ViewModel() {
 
     // Step 1: Core Info
     private val _fullName = MutableStateFlow("")
@@ -44,8 +47,13 @@ class AddContactViewModel(private val repository: ContactRepository) : ViewModel
     private val _socialProfiles = MutableStateFlow(listOf(SocialProfile()))
     val socialProfiles: StateFlow<List<SocialProfile>> = _socialProfiles.asStateFlow()
 
-    private val _subTag = MutableStateFlow("")
-    val subTag: StateFlow<String> = _subTag.asStateFlow()
+    private val _groupName = MutableStateFlow("")
+    val groupName: StateFlow<String> = _groupName.asStateFlow()
+
+    private val _tagName = MutableStateFlow("")
+    val tagName: StateFlow<String> = _tagName.asStateFlow()
+
+    val availableGroups: StateFlow<List<HierarchyGroup>> = hierarchyRepository.groups
 
     // Step 3: Corporate
     private val _companyName = MutableStateFlow("")
@@ -86,7 +94,17 @@ class AddContactViewModel(private val repository: ContactRepository) : ViewModel
 
     // Identity Updates
     fun onEmailChange(value: String) { _email.value = value }
-    fun onSubTagChange(value: String) { _subTag.value = value }
+    fun onGroupNameChange(value: String) { 
+        _groupName.value = value 
+        _tagName.value = "" // Reset tag when group changes
+    }
+    fun onTagNameChange(value: String) { _tagName.value = value }
+
+    fun onCreateNewGroup(name: String) {
+        hierarchyRepository.addGroup(name)
+        _groupName.value = name
+        _tagName.value = ""
+    }
     
     fun onSocialPlatformChange(index: Int, platform: String) {
         val list = _socialProfiles.value.toMutableList()
@@ -169,7 +187,8 @@ class AddContactViewModel(private val repository: ContactRepository) : ViewModel
                 phoneNumbers = _phoneNumbers.value.filter { it.isNotEmpty() },
                 sanitizedPrimaryPhone = _phoneNumbers.value.firstOrNull()?.replace(Regex("[^0-9]"), "") ?: "",
                 email = _email.value,
-                groupName = _subTag.value, // Placeholder for group/tag logic
+                groupName = _groupName.value.ifEmpty { "Unassigned" },
+                tagName = _tagName.value.ifEmpty { null },
                 socialProfiles = _socialProfiles.value.filter { it.handle.isNotEmpty() },
                 companyName = _companyName.value,
                 businessCategory = _businessCategory.value,
