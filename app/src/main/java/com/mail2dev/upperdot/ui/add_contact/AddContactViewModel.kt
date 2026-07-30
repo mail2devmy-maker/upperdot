@@ -163,6 +163,7 @@ class AddContactViewModel(private val repository: ContactRepository) : ViewModel
         
         viewModelScope.launch(Dispatchers.IO) {
             val entity = ContactEntity(
+                id = 0L,
                 fullName = _fullName.value,
                 nicknames = _nicknames.value.split(",").map { it.trim() }.filter { it.isNotEmpty() },
                 phoneNumbers = _phoneNumbers.value.filter { it.isNotEmpty() },
