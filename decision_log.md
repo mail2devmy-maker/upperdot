@@ -68,11 +68,11 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   3. Added `guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava` to resolve library duplication.
   4. Added `packaging` block to exclude `INDEX.LIST` and `DEPENDENCIES` files from the final APK.
 
-### 2024-05-20 - Screen 16: Relationship Hierarchy Manager
-- **Context/Goal:** Interface for managing nested relational groups and sub-tags (e.g., Favorites -> High Priority).
+### 2024-05-20 - Screen 17: Advanced App Settings
+- **Context/Goal:** Configuration hub for data management, sync preferences, and global localization.
 - **Conflicts & Alternatives Considered:**
-  - *Conflict 1: Nested List UI:* Infinite depth vs fixed 2-level. *Decision:* Fixed 2-level (Group -> Tag) as per AGENT.md clarification to ensure mutual exclusivity and maintain list performance.
-  - *Conflict 2: Expansion State Persistence:* Map vs boolean. *Decision:* Use a `Set<String>` in ViewModel to track expanded group IDs, ensuring expansion states are preserved during list recompositions and configuration changes.
-  - *Conflict 3: Inline Editing:* Dedicated screen vs AlertDialog. *Decision:* Inline `AlertDialog` for renaming and adding sub-tags to minimize navigation depth, matching the "In-Place Configuration" subtitle requirement.
-- **Final Decision:** Implement `RelationshipHierarchyScreen`. Use `LazyColumn` for groups with indented child rows for tags. Integrate warning dialogs for group deletion (showing contact impact count).
-- **Impact:** `RelationshipHierarchyScreen.kt`, `RelationshipHierarchyViewModel.kt`, `MainActivity.kt` routes.
+  - *Conflict 1: Backup Format:* SQL vs JSON. *Decision:* Serialized JSON as per AGENT.md to ensure compatibility with Google account context and ease of encryption/decryption for cross-device manual restores.
+  - *Conflict 2: VCF Conflict UI:* Global setting vs per-contact. *Decision:* Global "Conflict Resolution" dropdown within the settings screen to establish a default behavior for large batch imports.
+  - *Conflict 3: Diagnostic Visibility:* Real-time vs periodic. *Decision:* Real-time read-only metrics (File size, count) displayed in a distinct footer section to provide immediate visibility into local storage health.
+- **Final Decision:** Implement `AdvancedSettingsScreen` with grouped list items. Use specialized `Switch` and `Dropdown` components matching Stitch tokens. Purple header text for data management as per SRS.
+- **Impact:** `AdvancedSettingsScreen.kt`, `AdvancedSettingsViewModel.kt`, `MainActivity.kt` routes.

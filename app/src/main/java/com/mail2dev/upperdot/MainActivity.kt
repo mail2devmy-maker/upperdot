@@ -18,6 +18,8 @@ import com.mail2dev.upperdot.ui.add_contact.AddContactCorporateScreen
 import com.mail2dev.upperdot.ui.add_contact.AddContactFinancialScreen
 import com.mail2dev.upperdot.ui.add_contact.AddContactIdentityScreen
 import com.mail2dev.upperdot.ui.add_contact.AddContactViewModel
+import com.mail2dev.upperdot.ui.app_settings.AdvancedSettingsScreen
+import com.mail2dev.upperdot.ui.app_settings.AdvancedSettingsViewModel
 import com.mail2dev.upperdot.ui.auth_launchpad.AuthLaunchpadScreen
 import com.mail2dev.upperdot.ui.call_history.CallHistoryScreen
 import com.mail2dev.upperdot.ui.connections_list.ConnectionsListScreen
@@ -178,6 +180,14 @@ fun RootNavigation() {
             RelationshipHierarchyScreen(
                 onNavigateBack = { navController.popBackStack() },
                 viewModel = hierarchyViewModel
+            )
+        }
+
+        composable("advanced_app_settings") {
+            val settingsViewModel: AdvancedSettingsViewModel = viewModel()
+            AdvancedSettingsScreen(
+                onNavigateBack = { navController.popBackStack() },
+                viewModel = settingsViewModel
             )
         }
     }
