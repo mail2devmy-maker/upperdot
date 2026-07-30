@@ -1,21 +1,15 @@
 package com.mail2dev.upperdot.ui.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.mail2dev.upperdot.ui.theme.AccentCyan
-import com.mail2dev.upperdot.ui.theme.Surface
 
 sealed class BottomNavItem(
     val route: String,
@@ -42,7 +36,7 @@ fun UpperDotBottomNavigation(
     )
 
     NavigationBar(
-        containerColor = Color.Black,
+        containerColor = MaterialTheme.colorScheme.background,
         tonalElevation = 0.dp,
         modifier = Modifier.height(80.dp)
     ) {
@@ -54,23 +48,21 @@ fun UpperDotBottomNavigation(
                 icon = {
                     Icon(
                         imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
-                        contentDescription = item.title,
-                        tint = if (isSelected) Color.Black else Color.White
+                        contentDescription = item.title
                     )
                 },
                 label = {
                     Text(
                         text = item.title,
-                        fontSize = 12.sp,
-                        color = if (isSelected) AccentCyan else Color.White
+                        fontSize = 12.sp
                     )
                 },
                 colors = NavigationBarItemDefaults.colors(
-                    indicatorColor = AccentCyan,
-                    selectedIconColor = Color.Black,
-                    unselectedIconColor = Color.White,
-                    selectedTextColor = AccentCyan,
-                    unselectedTextColor = Color.White
+                    indicatorColor = MaterialTheme.colorScheme.secondary,
+                    selectedIconColor = MaterialTheme.colorScheme.onSecondary,
+                    unselectedIconColor = MaterialTheme.colorScheme.onBackground,
+                    selectedTextColor = MaterialTheme.colorScheme.secondary,
+                    unselectedTextColor = MaterialTheme.colorScheme.onBackground
                 )
             )
         }
