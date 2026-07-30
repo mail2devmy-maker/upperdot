@@ -132,9 +132,6 @@ fun ConnectionsListScreen(
                 is ConnectionsUIState.Empty -> {
                     EmptyConnectionsView()
                 }
-                is ConnectionsUIState.SearchEmpty -> {
-                    // TODO: Implement Search Empty View
-                }
                 is ConnectionsUIState.Success -> {
                     ConnectionsList(
                         contacts = state.contacts,
