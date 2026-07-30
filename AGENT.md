@@ -428,3 +428,5 @@ You have permission to use the integrated terminal to manage version control and
 2. Develop the necessary Composable functions using Jetpack Compose and establish corresponding MVVM ViewModel architectures following your specific Stitch Dark Theme parameters.
 3. Once the screen features are ready and fully compileable, execute an automated git commit from the terminal using the clear description format feat(ui): implement Screen XX - Screen Name layout.
 4. Ensure git status remains entirely clean before requesting user confirmation to proceed onto the subsequent screen setup.
+
+5. **Error Resolution Tracking Rule:** If your code introduces a compilation error or build failure, you must document it in `decision_log.md` under a subsection called "### ⚠️ Build Errors & Resolutions". State what caused the error (e.g., duplicate overloads, missing imports) and exactly how you refactored the code to fix it before proceeding.

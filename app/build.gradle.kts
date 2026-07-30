@@ -7,11 +7,7 @@ plugins {
 
 android {
     namespace = "com.mail2dev.upperdot"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.mail2dev.upperdot"
@@ -36,6 +32,13 @@ android {
     }
     buildFeatures {
         compose = true
+    }
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "META-INF/INDEX.LIST"
+            excludes += "META-INF/DEPENDENCIES"
+        }
     }
 }
 
@@ -75,6 +78,7 @@ dependencies {
         exclude(group = "org.apache.httpcomponents")
         exclude(group = "com.google.guava", module = "listenablefuture")
     }
+    implementation("com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava")
 
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))

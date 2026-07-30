@@ -50,3 +50,20 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   - *Conflict 3: Field Grouping:* How to separate Email, Social, and Tags? *Decision:* Use clear Section Headers in AccentCyan with vertical spacing, maintaining the "Stitch" vertical form flow.
 - **Final Decision:** Implement `AddContactIdentityScreen`. Maintain shared VM state. Utilize `PrimaryYellow` for the "X" Close and `AccentCyan` for active tab/headers.
 - **Impact:** `AddContactIdentityScreen.kt`, `AddContactViewModel.kt` (updated with setters), `MainActivity.kt` routes.
+
+### ⚠️ Build Errors & Resolutions
+- **Error:** `Conflicting overloads: fun WizardTabRow(...)` and `Unresolved reference: it` in `AddContactIdentityScreen.kt`.
+- **Cause:** Duplicated `WizardTabRow` and `StitchTextField` across both `AddContactCoreInfoScreen.kt` and the new `AddContactComponents.kt` file. Additionally, `StitchTextField` was missing a `modifier` parameter in its shared definition, causing a signature mismatch in the Identity screen.
+- **Resolution:**
+  1. Removed local component definitions from `AddContactCoreInfoScreen.kt` and `AddContactIdentityScreen.kt`.
+  2. Consolidated all shared wizard components into `AddContactComponents.kt`.
+  3. Updated `StitchTextField` signature to include `modifier: Modifier = Modifier` and `leadingIcon: ImageVector? = null`.
+  4. Fixed lambda parameter naming in `AddContactIdentityScreen.kt` for `onPlatformSelected`.
+
+- **Error:** `Using kotlin.sourceSets DSL to add Kotlin sources is not allowed with built-in Kotlin` and `Duplicate class ListenableFuture` and `INDEX.LIST` merge conflict.
+- **Cause:** KSP integration conflict with standard Kotlin DSL, `compileSdk` mismatch for lifecycle 2.11, and redundant dependencies in Google Drive libraries.
+- **Resolution:**
+  1. Set `android.disallowKotlinSourceSets=false` in `gradle.properties`.
+  2. Updated `compileSdk` to 37 in `app/build.gradle.kts`.
+  3. Added `guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava` to resolve library duplication.
+  4. Added `packaging` block to exclude `INDEX.LIST` and `DEPENDENCIES` files from the final APK.
