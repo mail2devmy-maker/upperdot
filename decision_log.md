@@ -77,6 +77,10 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   3. Added `guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava` to resolve library duplication.
   4. Added `packaging` block to exclude `INDEX.LIST` and `DEPENDENCIES` files from the final APK.
 
+- **Error:** `java.lang.ClassCastException: android.app.Application cannot be cast to com.mail2dev.upperdot.UpperDotApp` on startup.
+- **Cause:** Custom `Application` class (`UpperDotApp.kt`) was implemented but not registered in the system manifest.
+- **Resolution:** Manually added `android:name=".UpperDotApp"` to the `<application>` tag in `AndroidManifest.xml` to correctly initialize the project's repository singletons.
+
 ### 2024-05-20 - Screen 06: Add Contact Form Wizard - Step 3: Corporate Info
 - **Context/Goal:** Third step focusing on professional details: Company, Category, and Address.
 - **Conflicts & Alternatives Considered:**
