@@ -116,6 +116,15 @@ fun AddContactCoreInfoScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Avatar Picker
+                val initials = remember(fullName) {
+                    val names = fullName.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
+                    when {
+                        names.isEmpty() -> ""
+                        names.size == 1 -> names[0].take(1).uppercase()
+                        else -> (names[0].take(1) + names[1].take(1)).uppercase()
+                    }
+                }
+
                 Box(
                     modifier = Modifier
                         .size(100.dp)
@@ -126,12 +135,22 @@ fun AddContactCoreInfoScreen(
                         .clickable { /* Trigger Image Picker */ },
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.AddAPhoto,
-                        contentDescription = "Add Photo",
-                        tint = AccentCyan,
-                        modifier = Modifier.size(32.dp)
-                    )
+                    if (initials.isEmpty()) {
+                        Icon(
+                            imageVector = Icons.Default.AddAPhoto,
+                            contentDescription = "Add Photo",
+                            tint = AccentCyan,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    } else {
+                        Text(
+                            text = initials,
+                            color = AccentCyan,
+                            fontSize = 32.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(48.dp))
@@ -156,12 +175,30 @@ fun AddContactCoreInfoScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 phoneNumbers.forEachIndexed { index, number ->
-                    StitchTextField(
-                        value = number,
-                        onValueChange = { viewModel.onPhoneNumberChange(index, it) },
-                        placeholder = if (index == 0) "Primary Phone Number" else "Additional Number",
-                        leadingIcon = Icons.Default.Phone
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        StitchTextField(
+                            value = number,
+                            onValueChange = { viewModel.onPhoneNumberChange(index, it) },
+                            placeholder = if (index == 0) "Primary Phone Number" else "Additional Number",
+                            leadingIcon = Icons.Default.Phone,
+                            modifier = Modifier.weight(1f)
+                        )
+                        if (index > 0) {
+                            IconButton(
+                                onClick = { viewModel.removePhoneNumber(index) },
+                                modifier = Modifier.padding(start = 8.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Clear,
+                                    contentDescription = "Remove Number",
+                                    tint = Color.Gray
+                                )
+                            }
+                        }
+                    }
                     Spacer(modifier = Modifier.height(16.dp))
                 }
 

@@ -92,6 +92,14 @@ class AddContactViewModel(
         _phoneNumbers.value = _phoneNumbers.value + ""
     }
 
+    fun removePhoneNumber(index: Int) {
+        val list = _phoneNumbers.value.toMutableList()
+        if (index < list.size && list.size > 1) {
+            list.removeAt(index)
+            _phoneNumbers.value = list
+        }
+    }
+
     // Identity Updates
     fun onEmailChange(value: String) { _email.value = value }
     fun onGroupNameChange(value: String) { 

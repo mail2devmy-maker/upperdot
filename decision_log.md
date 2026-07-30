@@ -122,6 +122,14 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   1. Updated `StitchDropdown` in `AddContactCorporateScreen.kt` to use standard industries: "Services", "Retail & E-commerce", "Technology & Digital", "Manufacturing & Logistics", and "Food & Hospitality".
   2. Refactored `AddContactViewModel.kt` to set the default fallback value of `businessCategory` to "Services" to ensure data consistency.
 
+- **Error:** Missing dynamic avatar initials and phone number removal functionality in Add Contact wizard.
+- **Cause:** The profile avatar was a static placeholder, and additional phone number fields could be added but not removed.
+- **Resolution:**
+  1. Implemented text parsing logic in `AddContactCoreInfoScreen.kt` to extract initials from `fullName` (e.g., "Kamal Ahmad" -> "KA") and display them in the circular avatar.
+  2. Added `removePhoneNumber(index)` to `AddContactViewModel.kt`.
+  3. Updated `AddContactCoreInfoScreen.kt` to include a trailing `Clear` icon button for additional phone fields (index > 0) to allow seamless deletion.
+  4. Wrapped phone inputs in a `Row` and used `Modifier.weight(1f)` to accommodate the removal button while maintaining layout balance.
+
 - **Error:** `RuntimeException: Cannot create an instance of class... DigitalWalletViewModel` when navigating to the Profile Tab.
 - **Cause:** `DigitalWalletViewModel` was being instantiated using the default parameter-less `viewModel()` constructor inside `MyProfileSettingsScreen.kt`. However, the ViewModel requires a `BankCardRepository` dependency, which is provided via a factory in `MainActivity.kt`.
 - **Resolution:**
