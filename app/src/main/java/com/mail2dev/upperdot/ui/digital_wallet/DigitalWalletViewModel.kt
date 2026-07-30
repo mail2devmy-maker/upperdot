@@ -32,12 +32,24 @@ class DigitalWalletViewModel : ViewModel() {
     )
     val bankCards: StateFlow<List<BankCard>> = _bankCards.asStateFlow()
 
+    private val _showAddCardSheet = MutableStateFlow(false)
+    val showAddCardSheet: StateFlow<Boolean> = _showAddCardSheet.asStateFlow()
+
     fun onAddCardClicked(onSuccess: () -> Unit, onLimitExceeded: () -> Unit) {
         if (!_isPremium.value && _bankCards.value.size >= 1) {
             onLimitExceeded()
         } else {
-            onSuccess()
+            _showAddCardSheet.value = true
         }
+    }
+
+    fun dismissAddCardSheet() {
+        _showAddCardSheet.value = false
+    }
+
+    fun saveCard(bankName: String, holderName: String, accountNumber: String, color: Long) {
+        // TODO: Save to Room
+        _showAddCardSheet.value = false
     }
 
     fun onDeleteCard(cardId: String) {

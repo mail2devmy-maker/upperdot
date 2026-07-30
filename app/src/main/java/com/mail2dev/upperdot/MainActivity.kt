@@ -166,7 +166,6 @@ fun RootNavigation() {
             val walletViewModel: DigitalWalletViewModel = viewModel()
             DigitalWalletScreen(
                 onNavigateBack = { navController.popBackStack() },
-                onAddNewCard = { /* navController.navigate("new_bank_card") */ },
                 onNavigateToPlans = { navController.navigate("plans") },
                 viewModel = walletViewModel
             )

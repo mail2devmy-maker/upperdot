@@ -68,11 +68,11 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   3. Added `guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava` to resolve library duplication.
   4. Added `packaging` block to exclude `INDEX.LIST` and `DEPENDENCIES` files from the final APK.
 
-### 2024-05-20 - Screen 14: Digital Wallet Management
-- **Context/Goal:** Interface for managing multiple bank cards and payment QR codes with tiered limit enforcement.
+### 2024-05-20 - Screen 15: Add New Card Bottom Sheet Overlay
+- **Context/Goal:** Modal interface for adding or editing bank cards with theme customization and QR attachment.
 - **Conflicts & Alternatives Considered:**
-  - *Conflict 1: Card List Visualization:* Stacked overlap cards vs simple list. *Decision:* Vertical list of high-fidelity cards as per Screen 14 specs in AGENT.md, providing clear visibility of identifiers (Bank Name, Preview Number) for management.
-  - *Conflict 2: Limit Enforcement:* Where to block "Add" action? *Decision:* ViewModel checks `cardCount` against the 1-card limit for Free users. The "Add New Card" FAB will trigger an upsell dialog if the limit is reached.
-  - *Conflict 3: Tier Notification:* Persistent banner vs popup. *Decision:* Persistent Info Banner at the top of the list to educate Free users on storage limits early, matching the high-transparency design goal.
-- **Final Decision:** Implement `DigitalWalletScreen`. Use `ExtendedFloatingActionButton` for the "Add New Card" action. Integrate Edit (Cyan) and Delete (Red) action pairs for each card row.
-- **Impact:** `DigitalWalletScreen.kt`, `DigitalWalletViewModel.kt`, `MainActivity.kt` navigation.
+  - *Conflict 1: Color Picker UI:* Slider vs Tokens. *Decision:* Row of 6 color circles (Stitch Palette) to ensure high-contrast accessibility and visual consistency with the card deck.
+  - *Conflict 2: Field Prioritization:* Managing account number vs IBAN vs SWIFT. *Decision:* Standardized `StitchTextField` inputs with "Optional" labels for BIC/SWIFT, prioritizing local bank names and holder names as per Screen 15 visual specs.
+  - *Conflict 3: Validation Logic:* When to enable "Save"? *Decision:* "Save Card" button remains disabled until mandatory fields (Bank Name, Holder Name, Account Number) are non-empty, matching the "Secure Account" validation pattern.
+- **Final Decision:** Implement `NewBankCardSheet` using `ModalBottomSheet`. Leverage `StitchDropdown` for bank selection and `LazyRow` for the color picker.
+- **Impact:** `NewBankCardSheet.kt`, `DigitalWalletViewModel.kt` (updated with card state), `DigitalWalletScreen.kt`.

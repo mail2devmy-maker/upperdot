@@ -20,17 +20,27 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mail2dev.upperdot.ui.theme.*
+import com.mail2dev.upperdot.ui.wallet_overlay.NewBankCardSheet
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DigitalWalletScreen(
     onNavigateBack: () -> Unit,
-    onAddNewCard: () -> Unit,
     onNavigateToPlans: () -> Unit,
     viewModel: DigitalWalletViewModel = viewModel()
 ) {
     val bankCards by viewModel.bankCards.collectAsState()
     val isPremium by viewModel.isPremium.collectAsState()
+    val showAddCardSheet by viewModel.showAddCardSheet.collectAsState()
+
+    if (showAddCardSheet) {
+        NewBankCardSheet(
+            onDismiss = viewModel::dismissAddCardSheet,
+            onSave = { bank, holder, number, color -> 
+                viewModel.saveCard(bank, holder, number, color) 
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -52,7 +62,7 @@ fun DigitalWalletScreen(
             ExtendedFloatingActionButton(
                 onClick = {
                     viewModel.onAddCardClicked(
-                        onSuccess = onAddNewCard,
+                        onSuccess = { /* No-op, sheet handled by VM state */ },
                         onLimitExceeded = onNavigateToPlans
                     )
                 },
