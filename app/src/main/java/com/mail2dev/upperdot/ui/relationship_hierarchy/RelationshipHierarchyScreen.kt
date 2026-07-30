@@ -32,6 +32,104 @@ fun RelationshipHierarchyScreen(
     val groups by viewModel.groups.collectAsState()
     val expandedGroups by viewModel.expandedGroups.collectAsState()
 
+    var showAddTagDialog by remember { mutableStateOf<String?>(null) } // GroupId
+    var showRenameGroupDialog by remember { mutableStateOf<String?>(null) } // GroupId
+    var showRenameTagDialog by remember { mutableStateOf<Pair<String, String>?>(null) } // GroupId, TagId
+    var tempName by remember { mutableStateOf("") }
+
+    if (showAddTagDialog != null) {
+        AlertDialog(
+            onDismissRequest = { showAddTagDialog = null },
+            title = { Text("Add New Tag", color = Color.White) },
+            text = {
+                OutlinedTextField(
+                    value = tempName,
+                    onValueChange = { tempName = it },
+                    placeholder = { Text("Tag Name", color = Color.Gray) },
+                    colors = TextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedContainerColor = Surface,
+                        unfocusedContainerColor = Surface
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.onAddTag(showAddTagDialog!!, tempName)
+                    showAddTagDialog = null
+                    tempName = ""
+                }) { Text("Add", color = AccentCyan) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddTagDialog = null; tempName = "" }) { Text("Cancel", color = Color.Gray) }
+            },
+            containerColor = Surface
+        )
+    }
+
+    if (showRenameGroupDialog != null) {
+        AlertDialog(
+            onDismissRequest = { showRenameGroupDialog = null },
+            title = { Text("Rename Group", color = Color.White) },
+            text = {
+                OutlinedTextField(
+                    value = tempName,
+                    onValueChange = { tempName = it },
+                    placeholder = { Text("New Group Name", color = Color.Gray) },
+                    colors = TextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedContainerColor = Surface,
+                        unfocusedContainerColor = Surface
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.onRenameGroup(showRenameGroupDialog!!, tempName)
+                    showRenameGroupDialog = null
+                    tempName = ""
+                }) { Text("Rename", color = AccentCyan) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRenameGroupDialog = null; tempName = "" }) { Text("Cancel", color = Color.Gray) }
+            },
+            containerColor = Surface
+        )
+    }
+
+    if (showRenameTagDialog != null) {
+        AlertDialog(
+            onDismissRequest = { showRenameTagDialog = null },
+            title = { Text("Rename Tag", color = Color.White) },
+            text = {
+                OutlinedTextField(
+                    value = tempName,
+                    onValueChange = { tempName = it },
+                    placeholder = { Text("New Tag Name", color = Color.Gray) },
+                    colors = TextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedContainerColor = Surface,
+                        unfocusedContainerColor = Surface
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.onRenameTag(showRenameTagDialog!!.first, showRenameTagDialog!!.second, tempName)
+                    showRenameTagDialog = null
+                    tempName = ""
+                }) { Text("Rename", color = AccentCyan) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRenameTagDialog = null; tempName = "" }) { Text("Cancel", color = Color.Gray) }
+            },
+            containerColor = Surface
+        )
+    }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -69,9 +167,22 @@ fun RelationshipHierarchyScreen(
                     group = group,
                     isExpanded = expandedGroups.contains(group.id),
                     onToggle = { viewModel.toggleGroupExpansion(group.id) },
-                    onAddTag = { /* TODO */ },
-                    onRename = { /* TODO */ },
-                    onDelete = { viewModel.onDeleteGroup(group.id) }
+                    onAddTag = {
+                        tempName = ""
+                        showAddTagDialog = group.id
+                    },
+                    onRename = {
+                        tempName = group.name
+                        showRenameGroupDialog = group.id
+                    },
+                    onDelete = { viewModel.onDeleteGroup(group.id) },
+                    onRenameTag = { tagId, tagName ->
+                        tempName = tagName
+                        showRenameTagDialog = group.id to tagId
+                    },
+                    onDeleteTag = { tagId ->
+                        viewModel.onDeleteTag(group.id, tagId)
+                    }
                 )
             }
 
@@ -87,7 +198,9 @@ fun HierarchyGroupItem(
     onToggle: () -> Unit,
     onAddTag: () -> Unit,
     onRename: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onRenameTag: (String, String) -> Unit,
+    onDeleteTag: (String) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Card(
@@ -168,8 +281,8 @@ fun HierarchyGroupItem(
                 group.tags.forEach { tag ->
                     HierarchyTagItem(
                         tag = tag,
-                        onRename = { /* TODO */ },
-                        onDelete = { /* TODO */ }
+                        onRename = { onRenameTag(tag.id, tag.name) },
+                        onDelete = { onDeleteTag(tag.id) }
                     )
                 }
             }

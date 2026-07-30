@@ -52,14 +52,52 @@ class RelationshipHierarchyViewModel : ViewModel() {
     }
 
     fun onAddTag(groupId: String, tagName: String) {
-        // TODO: Save to Room
+        val currentGroups = _groups.value.toMutableList()
+        val groupIndex = currentGroups.indexOfFirst { it.id == groupId }
+        if (groupIndex != -1) {
+            val group = currentGroups[groupIndex]
+            val newTag = HierarchyTag(id = System.currentTimeMillis().toString(), name = tagName)
+            currentGroups[groupIndex] = group.copy(tags = group.tags + newTag)
+            _groups.value = currentGroups
+        }
     }
 
     fun onRenameGroup(groupId: String, newName: String) {
-        // TODO: Update in Room
+        val currentGroups = _groups.value.toMutableList()
+        val groupIndex = currentGroups.indexOfFirst { it.id == groupId }
+        if (groupIndex != -1) {
+            currentGroups[groupIndex] = currentGroups[groupIndex].copy(name = newName)
+            _groups.value = currentGroups
+        }
     }
 
     fun onDeleteGroup(groupId: String) {
-        // TODO: Delete from Room
+        _groups.value = _groups.value.filter { it.id != groupId }
+        _expandedGroups.value = _expandedGroups.value - groupId
+    }
+
+    fun onRenameTag(groupId: String, tagId: String, newName: String) {
+        val currentGroups = _groups.value.toMutableList()
+        val groupIndex = currentGroups.indexOfFirst { it.id == groupId }
+        if (groupIndex != -1) {
+            val group = currentGroups[groupIndex]
+            val currentTags = group.tags.toMutableList()
+            val tagIndex = currentTags.indexOfFirst { it.id == tagId }
+            if (tagIndex != -1) {
+                currentTags[tagIndex] = currentTags[tagIndex].copy(name = newName)
+                currentGroups[groupIndex] = group.copy(tags = currentTags)
+                _groups.value = currentGroups
+            }
+        }
+    }
+
+    fun onDeleteTag(groupId: String, tagId: String) {
+        val currentGroups = _groups.value.toMutableList()
+        val groupIndex = currentGroups.indexOfFirst { it.id == groupId }
+        if (groupIndex != -1) {
+            val group = currentGroups[groupIndex]
+            currentGroups[groupIndex] = group.copy(tags = group.tags.filter { it.id != tagId })
+            _groups.value = currentGroups
+        }
     }
 }
