@@ -7,9 +7,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.mail2dev.upperdot.ui.add_contact.AddContactCoreInfoScreen
+import com.mail2dev.upperdot.ui.add_contact.AddContactViewModel
 import com.mail2dev.upperdot.ui.auth_launchpad.AuthLaunchpadScreen
 import com.mail2dev.upperdot.ui.call_history.CallHistoryScreen
 import com.mail2dev.upperdot.ui.connections_list.ConnectionsListScreen
@@ -56,8 +59,20 @@ fun RootNavigation() {
                     navController.navigate("client_profile/$contactId")
                 },
                 onNavigateToAddContact = {
-                    navController.navigate("add_contact_step1")
+                    navController.navigate("add_contact")
                 }
+            )
+        }
+
+        composable("add_contact") {
+            val viewModel: AddContactViewModel = viewModel()
+            AddContactCoreInfoScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onStepSelected = { step ->
+                    // Logic to navigate between steps will be added here
+                    viewModel.onStepSelected(step)
+                },
+                viewModel = viewModel
             )
         }
         composable("call_history") {
