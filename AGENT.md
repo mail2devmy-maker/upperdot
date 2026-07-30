@@ -448,3 +448,21 @@ For every database entity module you construct, you must adhere to the execution
 2. Develop the Entity, DAO interfaces, and testing schemas.
 3. Hook the raw Repository layer implementations directly up into our pre-existing screen ViewModels.
 4. Execute an automated git commit with the message format: `feat(data): implement Room [Module Name] database schema and DAO`.
+---
+
+## 6. ViewModel Data Integration and State Wiring Rules
+
+You are now entering the view-state integration phase. You must refactor and wire our existing screen ViewModels to pull, stream, and save data directly through the established Room repositories.
+
+### Architectural Rules
+1. **Repository Injection:** Pass the corresponding Repository interfaces into the ViewModels using clean constructor injection patterns.
+2. **Reactive State Collection:** Convert the repository asynchronous Kotlin Coroutine `Flow` streams into Jetpack Compose `StateFlow` streams inside the ViewModels using `.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), InitialState)`.
+3. **UI State Wrapper:** Wrap your screen states inside a clean, modern UI sealed interface structure (`Loading`, `Empty`, `Success(data)`) so the Jetpack Compose layer dynamically alters its visual state.
+4. **Asynchronous Write Scope:** All create, update, or delete operations triggered by screen clicks (like saving a card or capturing a note) must be launched safely inside the ViewModel using `viewModelScope.launch(Dispatchers.IO)`.
+
+### Execution Sequence per Feature Package
+For each core screen package you refactor, follow this sequence:
+1. Log any data binding conflicts, data conversion routines (e.g., converting integer cents to a user-facing decimal string), or empty-state transitions in `decision_log.md` first.
+2. Update the target ViewModel files to connect directly to the underlying repositories.
+3. Verify that the Jetpack Compose screens react correctly to the live repository states.
+4. Execute an automated git commit with the message format: `feat(viewmodel): wire [Feature Name] ViewModel to repository layer`.

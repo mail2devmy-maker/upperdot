@@ -1,10 +1,14 @@
 package com.mail2dev.upperdot.ui.add_contact
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.mail2dev.upperdot.data.local.entity.ContactEntity
+import com.mail2dev.upperdot.data.repository.ContactRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -20,7 +24,7 @@ data class BankAccount(
     val accountNumber: String = ""
 )
 
-class AddContactViewModel : ViewModel() {
+class AddContactViewModel(private val repository: ContactRepository) : ViewModel() {
 
     // Step 1: Core Info
     private val _fullName = MutableStateFlow("")
@@ -155,7 +159,23 @@ class AddContactViewModel : ViewModel() {
             // TODO: Show error state for full name
             return
         }
-        // TODO: Persist to Room
-        onSuccess()
+        
+        viewModelScope.launch(Dispatchers.IO) {
+            val entity = ContactEntity(
+                fullName = _fullName.value,
+                nicknames = _nicknames.value.split(",").map { it.trim() }.filter { it.isNotEmpty() },
+                phoneNumbers = _phoneNumbers.value.filter { it.isNotEmpty() },
+                sanitizedPrimaryPhone = _phoneNumbers.value.firstOrNull()?.replace(Regex("[^0-9]"), "") ?: "",
+                email = _email.value,
+                groupName = _subTag.value, // Placeholder for group/tag logic
+                socialProfiles = _socialProfiles.value.filter { it.handle.isNotEmpty() },
+                companyName = _companyName.value,
+                businessCategory = _businessCategory.value,
+                physicalAddress = _officeAddress.value,
+                bankAccounts = _bankAccounts.value.filter { it.accountNumber.isNotEmpty() }
+            )
+            repository.insertContact(entity)
+            onSuccess()
+        }
     }
 }

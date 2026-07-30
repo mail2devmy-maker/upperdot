@@ -9,7 +9,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -23,6 +26,7 @@ import com.mail2dev.upperdot.ui.app_settings.AdvancedSettingsViewModel
 import com.mail2dev.upperdot.ui.auth_launchpad.AuthLaunchpadScreen
 import com.mail2dev.upperdot.ui.call_history.CallHistoryScreen
 import com.mail2dev.upperdot.ui.connections_list.ConnectionsListScreen
+import com.mail2dev.upperdot.ui.connections_list.ConnectionsListViewModel
 import com.mail2dev.upperdot.ui.digital_wallet.DigitalWalletScreen
 import com.mail2dev.upperdot.ui.digital_wallet.DigitalWalletViewModel
 import com.mail2dev.upperdot.ui.insights.InsightsScreen
@@ -49,6 +53,9 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun RootNavigation() {
     val navController = rememberNavController()
+    val context = LocalContext.current
+    val app = context.applicationContext as UpperDotApp
+    
     NavHost(
         navController = navController,
         startDestination = "auth_launchpad",
@@ -64,6 +71,13 @@ fun RootNavigation() {
             )
         }
         composable("connections_list") {
+            val connectionsViewModel: ConnectionsListViewModel = viewModel(
+                factory = viewModelFactory {
+                    initializer {
+                        ConnectionsListViewModel(app.contactRepository)
+                    }
+                }
+            )
             ConnectionsListScreen(
                 onNavigate = { route ->
                     navController.navigate(route) {
@@ -76,12 +90,19 @@ fun RootNavigation() {
                 },
                 onNavigateToAddContact = {
                     navController.navigate("add_contact")
-                }
+                },
+                viewModel = connectionsViewModel
             )
         }
 
         composable("add_contact") {
-            val addContactViewModel: AddContactViewModel = viewModel()
+            val addContactViewModel: AddContactViewModel = viewModel(
+                factory = viewModelFactory {
+                    initializer {
+                        AddContactViewModel(app.contactRepository)
+                    }
+                }
+            )
             val currentStep by addContactViewModel.currentStep.collectAsState()
             
             when (currentStep) {

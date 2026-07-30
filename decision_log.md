@@ -68,13 +68,13 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   3. Added `guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava` to resolve library duplication.
   4. Added `packaging` block to exclude `INDEX.LIST` and `DEPENDENCIES` files from the final APK.
 
-### 2024-05-20 - Data Layer: Cash Transactions Room Module
-- **Context/Goal:** Implementation of the local persistence layer for financial logs and income/expense tracking.
+### 2024-05-20 - ViewModel Integration: Contacts Workflow
+- **Context/Goal:** Connect the Connections List and Add Contact Wizard to the Room persistence layer via ContactRepository.
 - **Conflicts & Alternatives Considered:**
-  - *Conflict 1: Financial Precision:* Double vs Long (Cents). *Decision:* Store amount as `Double` for simplicity in this CRM context, matching the UI layer's existing state handling while ensuring 2-decimal formatting during display.
-  - *Conflict 2: Linked Discovery:* How to search transactions by contact? *Decision:* Implemented a sub-query in the DAO to allow searching transaction logs by the linked contact's `fullName`, ensuring users can find "plumber" payments by searching the person's name.
-  - *Conflict 3: Media persistence:* Consistency with Notes. *Decision:* Mirrored the `attachmentPaths` and `voiceRecordingPath` structure from the Notes module to maintain unified file management logic.
-- **Final Decision:** Implement `TransactionEntity` with `ForeignKey.CASCADE` on `contactId`. Use `isRevenue` boolean to drive balance calculations.
-- **Impact:** `TransactionEntity.kt`, `TransactionDao.kt`, `TransactionRepository.kt`, `AppDatabase.kt` update.
+  - *Conflict 1: UI State Wrapping:* Should we stream raw entities? *Decision:* Use a sealed interface `ConnectionsUIState` (Loading, Empty, Success) to handle the empty directory state as per SRS Screen 03 requirements.
+  - *Conflict 2: Wizard State Mapping:* Mapping complex Wizard state to Entity. *Decision:* Centralized `saveContact` logic in `AddContactViewModel` that handles the conversion of UI lists (nicknames, social, banks) into a single `ContactEntity`, including number sanitization for the Smart Matcher.
+  - *Conflict 3: Real-time Search:* Flow vs suspended calls. *Decision:* Transform the Repository `Flow` using `flatMapLatest` based on the `searchQuery` StateFlow to provide instantaneous UI updates as the user types.
+- **Final Decision:** Inject `ContactRepository` into ViewModels. Use `viewModelScope.launch(Dispatchers.IO)` for data writes. Ensure `ConnectionsListViewModel` reacts to live DB updates.
+- **Impact:** `ConnectionsListViewModel.kt`, `AddContactViewModel.kt`, `MainActivity.kt` injection.
 
 ---

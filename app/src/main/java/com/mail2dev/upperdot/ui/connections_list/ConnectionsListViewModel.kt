@@ -5,6 +5,11 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
+import com.mail2dev.upperdot.data.local.entity.ContactEntity
+import com.mail2dev.upperdot.data.repository.ContactRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+
 data class ContactSummary(
     val id: String,
     val fullName: String,
@@ -17,11 +22,11 @@ data class ContactSummary(
 sealed class ConnectionsUIState {
     object Loading : ConnectionsUIState()
     object Empty : ConnectionsUIState()
-    object SearchEmpty : ConnectionsUIState()
     data class Success(val contacts: List<ContactSummary>) : ConnectionsUIState()
 }
 
-class ConnectionsListViewModel : ViewModel() {
+@OptIn(ExperimentalCoroutinesApi::class)
+class ConnectionsListViewModel(private val repository: ContactRepository) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
@@ -29,42 +34,52 @@ class ConnectionsListViewModel : ViewModel() {
     private val _selectedFilter = MutableStateFlow("All")
     val selectedFilter: StateFlow<String> = _selectedFilter.asStateFlow()
 
-    private val _uiState = MutableStateFlow<ConnectionsUIState>(ConnectionsUIState.Empty)
-    val uiState: StateFlow<ConnectionsUIState> = _uiState.asStateFlow()
-
-    init {
-        // Initial load
-        loadContacts()
-    }
+    val uiState: StateFlow<ConnectionsUIState> = combine(_searchQuery, _selectedFilter) { query, filter ->
+        query to filter
+    }.flatMapLatest { (query, filter) ->
+        if (query.isEmpty()) {
+            repository.allContacts
+        } else {
+            repository.searchContacts(query)
+        }
+    }.map { entities ->
+        if (entities.isEmpty()) {
+            ConnectionsUIState.Empty
+        } else {
+            ConnectionsUIState.Success(entities.map { it.toSummary() })
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = ConnectionsUIState.Loading
+    )
 
     fun onSearchQueryChanged(query: String) {
         _searchQuery.value = query
-        filterContacts()
     }
 
     fun onFilterSelected(filter: String) {
         _selectedFilter.value = filter
-        filterContacts()
-    }
-
-    private fun loadContacts() {
-        // TODO: Load from Room DB
-        _uiState.value = ConnectionsUIState.Empty
-    }
-
-    private fun filterContacts() {
-        // TODO: Implement filtering logic
     }
 
     fun onDialContact(contact: ContactSummary) {
-        // Triggers Intent.ACTION_DIAL
+        // Implementation remains in UI via Intent
     }
 
     fun onAddNote(contactId: String) {
-        // Navigation to New Note Bottom Sheet
+        // Implementation remains in UI navigation
     }
 
     fun onAddTransaction(contactId: String) {
-        // Navigation to New Transaction Bottom Sheet
+        // Implementation remains in UI navigation
     }
 }
+
+private fun ContactEntity.toSummary() = ContactSummary(
+    id = id,
+    fullName = fullName,
+    nicknames = nicknames,
+    primaryPhone = sanitizedPrimaryPhone,
+    group = groupName,
+    tag = tagName
+)
