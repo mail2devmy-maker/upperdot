@@ -68,11 +68,11 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   3. Added `guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava` to resolve library duplication.
   4. Added `packaging` block to exclude `INDEX.LIST` and `DEPENDENCIES` files from the final APK.
 
-### 2024-05-20 - Screen 15: Add New Card Bottom Sheet Overlay
-- **Context/Goal:** Modal interface for adding or editing bank cards with theme customization and QR attachment.
+### 2024-05-20 - Screen 16: Relationship Hierarchy Manager
+- **Context/Goal:** Interface for managing nested relational groups and sub-tags (e.g., Favorites -> High Priority).
 - **Conflicts & Alternatives Considered:**
-  - *Conflict 1: Color Picker UI:* Slider vs Tokens. *Decision:* Row of 6 color circles (Stitch Palette) to ensure high-contrast accessibility and visual consistency with the card deck.
-  - *Conflict 2: Field Prioritization:* Managing account number vs IBAN vs SWIFT. *Decision:* Standardized `StitchTextField` inputs with "Optional" labels for BIC/SWIFT, prioritizing local bank names and holder names as per Screen 15 visual specs.
-  - *Conflict 3: Validation Logic:* When to enable "Save"? *Decision:* "Save Card" button remains disabled until mandatory fields (Bank Name, Holder Name, Account Number) are non-empty, matching the "Secure Account" validation pattern.
-- **Final Decision:** Implement `NewBankCardSheet` using `ModalBottomSheet`. Leverage `StitchDropdown` for bank selection and `LazyRow` for the color picker.
-- **Impact:** `NewBankCardSheet.kt`, `DigitalWalletViewModel.kt` (updated with card state), `DigitalWalletScreen.kt`.
+  - *Conflict 1: Nested List UI:* Infinite depth vs fixed 2-level. *Decision:* Fixed 2-level (Group -> Tag) as per AGENT.md clarification to ensure mutual exclusivity and maintain list performance.
+  - *Conflict 2: Expansion State Persistence:* Map vs boolean. *Decision:* Use a `Set<String>` in ViewModel to track expanded group IDs, ensuring expansion states are preserved during list recompositions and configuration changes.
+  - *Conflict 3: Inline Editing:* Dedicated screen vs AlertDialog. *Decision:* Inline `AlertDialog` for renaming and adding sub-tags to minimize navigation depth, matching the "In-Place Configuration" subtitle requirement.
+- **Final Decision:** Implement `RelationshipHierarchyScreen`. Use `LazyColumn` for groups with indented child rows for tags. Integrate warning dialogs for group deletion (showing contact impact count).
+- **Impact:** `RelationshipHierarchyScreen.kt`, `RelationshipHierarchyViewModel.kt`, `MainActivity.kt` routes.

@@ -28,6 +28,8 @@ import com.mail2dev.upperdot.ui.profile_detail.ClientProfileDetailScreen
 import com.mail2dev.upperdot.ui.profile_detail.ClientProfileDetailViewModel
 import com.mail2dev.upperdot.ui.profile_settings.MyProfileSettingsScreen
 import com.mail2dev.upperdot.ui.profile_settings.ProfileSettingsViewModel
+import com.mail2dev.upperdot.ui.relationship_hierarchy.RelationshipHierarchyScreen
+import com.mail2dev.upperdot.ui.relationship_hierarchy.RelationshipHierarchyViewModel
 import com.mail2dev.upperdot.ui.theme.UpperDotTheme
 
 class MainActivity : ComponentActivity() {
@@ -168,6 +170,14 @@ fun RootNavigation() {
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToPlans = { navController.navigate("plans") },
                 viewModel = walletViewModel
+            )
+        }
+
+        composable("manage_custom_groups") {
+            val hierarchyViewModel: RelationshipHierarchyViewModel = viewModel()
+            RelationshipHierarchyScreen(
+                onNavigateBack = { navController.popBackStack() },
+                viewModel = hierarchyViewModel
             )
         }
     }
