@@ -740,6 +740,16 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Final Decision:** Use `File.length()` for the database file and a recursive `walkTopDown()` for internal storage, exposing results as MB-formatted `StateFlow` strings.
 - **Impact:** `AdvancedSettingsViewModel.kt`, `AdvancedSettingsScreen.kt`.
 
+### 2024-05-20 - Google Drive Sync Engine Activation
+- **Context/Goal:** Activate the manual Google Drive synchronization trigger and implement real-time state observation to provide user feedback.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Interaction Feedback:* The sync refresh icon was a static element. *Decision:* Implemented a manual trigger using `OneTimeWorkRequest` via WorkManager. Added an infinite rotation animation to the icon while the worker is in the `RUNNING` state, providing clear visual evidence of background activity.
+  - *Conflict 2: Persistence tracking:* No field existed to track the last successful sync. *Decision:* Updated `PreferenceEntity` to include `lastSyncTime: Long`. The ViewModel now updates this field upon receiving a `SUCCEEDED` state from WorkManager, ensuring the timestamp is persisted across app sessions.
+  - *Conflict 3: UI State Mapping:* Dynamic display of "Not Synced" vs formatted date. *Decision:* Used a `combine` operator in the ViewModel to reactively format the timestamp into a human-readable string (e.g., 'Aug 01, 2026, 07:04 AM') whenever preferences change.
+- **Final Decision:** Use WorkManager `getWorkInfoByIdFlow` for state observation and `InfiniteTransition` for rotation animation.
+- **Impact:** `ProfileSettingsViewModel.kt`, `MyProfileSettingsScreen.kt`, `MainActivity.kt`, `PreferenceEntity.kt`.
+
+### ⚠️ Build Errors & Resolutions
 ### 2024-05-20 - Multi-Column Wildcard Search Optimization
 - **Context/Goal:** Update the dashboard search logic to include nicknames in the discovery process, ensuring that alternate names match connection cards.
 - **Conflicts & Alternatives Considered:**

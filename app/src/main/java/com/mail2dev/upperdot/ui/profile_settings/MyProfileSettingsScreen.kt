@@ -1,5 +1,6 @@
 package com.mail2dev.upperdot.ui.profile_settings
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,6 +17,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -26,6 +28,7 @@ import com.mail2dev.upperdot.ui.components.UpperDotBottomNavigation
 import com.mail2dev.upperdot.ui.digital_wallet.DigitalWalletViewModel
 import com.mail2dev.upperdot.ui.theme.*
 import com.mail2dev.upperdot.ui.wallet_overlay.QuickWalletOverlaySheet
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun MyProfileSettingsScreen(
@@ -37,6 +40,25 @@ fun MyProfileSettingsScreen(
     val userSummary by viewModel.userSummary.collectAsState()
     val bankCards by walletViewModel.bankCards.collectAsState()
     val showQuickWallet by walletViewModel.showQuickWalletSheet.collectAsState()
+    val isSyncing by viewModel.isSyncing.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    val rotation = rememberInfiniteTransition(label = "sync_rotation")
+    val angle by rotation.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "angle"
+    )
+
+    LaunchedEffect(Unit) {
+        viewModel.syncEvent.collectLatest { message ->
+            snackbarHostState.showSnackbar(message)
+        }
+    }
 
     if (showQuickWallet) {
         QuickWalletOverlaySheet(
@@ -49,6 +71,7 @@ fun MyProfileSettingsScreen(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             UpperDotBottomNavigation(
                 currentRoute = "my_profile",
@@ -170,9 +193,17 @@ fun MyProfileSettingsScreen(
                             )
                             IconButton(
                                 onClick = viewModel::onRefreshSync,
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(24.dp),
+                                enabled = !isSyncing
                             ) {
-                                Icon(Icons.Default.Sync, contentDescription = "Refresh", tint = AccentCyan, modifier = Modifier.size(16.dp))
+                                Icon(
+                                    imageVector = Icons.Default.Sync,
+                                    contentDescription = "Refresh",
+                                    tint = AccentCyan,
+                                    modifier = Modifier
+                                        .size(16.dp)
+                                        .then(if (isSyncing) Modifier.rotate(angle) else Modifier)
+                                )
                             }
                         }
                     }
