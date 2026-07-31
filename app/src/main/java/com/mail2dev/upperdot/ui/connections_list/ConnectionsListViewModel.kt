@@ -13,6 +13,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class ContactSummary(
     val id: Long,
@@ -53,6 +54,9 @@ class ConnectionsListViewModel(
 
     private val _contactSearchQuery = MutableStateFlow("")
     val contactSearchQuery: StateFlow<String> = _contactSearchQuery.asStateFlow()
+
+    private val _selectedAttachments = MutableStateFlow<List<String>>(emptyList())
+    val selectedAttachments: StateFlow<List<String>> = _selectedAttachments.asStateFlow()
 
     val searchedContacts: StateFlow<List<ContactSummary>> = _contactSearchQuery
         .debounce(300)
@@ -98,6 +102,22 @@ class ConnectionsListViewModel(
         _selectedFilter.value = filter
     }
 
+    fun addAttachmentPath(path: String) {
+        _selectedAttachments.value = _selectedAttachments.value + path
+    }
+
+    fun removeAttachmentPath(index: Int) {
+        val list = _selectedAttachments.value.toMutableList()
+        if (index < list.size) {
+            list.removeAt(index)
+            _selectedAttachments.value = list
+        }
+    }
+
+    fun clearMedia() {
+        _selectedAttachments.value = emptyList()
+    }
+
     fun onDialContact(contact: ContactSummary) {
         // UI implementation
     }
@@ -122,29 +142,33 @@ class ConnectionsListViewModel(
         _showAddNoteSheet.value = false
         _preSelectedContact.value = null
         _contactSearchQuery.value = ""
+        clearMedia()
     }
 
     fun dismissAddTransactionSheet() {
         _showAddTransactionSheet.value = false
         _preSelectedContact.value = null
         _contactSearchQuery.value = ""
+        clearMedia()
     }
 
-    fun saveNote(contactId: Long, title: String, content: String, attachments: List<String>, voice: String?) {
+    fun saveNote(contactId: Long, title: String, content: String, voice: String?) {
         viewModelScope.launch(Dispatchers.IO) {
             val note = NoteEntity(
                 contactId = contactId,
                 title = title,
                 content = content,
-                attachmentPaths = attachments,
+                attachmentPaths = _selectedAttachments.value,
                 voiceRecordingPath = voice
             )
             noteRepository.insertNote(note)
-            dismissAddNoteSheet()
+            withContext(Dispatchers.Main) {
+                dismissAddNoteSheet()
+            }
         }
     }
 
-    fun saveTransaction(contactId: Long, isRevenue: Boolean, title: String, amount: String, detail: String, attachments: List<String>, voice: String?) {
+    fun saveTransaction(contactId: Long, isRevenue: Boolean, title: String, amount: String, detail: String, voice: String?) {
         viewModelScope.launch(Dispatchers.IO) {
             val transaction = TransactionEntity(
                 contactId = contactId,
@@ -152,11 +176,13 @@ class ConnectionsListViewModel(
                 amount = amount.toDoubleOrNull() ?: 0.0,
                 isRevenue = isRevenue,
                 detail = detail,
-                attachmentPaths = attachments,
+                attachmentPaths = _selectedAttachments.value,
                 voiceRecordingPath = voice
             )
             transactionRepository.insertTransaction(transaction)
-            dismissAddTransactionSheet()
+            withContext(Dispatchers.Main) {
+                dismissAddTransactionSheet()
+            }
         }
     }
 }

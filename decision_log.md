@@ -69,10 +69,22 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Final Decision:** Implement reactive wiring in ViewModel and `LazyColumn` row components in Screen. Used `ModalBottomSheet` with `skipPartiallyExpanded = true` for viewer overlays.
 - **Impact:** `ClientProfileDetailViewModel.kt`, `ClientProfileDetailScreen.kt`, `MainActivity.kt` update, `DateUtils.kt` created.
 
+### 2024-05-20 - Global Insights Interaction & Media Stabilization
+- **Context/Goal:** Fix frozen clicks in Insights tab and resolve missing attachment paths in contact card shortcuts.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Interaction Wiring:* Tapping cards in Insights was unresponsive. *Decision:* Wired `onClick` modifiers in `NoteCard` and `TransactionCard` to the ViewModel's `selectNote/Transaction` methods. Implemented shared `NoteViewerSheet` and `TransactionViewerSheet` components to ensure a unified detail viewing experience across the app.
+  - *Conflict 2: Media Persistence:* Shortcut-created notes were losing attachment paths. *Decision:* Identified that managing media state via local `remember` in the UI layer was fragile. Moved `selectedAttachments` pipeline directly into `ConnectionsListViewModel` and `InsightsViewModel`. Updated the saving logic to gather paths directly from the ViewModel's StateFlow, ensuring Room writes are complete before state is cleared.
+- **Final Decision:** Migrated all temporary media states to ViewModels and unified detail viewer overlays into a shared component library.
+- **Impact:** `InsightsScreen.kt`, `InsightsViewModel.kt`, `ConnectionsListScreen.kt`, `ConnectionsListViewModel.kt`, `DetailViewerSheets.kt` created.
+
 ### ⚠️ Build Errors & Resolutions
 - **Error:** `Unresolved reference: toFormattedDate` in `ClientProfileDetailScreen.kt`.
 - **Cause:** Missing utility function for formatting `Long` timestamps into user-friendly date strings.
 - **Resolution:** Created `com.mail2dev.upperdot.utils.DateUtils.kt` with a `Long.toFormattedDate()` extension function using `SimpleDateFormat`.
+
+- **Error:** Syntax errors in `DetailViewerSheets.kt` due to escaped format strings.
+- **Cause:** Incorrect string literal escaping during file write operation (`\"%.2f\"` instead of `"%.2f"`).
+- **Resolution:** Refactored `DetailViewerSheets.kt` using `replace_file_content` to ensure correct Kotlin string formatting for currency values.
 
 - **Error:** `Conflicting overloads: fun WizardTabRow(...)` and `Unresolved reference: it` in `AddContactIdentityScreen.kt`.
 - **Cause:** Duplicated `WizardTabRow` and `StitchTextField` across both `AddContactCoreInfoScreen.kt` and the new `AddContactComponents.kt` file. Additionally, `StitchTextField` was missing a `modifier` parameter in its shared definition, causing a signature mismatch in the Identity screen.

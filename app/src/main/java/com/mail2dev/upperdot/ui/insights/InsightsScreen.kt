@@ -21,11 +21,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mail2dev.upperdot.ui.components.FilterCapsule
+import com.mail2dev.upperdot.ui.components.NoteViewerSheet
+import com.mail2dev.upperdot.ui.components.TransactionViewerSheet
 import com.mail2dev.upperdot.ui.components.UpperDotBottomNavigation
 import com.mail2dev.upperdot.ui.new_cash_transaction.NewCashTransactionSheet
 import com.mail2dev.upperdot.ui.new_relationship_note.NewRelationshipNoteSheet
 import com.mail2dev.upperdot.ui.theme.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InsightsScreen(
     onNavigate: (String) -> Unit,
@@ -45,6 +48,10 @@ fun InsightsScreen(
     val selectedAttachments by viewModel.selectedAttachments.collectAsState()
     val contactSearchQuery by viewModel.contactSearchQuery.collectAsState()
     val searchedContacts by viewModel.searchedContacts.collectAsState()
+
+    val selectedNote by viewModel.selectedNote.collectAsState()
+    val selectedTransaction by viewModel.selectedTransaction.collectAsState()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     if (showAddNoteSheet) {
         NewRelationshipNoteSheet(
@@ -77,6 +84,22 @@ fun InsightsScreen(
             attachmentPaths = selectedAttachments,
             onAddAttachment = viewModel::addAttachmentPath,
             onRemoveAttachment = viewModel::removeAttachmentPath
+        )
+    }
+
+    if (selectedNote != null) {
+        NoteViewerSheet(
+            note = selectedNote!!,
+            sheetState = sheetState,
+            onDismiss = viewModel::dismissNoteViewer
+        )
+    }
+
+    if (selectedTransaction != null) {
+        TransactionViewerSheet(
+            transaction = selectedTransaction!!,
+            sheetState = sheetState,
+            onDismiss = viewModel::dismissTransactionViewer
         )
     }
 
@@ -246,9 +269,9 @@ fun InsightsScreen(
 
             // Content
             if (selectedTab == InsightTab.NOTES) {
-                NotesList(notes = notes, onContactClick = viewModel::onContactFilterSelected)
+                NotesList(notes = notes, onContactClick = viewModel::onContactFilterSelected, onNoteClick = viewModel::selectNote)
             } else {
-                TransactionsList(transactions = transactions, onContactClick = viewModel::onContactFilterSelected)
+                TransactionsList(transactions = transactions, onContactClick = viewModel::onContactFilterSelected, onTransactionClick = viewModel::selectTransaction)
             }
         }
     }
@@ -308,13 +331,14 @@ fun TabItem(
 @Composable
 fun NotesList(
     notes: List<NoteEntry>,
-    onContactClick: (String) -> Unit
+    onContactClick: (String) -> Unit,
+    onNoteClick: (Long) -> Unit
 ) {
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(notes, key = { it.id }) { note ->
-            NoteCard(note = note, onContactClick = { onContactClick(note.contactName) })
+            NoteCard(note = note, onContactClick = { onContactClick(note.contactName) }, onClick = { onNoteClick(note.id) })
         }
     }
 }
@@ -322,13 +346,14 @@ fun NotesList(
 @Composable
 fun TransactionsList(
     transactions: List<TransactionEntry>,
-    onContactClick: (String) -> Unit
+    onContactClick: (String) -> Unit,
+    onTransactionClick: (Long) -> Unit
 ) {
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(transactions, key = { it.id }) { transaction ->
-            TransactionCard(transaction = transaction, onContactClick = { onContactClick(transaction.contactName) })
+            TransactionCard(transaction = transaction, onContactClick = { onContactClick(transaction.contactName) }, onClick = { onTransactionClick(transaction.id) })
         }
     }
 }
@@ -336,14 +361,15 @@ fun TransactionsList(
 @Composable
 fun TransactionCard(
     transaction: TransactionEntry,
-    onContactClick: () -> Unit
+    onContactClick: () -> Unit,
+    onClick: () -> Unit
 ) {
     var isExpanded by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { isExpanded = !isExpanded },
+            .clickable { onClick() },
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Surface)
     ) {
@@ -442,14 +468,15 @@ fun TransactionCard(
 @Composable
 fun NoteCard(
     note: NoteEntry,
-    onContactClick: () -> Unit
+    onContactClick: () -> Unit,
+    onClick: () -> Unit
 ) {
     var isExpanded by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { isExpanded = !isExpanded },
+            .clickable { onClick() },
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Surface)
     ) {

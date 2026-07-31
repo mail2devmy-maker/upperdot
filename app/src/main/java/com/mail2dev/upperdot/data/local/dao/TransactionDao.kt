@@ -13,6 +13,9 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE contactId = :contactId ORDER BY createdAt DESC")
     fun getTransactionsForContact(contactId: Long): Flow<List<TransactionEntity>>
 
+    @Query("SELECT * FROM transactions WHERE id = :id")
+    suspend fun getTransactionById(id: Long): TransactionEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTransaction(transaction: TransactionEntity)
 

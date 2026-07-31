@@ -11,6 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Locale
 
 enum class InsightTab {
@@ -63,6 +64,12 @@ class InsightsViewModel(
 
     private val _contactSearchQuery = MutableStateFlow("")
     val contactSearchQuery: StateFlow<String> = _contactSearchQuery.asStateFlow()
+
+    private val _selectedNote = MutableStateFlow<NoteEntity?>(null)
+    val selectedNote: StateFlow<NoteEntity?> = _selectedNote.asStateFlow()
+
+    private val _selectedTransaction = MutableStateFlow<TransactionEntity?>(null)
+    val selectedTransaction: StateFlow<TransactionEntity?> = _selectedTransaction.asStateFlow()
 
     val searchedContacts: StateFlow<List<ContactSummary>> = _contactSearchQuery
         .debounce(300)
@@ -172,6 +179,26 @@ class InsightsViewModel(
         _showAddTransactionSheet.value = false
     }
 
+    fun selectNote(noteId: Long) {
+        viewModelScope.launch {
+            _selectedNote.value = noteRepository.getNoteById(noteId)
+        }
+    }
+
+    fun dismissNoteViewer() {
+        _selectedNote.value = null
+    }
+
+    fun selectTransaction(transactionId: Long) {
+        viewModelScope.launch {
+            _selectedTransaction.value = transactionRepository.getTransactionById(transactionId)
+        }
+    }
+
+    fun dismissTransactionViewer() {
+        _selectedTransaction.value = null
+    }
+
     fun saveNote(
         contactId: Long,
         title: String, 
@@ -188,8 +215,10 @@ class InsightsViewModel(
                 voiceRecordingPath = voicePath
             )
             noteRepository.insertNote(note)
-            _showAddNoteSheet.value = false
-            _contactSearchQuery.value = ""
+            withContext(Dispatchers.Main) {
+                _showAddNoteSheet.value = false
+                _contactSearchQuery.value = ""
+            }
         }
     }
 
@@ -213,8 +242,10 @@ class InsightsViewModel(
                 voiceRecordingPath = voicePath
             )
             transactionRepository.insertTransaction(transaction)
-            _showAddTransactionSheet.value = false
-            _contactSearchQuery.value = ""
+            withContext(Dispatchers.Main) {
+                _showAddTransactionSheet.value = false
+                _contactSearchQuery.value = ""
+            }
         }
     }
 }
