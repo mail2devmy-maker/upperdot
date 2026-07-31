@@ -34,6 +34,7 @@ import java.io.File
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import com.mail2dev.upperdot.utils.StorageUtils
 import coil.compose.AsyncImage
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -73,7 +74,12 @@ fun NewRelationshipNoteSheet(
     val attachmentLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
-        uri?.let { onAddAttachment(it.toString()) }
+        uri?.let { 
+            val internalPath = StorageUtils.copyUriToInternalStorage(context, it)
+            if (internalPath != null) {
+                onAddAttachment(internalPath)
+            }
+        }
     }
 
     // Voice Recording State

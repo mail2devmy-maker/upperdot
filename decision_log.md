@@ -77,6 +77,15 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Final Decision:** Migrated all temporary media states to ViewModels and unified detail viewer overlays into a shared component library.
 - **Impact:** `InsightsScreen.kt`, `InsightsViewModel.kt`, `ConnectionsListScreen.kt`, `ConnectionsListViewModel.kt`, `DetailViewerSheets.kt` created.
 
+### 2024-05-20 - Internal Storage Persistence & Media Refactor
+- **Context/Goal:** Fix blank attachment thumbnails caused by Android file storage access restrictions by migrating to a local-first file persistence strategy.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Storage Strategy:* Raw URIs vs File Copying. *Decision:* Implemented a file stream copying mechanism using `StorageUtils`. When a user selects an image, it is immediately cloned into the app's internal private storage (`context.filesDir/attachments`). This ensures permanent availability regardless of external gallery changes or permission revocations.
+  - *Conflict 2: Path Persistence:* Storing content URIs vs Absolute Paths. *Decision:* Switched the database column to store absolute internal file paths. This simplifies loading logic and improves performance as the app doesn't need to resolve URIs or request persistent permissions repeatedly.
+  - *Conflict 3: Viewer UX:* Static thumbnails vs Full-Screen Preview. *Decision:* Enhanced `NoteViewerSheet` and `TransactionViewerSheet` with `FullScreenImagePreview` dialogs. Tapping a thumbnail now opens a high-fidelity fit-to-screen view with a dedicated close action.
+- **Final Decision:** Use internal storage for all rich media and absolute path strings in Room.
+- **Impact:** `StorageUtils.kt` created, `DetailViewerSheets.kt` updated, `NewRelationshipNoteSheet.kt` and `NewCashTransactionSheet.kt` refactored to use the new copy logic.
+
 ### ⚠️ Build Errors & Resolutions
 - **Error:** `Unresolved reference: toFormattedDate` in `ClientProfileDetailScreen.kt`.
 - **Cause:** Missing utility function for formatting `Long` timestamps into user-friendly date strings.

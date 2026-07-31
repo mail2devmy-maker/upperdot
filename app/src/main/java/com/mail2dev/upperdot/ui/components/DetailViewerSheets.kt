@@ -1,23 +1,30 @@
 package com.mail2dev.upperdot.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import coil.compose.AsyncImage
 import com.mail2dev.upperdot.data.local.entity.NoteEntity
 import com.mail2dev.upperdot.data.local.entity.TransactionEntity
 import com.mail2dev.upperdot.ui.theme.*
 import com.mail2dev.upperdot.utils.toFormattedDate
+import java.io.File
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -27,6 +34,15 @@ fun NoteViewerSheet(
     sheetState: SheetState,
     onDismiss: () -> Unit
 ) {
+    var fullScreenImagePath by remember { mutableStateOf<String?>(null) }
+
+    if (fullScreenImagePath != null) {
+        FullScreenImagePreview(
+            path = fullScreenImagePath!!,
+            onDismiss = { fullScreenImagePath = null }
+        )
+    }
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -99,14 +115,17 @@ fun NoteViewerSheet(
                 Text("Attachments", color = AccentCyan, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    note.attachmentPaths.forEach { _ ->
-                        Surface(
-                            modifier = Modifier.size(60.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            color = Color.DarkGray
-                        ) {
-                            Icon(Icons.Default.Image, contentDescription = null, tint = Color.Gray, modifier = Modifier.padding(16.dp))
-                        }
+                    note.attachmentPaths.forEach { path ->
+                        AsyncImage(
+                            model = File(path),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color.DarkGray)
+                                .clickable { fullScreenImagePath = path },
+                            contentScale = ContentScale.Crop
+                        )
                     }
                 }
             }
@@ -121,6 +140,15 @@ fun TransactionViewerSheet(
     sheetState: SheetState,
     onDismiss: () -> Unit
 ) {
+    var fullScreenImagePath by remember { mutableStateOf<String?>(null) }
+
+    if (fullScreenImagePath != null) {
+        FullScreenImagePreview(
+            path = fullScreenImagePath!!,
+            onDismiss = { fullScreenImagePath = null }
+        )
+    }
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -187,15 +215,53 @@ fun TransactionViewerSheet(
                 Spacer(modifier = Modifier.height(24.dp))
                 Text("Receipt", color = AccentCyan, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
-                Surface(
-                    modifier = Modifier.fillMaxWidth().height(200.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color.DarkGray
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.ReceiptLong, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(48.dp))
-                    }
-                }
+                AsyncImage(
+                    model = File(transaction.attachmentPaths.first()),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color.DarkGray)
+                        .clickable { fullScreenImagePath = transaction.attachmentPaths.first() },
+                    contentScale = ContentScale.Crop
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun FullScreenImagePreview(
+    path: String,
+    onDismiss: () -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+                .clickable { onDismiss() },
+            contentAlignment = Alignment.Center
+        ) {
+            AsyncImage(
+                model = File(path),
+                contentDescription = "Full Screen Preview",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Fit
+            )
+            
+            IconButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
+                    .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+            ) {
+                Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
             }
         }
     }
