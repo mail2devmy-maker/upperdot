@@ -136,6 +136,15 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   4. Updated the state binding to ensure selecting a contact correctly links their `id` and `fullName` to the active note or transaction.
   5. Refactored the `save` logic to use the selected contact's ID for database persistence.
 
+- **Error:** Searching for contacts in `NewRelationshipNoteSheet` and `NewCashTransactionSheet` allowed submitting non-existent names, causing orphan data.
+- **Cause:** The UI logic didn't strictly separate the typed query from a verified database selection, and the "Save" buttons were enabled even without a verified contact object.
+- **Resolution:**
+  1. Implemented a strict verification policy in `NewRelationshipNoteSheet.kt` and `NewCashTransactionSheet.kt`.
+  2. Separated the search query string from the `selectedContact` state object.
+  3. Configured the contact input field to only display a verified `fullName` once an item from the search dropdown is explicitly clicked.
+  4. Enforced button validation: "Save Relationship Note" and "Finalize Transaction" are now completely disabled if `selectedContact` is null, preventing the creation of orphan records.
+  5. Wired the `onValueChange` handler to immediately clear the verified selection if the user modifies the search text, requiring a fresh selection from the results list.
+
 - **Error:** Incomplete functionality in `NewCashTransactionSheet` (missing Date Picker, Receipt Attachments, and Voice Recorder).
 - **Cause:** These features were not yet implemented in the cash transaction flow, leading to UX inconsistency with the relationship notes flow.
 - **Resolution:**

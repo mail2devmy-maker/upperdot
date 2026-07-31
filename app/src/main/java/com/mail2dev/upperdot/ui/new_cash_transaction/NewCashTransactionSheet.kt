@@ -154,8 +154,9 @@ fun NewCashTransactionSheet(
             // Searchable Contact Picker
             Column(modifier = Modifier.fillMaxWidth()) {
                 StitchTextField(
-                    value = if (isSearchDropdownExpanded) contactSearchQuery else selectedContact?.fullName ?: "",
+                    value = if (selectedContact != null && !isSearchDropdownExpanded) selectedContact!!.fullName else contactSearchQuery,
                     onValueChange = {
+                        if (selectedContact != null) selectedContact = null
                         onContactSearchQueryChange(it)
                         isSearchDropdownExpanded = true
                     },
@@ -182,6 +183,7 @@ fun NewCashTransactionSheet(
                                         .fillMaxWidth()
                                         .clickable {
                                             selectedContact = contact
+                                            onContactSearchQueryChange(contact.fullName)
                                             isSearchDropdownExpanded = false
                                         }
                                         .padding(16.dp)
