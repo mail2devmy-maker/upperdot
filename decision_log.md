@@ -697,6 +697,14 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Final Decision:** Apply `positionalThreshold = { totalDistance -> totalDistance * 0.60f }` and verify progress in `confirmValueChange`.
 - **Impact:** `ConnectionsListScreen.kt`.
 
+### 2024-05-20 - Velocity Fling Neutralization
+- **Context/Goal:** Completely disable accidental dialing caused by high-velocity flings that bypass positional thresholds in `SwipeToDismissBox`.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: State Pollution:* The internal state's `progress` and target `value` are updated by velocity flings before the physical check is complete. *Decision:* Implemented manual offset tracking using `onGloballyPositioned`. By recording the card's `positionInParent().x`, we obtain a velocity-independent physical distance that can be strictly validated during the release gesture.
+  - *Conflict 2: Veto Logic:* The system treats fast slides as "dismissed" even if only 5% distance is covered. *Decision:* Forced a `false` return in `confirmValueChange` whenever the manual `currentCardOffset` is below the 60% mark. This explicitly blocks the state transition and triggers a snap-back, regardless of how high the flick velocity was.
+- **Final Decision:** Use `onGloballyPositioned` to track physical displacement and veto `confirmValueChange` if offset < 60% width.
+- **Impact:** `ConnectionsListScreen.kt`.
+
 ### ⚠️ Build Errors & Resolutions
 - **Error:** Bracing mismatch in `DetailViewerSheets.kt` causing unresolved references.
 - **Cause:** Incorrect nested block closures in `NoteViewerSheet` after adding the `isEditingMode` conditional.
