@@ -263,7 +263,7 @@ fun AdvancedSettingsScreen(
                             icon = Icons.Default.CloudDownload,
                             title = "Import Database Restore",
                             subtitle = "Overwrite local data with backup",
-                            onClick = { importLauncher.launch(arrayOf("application/json")) }
+                            onClick = { importLauncher.launch(arrayOf("application/zip")) }
                         )
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.DarkGray.copy(alpha = 0.3f))
                         SettingsListItem(
