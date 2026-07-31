@@ -1,5 +1,6 @@
 package com.mail2dev.upperdot.ui.wallet_overlay
 
+import android.app.Activity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,14 +18,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import coil.compose.AsyncImage
 import com.mail2dev.upperdot.ui.digital_wallet.BankCard
 import com.mail2dev.upperdot.ui.theme.*
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -104,6 +110,15 @@ fun QuickCardDisplay(
     card: BankCard,
     onCopy: () -> Unit
 ) {
+    var showFullScreenQr by remember { mutableStateOf(false) }
+
+    if (showFullScreenQr) {
+        FullScreenQrDialog(
+            qrPath = card.qrImagePath,
+            onDismiss = { showFullScreenQr = false }
+        )
+    }
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -117,30 +132,20 @@ fun QuickCardDisplay(
         Surface(
             modifier = Modifier
                 .size(240.dp)
-                .clickable { /* Expand to full screen & increase brightness */ },
+                .clickable { showFullScreenQr = true },
             shape = RoundedCornerShape(24.dp),
             color = Color.White
         ) {
             Box(contentAlignment = Alignment.Center) {
-                // Placeholder for dynamic QR code
-                Icon(Icons.Default.QrCode2, contentDescription = null, tint = Color.Black, modifier = Modifier.size(160.dp))
-                
-                // Share Button Overlay
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.CenterEnd
-                ) {
-                    Surface(
-                        shape = CircleShape,
-                        color = AccentCyan,
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.Share, contentDescription = "Share", tint = Color.Black, modifier = Modifier.size(20.dp))
-                        }
-                    }
+                if (card.qrImagePath != null) {
+                    AsyncImage(
+                        model = File(card.qrImagePath),
+                        contentDescription = "QR Code",
+                        modifier = Modifier.fillMaxSize().padding(24.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                } else {
+                    Icon(Icons.Default.QrCode2, contentDescription = null, tint = Color.Black, modifier = Modifier.size(160.dp))
                 }
             }
         }
@@ -161,6 +166,88 @@ fun QuickCardDisplay(
                 Icon(Icons.Default.ContentCopy, contentDescription = null, tint = TextSecondary, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(text = card.accountNumber, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Relocated Share Button
+        Surface(
+            shape = CircleShape,
+            color = AccentCyan,
+            modifier = Modifier.size(48.dp).clickable { /* TODO: Implement Share */ }
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.Share, contentDescription = "Share", tint = Color.Black, modifier = Modifier.size(20.dp))
+            }
+        }
+    }
+}
+
+@Composable
+fun FullScreenQrDialog(
+    qrPath: String?,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    
+    DisposableEffect(Unit) {
+        val window = (context as? Activity)?.window
+        val originalBrightness = window?.attributes?.screenBrightness ?: -1f
+        
+        window?.let {
+            val params = it.attributes
+            params.screenBrightness = 1.0f
+            it.attributes = params
+        }
+        
+        onDispose {
+            window?.let {
+                val params = it.attributes
+                params.screenBrightness = originalBrightness
+                it.attributes = params
+            }
+        }
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+                .clickable { onDismiss() },
+            contentAlignment = Alignment.Center
+        ) {
+            if (qrPath != null) {
+                AsyncImage(
+                    model = File(qrPath),
+                    contentDescription = "Full Screen QR",
+                    modifier = Modifier.fillMaxWidth().padding(32.dp),
+                    contentScale = ContentScale.Fit
+                )
+            } else {
+                Icon(
+                    Icons.Default.QrCode2,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(280.dp)
+                )
+            }
+            
+            IconButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 48.dp, end = 24.dp)
+                    .background(Color.White.copy(alpha = 0.2f), CircleShape)
+            ) {
+                Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
             }
         }
     }
