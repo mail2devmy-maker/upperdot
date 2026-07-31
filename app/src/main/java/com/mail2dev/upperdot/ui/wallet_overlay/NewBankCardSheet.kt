@@ -54,6 +54,12 @@ fun NewBankCardSheet(
     }
     
     val themeColors = listOf(
+        Color(0xFFFFC72C), // Maybank Yellow
+        Color(0xFF8C0B12), // CIMB Maroon
+        Color(0xFF005EA6), // RHB Blue
+        Color(0xFFED1C24), // Public Bank Red
+        Color(0xFF1A1A1A), // Matte Black
+        Color(0xFFB5B7BB), // Platinum
         AccentCyan,
         Color(0xFF2962FF), // Blue
         Color(0xFF00BFA5), // Teal

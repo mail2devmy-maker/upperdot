@@ -171,7 +171,7 @@ fun QuickCardDisplay(
             val context = LocalContext.current
             Surface(
                 shape = CircleShape,
-                color = AccentCyan,
+                color = Color(card.themeColor.toInt()),
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
                     .size(48.dp)

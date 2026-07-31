@@ -147,7 +147,7 @@ fun BankCardItem(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface)
+        colors = CardDefaults.cardColors(containerColor = Color(card.themeColor.toInt()))
     ) {
         Row(
             modifier = Modifier
