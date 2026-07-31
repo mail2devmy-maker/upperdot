@@ -86,6 +86,14 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Final Decision:** Use internal storage for all rich media and absolute path strings in Room.
 - **Impact:** `StorageUtils.kt` created, `DetailViewerSheets.kt` updated, `NewRelationshipNoteSheet.kt` and `NewCashTransactionSheet.kt` refactored to use the new copy logic.
 
+### 2024-05-20 - Contextual Picker Locking Mechanism
+- **Context/Goal:** Prevent accidental contact changes when creating notes or transactions via contact card shortcuts by locking the contact selection UI.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Interaction Control:* How to disable the picker without creating separate sheet components? *Decision:* Implemented an `isContactLocked` boolean flag in `NewRelationshipNoteSheet` and `NewCashTransactionSheet`. When true, the picker `Box` disables its `clickable` modifier, the dropdown chevron is hidden, and the internal search/filter overlay is entirely bypassed.
+  - *Conflict 2: State Awareness:* When should the picker be locked? *Decision:* The picker is locked in `ConnectionsListScreen` whenever `preSelectedContact` is non-null (shortcut method). It remains unlocked (default) in the global `InsightsScreen` to allow the user to search and associate any contact.
+- **Final Decision:** Use conditional UI rendering and modifier application based on the `isContactLocked` flag to enforce context-specific input restrictions.
+- **Impact:** `NewRelationshipNoteSheet.kt`, `NewCashTransactionSheet.kt`, `ConnectionsListScreen.kt`, `InsightsScreen.kt`.
+
 ### ⚠️ Build Errors & Resolutions
 - **Error:** `Unresolved reference: toFormattedDate` in `ClientProfileDetailScreen.kt`.
 - **Cause:** Missing utility function for formatting `Long` timestamps into user-friendly date strings.

@@ -68,7 +68,8 @@ fun InsightsScreen(
             searchedContacts = searchedContacts,
             attachmentPaths = selectedAttachments,
             onAddAttachment = viewModel::addAttachmentPath,
-            onRemoveAttachment = viewModel::removeAttachmentPath
+            onRemoveAttachment = viewModel::removeAttachmentPath,
+            isContactLocked = false
         )
     }
 
@@ -83,7 +84,8 @@ fun InsightsScreen(
             searchedContacts = searchedContacts,
             attachmentPaths = selectedAttachments,
             onAddAttachment = viewModel::addAttachmentPath,
-            onRemoveAttachment = viewModel::removeAttachmentPath
+            onRemoveAttachment = viewModel::removeAttachmentPath,
+            isContactLocked = false
         )
     }
 
