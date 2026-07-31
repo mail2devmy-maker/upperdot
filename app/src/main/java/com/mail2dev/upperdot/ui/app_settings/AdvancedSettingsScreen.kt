@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mail2dev.upperdot.ui.theme.*
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,6 +42,23 @@ fun AdvancedSettingsScreen(
     val showCurrencyDialog by viewModel.showCurrencyDialog.collectAsState()
     val vcfImportState by viewModel.vcfImportState.collectAsState()
     val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(Unit) {
+        viewModel.eventFlow.collectLatest { event ->
+            when (event) {
+                is SettingsUiEvent.Success -> {
+                    snackbarHostState.showSnackbar(event.message)
+                }
+                is SettingsUiEvent.Error -> {
+                    snackbarHostState.showSnackbar(event.message)
+                }
+                SettingsUiEvent.Loading -> {
+                    // Handled visually or via specific state if needed
+                }
+            }
+        }
+    }
 
     if (showFrequencyDialog) {
         val options = listOf("1h", "6h", "12h", "24h", "Manual")
@@ -214,6 +232,16 @@ fun AdvancedSettingsScreen(
                     navigationIconContentColor = Color.White
                 )
             )
+        },
+        snackbarHost = { 
+            SnackbarHost(hostState = snackbarHostState) { data ->
+                Snackbar(
+                    snackbarData = data,
+                    containerColor = Surface,
+                    contentColor = Color.White,
+                    shape = RoundedCornerShape(16.dp)
+                )
+            }
         },
         containerColor = Color.Black
     ) { innerPadding ->
