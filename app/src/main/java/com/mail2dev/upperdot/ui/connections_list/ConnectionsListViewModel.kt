@@ -7,7 +7,9 @@ import com.mail2dev.upperdot.data.local.entity.NoteEntity
 import com.mail2dev.upperdot.data.local.entity.TransactionEntity
 import com.mail2dev.upperdot.data.repository.ContactRepository
 import com.mail2dev.upperdot.data.repository.NoteRepository
+import com.mail2dev.upperdot.data.repository.PreferenceRepository
 import com.mail2dev.upperdot.data.repository.TransactionRepository
+import androidx.compose.material3.ExperimentalMaterial3Api
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -30,11 +32,12 @@ sealed class ConnectionsUIState {
     data class Success(val contacts: List<ContactSummary>) : ConnectionsUIState()
 }
 
-@OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalCoroutinesApi::class, FlowPreview::class)
 class ConnectionsListViewModel(
     private val repository: ContactRepository,
     private val noteRepository: NoteRepository,
-    private val transactionRepository: TransactionRepository
+    private val transactionRepository: TransactionRepository,
+    private val preferenceRepository: PreferenceRepository
 ) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
@@ -57,6 +60,10 @@ class ConnectionsListViewModel(
 
     private val _selectedAttachments = MutableStateFlow<List<String>>(emptyList())
     val selectedAttachments: StateFlow<List<String>> = _selectedAttachments.asStateFlow()
+
+    val currencySymbol: StateFlow<String> = preferenceRepository.preferences
+        .map { it.currencySymbol }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "$")
 
     val searchedContacts: StateFlow<List<ContactSummary>> = _contactSearchQuery
         .debounce(300)
@@ -160,13 +167,13 @@ class ConnectionsListViewModel(
         clearMedia()
     }
 
-    fun saveNote(contactId: Long, title: String, content: String, voice: String?) {
+    fun saveNote(contactId: Long, title: String, content: String, attachments: List<String>, voice: String?) {
         viewModelScope.launch(Dispatchers.IO) {
             val note = NoteEntity(
                 contactId = contactId,
                 title = title,
                 content = content,
-                attachmentPaths = _selectedAttachments.value,
+                attachmentPaths = attachments,
                 voiceRecordingPath = voice
             )
             noteRepository.insertNote(note)
@@ -176,7 +183,7 @@ class ConnectionsListViewModel(
         }
     }
 
-    fun saveTransaction(contactId: Long, isRevenue: Boolean, title: String, amount: String, detail: String, voice: String?) {
+    fun saveTransaction(contactId: Long, isRevenue: Boolean, title: String, amount: String, detail: String, attachments: List<String>, voice: String?) {
         viewModelScope.launch(Dispatchers.IO) {
             val transaction = TransactionEntity(
                 contactId = contactId,
@@ -184,7 +191,7 @@ class ConnectionsListViewModel(
                 amount = amount.toDoubleOrNull() ?: 0.0,
                 isRevenue = isRevenue,
                 detail = detail,
-                attachmentPaths = _selectedAttachments.value,
+                attachmentPaths = attachments,
                 voiceRecordingPath = voice
             )
             transactionRepository.insertTransaction(transaction)

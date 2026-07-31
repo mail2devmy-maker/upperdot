@@ -8,6 +8,7 @@ import com.mail2dev.upperdot.data.local.model.NoteWithContact
 import com.mail2dev.upperdot.data.local.model.TransactionWithContact
 import com.mail2dev.upperdot.data.repository.ContactRepository
 import com.mail2dev.upperdot.data.repository.NoteRepository
+import com.mail2dev.upperdot.data.repository.PreferenceRepository
 import com.mail2dev.upperdot.data.repository.TransactionRepository
 import com.mail2dev.upperdot.utils.toFormattedDate
 import kotlinx.coroutines.Dispatchers
@@ -47,7 +48,8 @@ data class TransactionEntry(
 class InsightsViewModel(
     private val contactRepository: ContactRepository,
     private val noteRepository: NoteRepository,
-    private val transactionRepository: TransactionRepository
+    private val transactionRepository: TransactionRepository,
+    private val preferenceRepository: PreferenceRepository
 ) : ViewModel() {
 
     private val _selectedTab = MutableStateFlow(InsightTab.NOTES)
@@ -109,6 +111,10 @@ class InsightsViewModel(
     val contactNames: StateFlow<List<String>> = contactRepository.allContacts
         .map { contacts -> contacts.map { it.fullName } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val currencySymbol: StateFlow<String> = preferenceRepository.preferences
+        .map { it.currencySymbol }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "$")
 
     val notes: StateFlow<List<NoteEntry>> = combine(_searchQuery, _selectedContactFilter) { query, filter ->
         query to filter

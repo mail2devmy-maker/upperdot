@@ -51,6 +51,7 @@ fun NewCashTransactionSheet(
     attachmentPaths: List<String>,
     onAddAttachment: (String) -> Unit,
     onRemoveAttachment: (Int) -> Unit,
+    currencySymbol: String,
     initialContact: ContactSummary? = null,
     isContactLocked: Boolean = false
 ) {
@@ -293,7 +294,7 @@ fun NewCashTransactionSheet(
                 StitchTextField(
                     value = amount,
                     onValueChange = { amount = it },
-                    placeholder = "Amount ($)",
+                    placeholder = "Amount ($currencySymbol)",
                     modifier = Modifier.weight(0.4f),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )

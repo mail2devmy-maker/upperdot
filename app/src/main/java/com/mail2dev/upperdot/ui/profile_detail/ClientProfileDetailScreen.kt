@@ -41,6 +41,7 @@ fun ClientProfileDetailScreen(
     val transactions by viewModel.transactions.collectAsState()
     val isNotesExpanded by viewModel.isNotesExpanded.collectAsState()
     val isTransactionsExpanded by viewModel.isTransactionsExpanded.collectAsState()
+    val currencySymbol by viewModel.currencySymbol.collectAsState()
     
     var showDeleteDialog by remember { mutableStateOf(false) }
     var selectedNote by remember { mutableStateOf<NoteEntity?>(null) }
@@ -89,6 +90,7 @@ fun ClientProfileDetailScreen(
     if (selectedTransaction != null) {
         TransactionViewerSheet(
             transaction = selectedTransaction!!,
+            currencySymbol = currencySymbol,
             sheetState = sheetState,
             onDismiss = { selectedTransaction = null }
         )
@@ -269,7 +271,11 @@ fun ClientProfileDetailScreen(
                         } else {
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 transactions.forEach { transaction ->
-                                    TransactionRow(transaction = transaction, onClick = { selectedTransaction = transaction })
+                                    TransactionRow(
+                                        transaction = transaction,
+                                        currencySymbol = currencySymbol,
+                                        onClick = { selectedTransaction = transaction }
+                                    )
                                 }
                             }
                         }
@@ -337,7 +343,11 @@ fun NoteRow(note: NoteEntity, onClick: () -> Unit) {
 }
 
 @Composable
-fun TransactionRow(transaction: TransactionEntity, onClick: () -> Unit) {
+fun TransactionRow(
+    transaction: TransactionEntity,
+    currencySymbol: String,
+    onClick: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -369,9 +379,9 @@ fun TransactionRow(transaction: TransactionEntity, onClick: () -> Unit) {
             }
 
             val amountText = if (transaction.isRevenue) {
-                "+$${String.format(Locale.getDefault(), "%.2f", transaction.amount)}"
+                "+$currencySymbol${String.format(Locale.getDefault(), "%.2f", transaction.amount)}"
             } else {
-                "-$${String.format(Locale.getDefault(), "%.2f", transaction.amount)}"
+                "-$currencySymbol${String.format(Locale.getDefault(), "%.2f", transaction.amount)}"
             }
             val amountColor = if (transaction.isRevenue) PositiveGreen else NegativeRed
 

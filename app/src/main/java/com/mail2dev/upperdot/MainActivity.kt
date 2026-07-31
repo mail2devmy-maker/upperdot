@@ -154,7 +154,8 @@ fun RootNavigation() {
                         ConnectionsListViewModel(
                             app.contactRepository,
                             app.noteRepository,
-                            app.transactionRepository
+                            app.transactionRepository,
+                            app.preferenceRepository
                         )
                     }
                 }
@@ -240,7 +241,8 @@ fun RootNavigation() {
                         ClientProfileDetailViewModel(
                             app.contactRepository,
                             app.noteRepository,
-                            app.transactionRepository
+                            app.transactionRepository,
+                            app.preferenceRepository
                         )
                     }
                 }
@@ -257,17 +259,6 @@ fun RootNavigation() {
         }
         
         composable("insights") {
-            val insightsViewModel: InsightsViewModel = viewModel(
-                factory = viewModelFactory {
-                    initializer {
-                        InsightsViewModel(
-                            app.contactRepository,
-                            app.noteRepository,
-                            app.transactionRepository
-                        )
-                    }
-                }
-            )
             InsightsScreen(
                 onNavigate = { route ->
                     navController.navigate(route) {
@@ -275,7 +266,18 @@ fun RootNavigation() {
                         restoreState = true
                     }
                 },
-                viewModel = insightsViewModel
+                viewModel = viewModel(
+                    factory = viewModelFactory {
+                        initializer {
+                            InsightsViewModel(
+                                app.contactRepository,
+                                app.noteRepository,
+                                app.transactionRepository,
+                                app.preferenceRepository
+                            )
+                        }
+                    }
+                )
             )
         }
 

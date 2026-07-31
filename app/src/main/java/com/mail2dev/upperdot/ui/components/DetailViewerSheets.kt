@@ -137,6 +137,7 @@ fun NoteViewerSheet(
 @Composable
 fun TransactionViewerSheet(
     transaction: TransactionEntity,
+    currencySymbol: String,
     sheetState: SheetState,
     onDismiss: () -> Unit
 ) {
@@ -181,9 +182,9 @@ fun TransactionViewerSheet(
                 }
                 
                 val amountText = if (transaction.isRevenue) {
-                    "+$${String.format(Locale.getDefault(), "%.2f", transaction.amount)}"
+                    "+$currencySymbol${String.format(Locale.getDefault(), "%.2f", transaction.amount)}"
                 } else {
-                    "-$${String.format(Locale.getDefault(), "%.2f", transaction.amount)}"
+                    "-$currencySymbol${String.format(Locale.getDefault(), "%.2f", transaction.amount)}"
                 }
                 val amountColor = if (transaction.isRevenue) PositiveGreen else NegativeRed
                 
