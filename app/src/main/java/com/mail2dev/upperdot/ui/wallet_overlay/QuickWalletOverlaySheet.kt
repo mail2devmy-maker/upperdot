@@ -158,15 +158,18 @@ fun QuickCardDisplay(
         
         Spacer(modifier = Modifier.height(24.dp))
 
+        Spacer(modifier = Modifier.height(24.dp))
+
         // QR and Share Layout Block
-        Box(
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            contentAlignment = Alignment.Center
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             // White QR Card Template
             Surface(
                 modifier = Modifier
-                    .size(240.dp)
+                    .size(220.dp) // Slightly reduced to ensure fit on smaller screens
                     .clickable { showFullScreenQr = true },
                 shape = RoundedCornerShape(24.dp),
                 color = Color.White
@@ -178,7 +181,7 @@ fun QuickCardDisplay(
                             contentDescription = "QR Code",
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(24.dp),
+                                .padding(20.dp),
                             contentScale = ContentScale.Fit
                         )
                     } else {
@@ -186,11 +189,13 @@ fun QuickCardDisplay(
                             imageVector = Icons.Default.QrCode2,
                             contentDescription = null,
                             tint = Color.Black,
-                            modifier = Modifier.size(160.dp)
+                            modifier = Modifier.size(140.dp)
                         )
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.width(16.dp))
 
             // Glassmorphic Share Action Button
             val context = LocalContext.current
@@ -198,8 +203,7 @@ fun QuickCardDisplay(
                 shape = CircleShape,
                 color = Color.White.copy(alpha = 0.15f),
                 modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .size(52.dp)
+                    .size(44.dp) // Reduced size to sit cleanly inside safe zone
                     .border(1.dp, Color.White.copy(alpha = 0.3f), CircleShape)
                     .clickable { 
                         if (card.qrImagePath != null) {
@@ -234,7 +238,7 @@ fun QuickCardDisplay(
                         imageVector = Icons.Default.Share,
                         contentDescription = "Share",
                         tint = Color.White,
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }

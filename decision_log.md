@@ -602,6 +602,14 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Final Decision:** Use layered background alpha blends and neon border glows. Applied sophisticated uppercase typography with expanded letter-spacing (1.5sp) for bank titles and grouped account number formatting.
 - **Impact:** `DigitalWalletScreen.kt`, `QuickWalletOverlaySheet.kt`.
 
+### 2024-05-20 - Quick Wallet Layout Alignment Fix
+- **Context/Goal:** Resolve a layout bug where the share button was clipping over the card edge boundary in `QuickWalletOverlaySheet.kt`.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Shared Alignment:* The `Box` with `Alignment.CenterEnd` was pushing the button too far to the right, causing it to overlap the glassmorphic card border. *Decision:* Restructured the layout using a centered `Row` to keep the QR card and share button grouped relative to each other.
+  - *Conflict 2: Button Scaling:* The 52dp button was too large for the available safe zone. *Decision:* Reduced the share button size to 44dp and the QR card size to 220dp to ensure a perfect fit without clipping the viewport or overlapping borders on standard devices.
+- **Final Decision:** Use a centered `Row` with 16dp spacing and reduced component dimensions to maintain safe zone integrity.
+- **Impact:** `QuickWalletOverlaySheet.kt`.
+
 ### ⚠️ Build Errors & Resolutions
 - **Error:** `Unresolved reference: border` in `QuickWalletOverlaySheet.kt`.
 - **Cause:** Missing import for `androidx.compose.foundation.border` after adding glassmorphic border glows.
