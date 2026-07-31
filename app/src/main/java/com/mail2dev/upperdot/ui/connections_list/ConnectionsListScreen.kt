@@ -321,9 +321,18 @@ fun ContactCard(
     var isExpanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
     
+    // Use a Ref to avoid circular reference during state initialization
+    val stateRef = remember { mutableStateOf<SwipeToDismissBoxState?>(null) }
+    
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
-            if (value == SwipeToDismissBoxValue.StartToEnd) {
+            val isDismissedToEnd = value == SwipeToDismissBoxValue.StartToEnd
+            // STRICT VELOCITY GATING: Only execute if we are swiping right AND we have actually crossed the 60% threshold positionally.
+            // This prevents "fast slides" from auto-completing via velocity alone.
+            val currentProgress = stateRef.value?.progress ?: 0f
+            val reachedThreshold = currentProgress >= 0.6f
+            
+            if (isDismissedToEnd && reachedThreshold) {
                 // EXECUTION LOCK: Fires strictly on release Past 60% threshold
                 if (contact.primaryPhone.isNotEmpty()) {
                     val intent = Intent(Intent.ACTION_CALL).apply {
@@ -343,8 +352,13 @@ fun ContactCard(
                 false
             }
         },
-        positionalThreshold = { it * 0.6f } // Strict 60% Boundary
+        positionalThreshold = { totalDistance -> totalDistance * 0.60f } // Strict 60% Boundary Lock
     )
+    
+    // Update the ref so the lambda can access the state during gestures
+    SideEffect {
+        stateRef.value = dismissState
+    }
 
     SwipeToDismissBox(
         state = dismissState,
