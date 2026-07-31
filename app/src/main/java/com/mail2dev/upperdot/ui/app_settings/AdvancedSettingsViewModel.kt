@@ -18,12 +18,15 @@ import com.mail2dev.upperdot.data.local.entity.ContactEntity
 import com.mail2dev.upperdot.data.local.entity.PreferenceEntity
 import com.mail2dev.upperdot.data.repository.PreferenceRepository
 import com.mail2dev.upperdot.util.ContactUtils
+import com.mail2dev.upperdot.utils.BackupUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.io.File
 import java.io.InputStream
+import java.io.OutputStream
 
 data class DatabaseDiagnostics(
     val vaultSize: String = "0.00 MB",
@@ -162,40 +165,46 @@ class AdvancedSettingsViewModel(
         _showClearCacheDialog.value = false
     }
 
-    fun exportDatabase(onSuccess: (String) -> Unit) {
+    fun exportDatabase(filesDir: File, outputStream: OutputStream, onComplete: () -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             val backup = DatabaseBackup(
                 contacts = contactRepository.allContacts.first(),
                 notes = noteRepository.allNotes.first(),
                 transactions = transactionRepository.allTransactions.first(),
-                bankCards = bankCardRepository.allCards.first()
+                bankCards = bankCardRepository.allCards.first(),
+                preferences = preferenceRepository.preferences.first()
             )
             val json = Json.encodeToString(backup)
+            BackupUtils.createZipBackup(filesDir, json, outputStream)
             withContext(Dispatchers.Main) {
-                onSuccess(json)
+                onComplete()
             }
         }
     }
 
-    fun importDatabase(json: String, onSuccess: () -> Unit) {
+    fun importDatabase(filesDir: File, inputStream: InputStream, onSuccess: () -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val backup = Json.decodeFromString<DatabaseBackup>(json)
-                
-                // Clear existing
-                contactRepository.deleteAll()
-                noteRepository.deleteAll()
-                transactionRepository.deleteAll()
-                bankCardRepository.deleteAll()
+                val json = BackupUtils.restoreZipBackup(filesDir, inputStream)
+                if (json != null) {
+                    val backup = Json.decodeFromString<DatabaseBackup>(json)
+                    
+                    // Clear existing
+                    contactRepository.deleteAll()
+                    noteRepository.deleteAll()
+                    transactionRepository.deleteAll()
+                    bankCardRepository.deleteAll()
 
-                // Restore
-                contactRepository.insertContacts(backup.contacts)
-                noteRepository.insertNotes(backup.notes)
-                transactionRepository.insertTransactions(backup.transactions)
-                bankCardRepository.insertCards(backup.bankCards)
+                    // Restore
+                    contactRepository.insertContacts(backup.contacts)
+                    noteRepository.insertNotes(backup.notes)
+                    transactionRepository.insertTransactions(backup.transactions)
+                    bankCardRepository.insertCards(backup.bankCards)
+                    backup.preferences?.let { preferenceRepository.savePreferences(it) }
 
-                withContext(Dispatchers.Main) {
-                    onSuccess()
+                    withContext(Dispatchers.Main) {
+                        onSuccess()
+                    }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()

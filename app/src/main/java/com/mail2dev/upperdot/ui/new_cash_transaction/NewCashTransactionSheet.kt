@@ -94,7 +94,9 @@ fun NewCashTransactionSheet(
 
     fun startRecording() {
         try {
-            val file = File(context.cacheDir, "trans_voice_${System.currentTimeMillis()}.mp3")
+            val folder = File(context.filesDir, "attachments")
+            if (!folder.exists()) folder.mkdirs()
+            val file = File(folder, "trans_voice_${System.currentTimeMillis()}.mp4")
             voiceRecordingPath = file.absolutePath
             recorder = MediaRecorder().apply {
                 setAudioSource(MediaRecorder.AudioSource.MIC)

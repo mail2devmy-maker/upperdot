@@ -627,6 +627,15 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Final Decision:** Use repository-driven StateFlows to broadcast the active currency token to all financial display surfaces and input masks.
 - **Impact:** `InsightsViewModel.kt`, `InsightsScreen.kt`, `ConnectionsListViewModel.kt`, `ConnectionsListScreen.kt`, `ClientProfileDetailViewModel.kt`, `ClientProfileDetailScreen.kt`, `NewCashTransactionSheet.kt`, `DetailViewerSheets.kt`, `MainActivity.kt`.
 
+### 2024-05-20 - Binary Asset Backup & Restore (ZIP Transformation)
+- **Context/Goal:** Transition the backup engine from a single JSON file to a compressed ZIP archive to prevent loss of binary assets (voice recordings, images, QR codes) during device migrations.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Storage Location:* Temporary cache vs permanent storage. *Decision:* Migrated voice recording capture from `cacheDir` to `filesDir/attachments` to ensure they are eligible for backup. Internal private storage (`filesDir`) remains the source of truth.
+  - *Conflict 2: Backup Format:* JSON vs ZIP. *Decision:* Implemented `BackupUtils` to generate a `.zip` container. The Room database state is serialized into `database.json`, while physical binary files are packed into an `attachments/` and `qrcodes/` subfolder hierarchy.
+  - *Conflict 3: Restore Hydration:* How to re-populate the file system? *Decision:* During restore, the engine recursively extracts the ZIP entries back into the app's internal sandbox (`context.filesDir`). It clears existing local folders first to ensure a clean, non-conflicting environment before re-inserting Room records.
+- **Final Decision:** Use `ZipOutputStream` and `ZipInputStream` for binary serialization. Package all internal app files along with the database snapshot.
+- **Impact:** `AdvancedSettingsViewModel.kt`, `AdvancedSettingsScreen.kt`, `BackupUtils.kt`, `DatabaseBackup.kt`, `NewRelationshipNoteSheet.kt`, `NewCashTransactionSheet.kt`.
+
 ### ⚠️ Build Errors & Resolutions
 - **Error:** `No parameter with name 'currencySymbol' found` in `InsightsScreen.kt` and `NewRelationshipNoteSheet.kt`.
 - **Cause:** Incomplete parameter synchronization across Composable signatures and their navigation call sites in `MainActivity.kt`.

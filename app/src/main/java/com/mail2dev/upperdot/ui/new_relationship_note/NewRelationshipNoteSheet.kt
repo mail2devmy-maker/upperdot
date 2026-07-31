@@ -91,7 +91,9 @@ fun NewRelationshipNoteSheet(
 
     fun startRecording() {
         try {
-            val file = File(context.cacheDir, "voice_note_${System.currentTimeMillis()}.mp3")
+            val folder = File(context.filesDir, "attachments")
+            if (!folder.exists()) folder.mkdirs()
+            val file = File(folder, "voice_note_${System.currentTimeMillis()}.mp4")
             voiceRecordingPath = file.absolutePath
             recorder = MediaRecorder().apply {
                 setAudioSource(MediaRecorder.AudioSource.MIC)
