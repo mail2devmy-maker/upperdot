@@ -30,6 +30,8 @@ class AddContactViewModel(
     private val hierarchyRepository: HierarchyRepository
 ) : ViewModel() {
 
+    private var editingContactId: Long? = null
+
     // Step 1: Core Info
     private val _fullName = MutableStateFlow("")
     val fullName: StateFlow<String> = _fullName.asStateFlow()
@@ -75,6 +77,25 @@ class AddContactViewModel(
 
     private val _showDiscardDialog = MutableStateFlow(false)
     val showDiscardDialog: StateFlow<Boolean> = _showDiscardDialog.asStateFlow()
+
+    fun loadContact(id: Long) {
+        viewModelScope.launch {
+            repository.getContactById(id)?.let { contact ->
+                editingContactId = contact.id
+                _fullName.value = contact.fullName
+                _nicknames.value = contact.nicknames.joinToString(", ")
+                _phoneNumbers.value = contact.phoneNumbers.ifEmpty { listOf("") }
+                _emails.value = contact.emails.ifEmpty { listOf("") }
+                _socialProfiles.value = contact.socialProfiles.ifEmpty { listOf(SocialProfile()) }
+                _groupName.value = contact.groupName
+                _tagName.value = contact.tagName ?: ""
+                _companyName.value = contact.companyName ?: ""
+                _businessCategory.value = contact.businessCategory
+                _officeAddress.value = contact.physicalAddress ?: ""
+                _bankAccounts.value = contact.bankAccounts.ifEmpty { listOf(BankAccount()) }
+            }
+        }
+    }
 
     // Update methods
     fun onFullNameChange(value: String) { _fullName.value = value }
@@ -215,7 +236,7 @@ class AddContactViewModel(
         
         viewModelScope.launch(Dispatchers.IO) {
             val entity = ContactEntity(
-                id = 0L,
+                id = editingContactId ?: 0L,
                 fullName = _fullName.value,
                 nicknames = _nicknames.value.split(",").map { it.trim() }.filter { it.isNotEmpty() },
                 phoneNumbers = _phoneNumbers.value.filter { it.isNotEmpty() },
@@ -229,7 +250,13 @@ class AddContactViewModel(
                 physicalAddress = _officeAddress.value,
                 bankAccounts = _bankAccounts.value.filter { it.accountNumber.isNotEmpty() }
             )
-            repository.insertContact(entity)
+            
+            if (editingContactId != null) {
+                repository.updateContact(entity)
+            } else {
+                repository.insertContact(entity)
+            }
+
             withContext(Dispatchers.Main) {
                 onSuccess()
             }

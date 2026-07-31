@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -104,13 +105,14 @@ fun RootNavigation() {
                     navController.navigate("client_profile/$contactId")
                 },
                 onNavigateToAddContact = {
-                    navController.navigate("add_contact")
+                    navController.navigate("add_contact?contactId=")
                 },
                 viewModel = connectionsViewModel
             )
         }
 
-        composable("add_contact") { backStackEntry ->
+        composable("add_contact?contactId={contactId}") { backStackEntry ->
+            val contactId = backStackEntry.arguments?.getString("contactId")?.toLongOrNull()
             val addContactViewModel: AddContactViewModel = viewModel(
                 viewModelStoreOwner = backStackEntry,
                 factory = viewModelFactory {
@@ -119,6 +121,11 @@ fun RootNavigation() {
                     }
                 }
             )
+
+            LaunchedEffect(contactId) {
+                contactId?.let { addContactViewModel.loadContact(it) }
+            }
+
             val currentStep by addContactViewModel.currentStep.collectAsState()
             
             when (currentStep) {
@@ -178,7 +185,7 @@ fun RootNavigation() {
                 onNavigateBack = { navController.popBackStack() },
                 onEditContact = { id ->
                     // Navigation to edit mode
-                    navController.navigate("add_contact")
+                    navController.navigate("add_contact?contactId=$id")
                 },
                 viewModel = profileViewModel
             )

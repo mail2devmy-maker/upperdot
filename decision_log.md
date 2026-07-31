@@ -102,6 +102,15 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Final Decision:** Use SQLite Inner Joins to dynamically resolve contact names from the `contacts` table based on `contactId`.
 - **Impact:** `NoteDao.kt`, `TransactionDao.kt`, `NoteRepository.kt`, `TransactionRepository.kt`, `InsightsViewModel.kt` updated. `NoteWithContact.kt` and `TransactionWithContact.kt` models created.
 
+### 2024-05-20 - Contact Form Wizard Edit Mode Update Fix
+- **Context/Goal:** Fix the freeze occurring when attempting to save an edited contact. Ensure updated values are correctly mapped to the existing ID and persisted to Room.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Navigation Routing:* Should edit mode be a separate route? *Decision:* Implemented an optional `contactId` query parameter for the `add_contact` route: `add_contact?contactId={contactId}`. This allows reusing the same Wizard UI while providing a hook to load existing data.
+  - *Conflict 2: State Initialization:* When to load contact data? *Decision:* Used a `LaunchedEffect(contactId)` block in `MainActivity.kt` to trigger `addContactViewModel.loadContact(it)` upon route entry. This ensures the form is pre-populated before the user interacts with it.
+  - *Conflict 3: Persistence Logic:* Insert vs Update. *Decision:* Updated `saveContact` in `AddContactViewModel` to check for a non-null `editingContactId`. If present, it calls `repository.updateContact(entity)`; otherwise, it performs a standard `insertContact(entity)`.
+- **Final Decision:** Use an internal `editingContactId` reference in the ViewModel to drive the branching logic between creation and updates, ensuring ID continuity for relational data (notes/transactions).
+- **Impact:** `AddContactViewModel.kt`, `MainActivity.kt` updated.
+
 ### ⚠️ Build Errors & Resolutions
 - **Error:** `Unresolved reference: toFormattedDate` in `ClientProfileDetailScreen.kt`.
 - **Cause:** Missing utility function for formatting `Long` timestamps into user-friendly date strings.
