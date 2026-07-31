@@ -671,7 +671,20 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Final Decision:** Use `List<String>` with `receiptPaths` naming and implement `LazyRow` carousels in both the creation sheet and the viewer sheet.
 - **Impact:** `TransactionEntity.kt`, `InsightsViewModel.kt`, `ConnectionsListViewModel.kt`, `NewCashTransactionSheet.kt`, `DetailViewerSheets.kt`, `InsightsScreen.kt`, `ConnectionsListScreen.kt`.
 
+### 2024-05-20 - Viewer Sheet Administrative Controls
+- **Context/Goal:** Implement Edit and Delete functionality in `NoteViewerSheet` and `TransactionViewerSheet` to allow full lifecycle management of logs directly from the preview overlay.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Interaction Model:* Modal vs inline editing. *Decision:* Implemented inline editing within the sheet itself using a local `isEditingMode` flag. This minimizes navigation churn and allows the user to see the context of the record while making quick adjustments.
+  - *Conflict 2: Deletion Safety:* Immediate vs Confirmed. *Decision:* Integrated an `AlertDialog` confirmation prompt for all delete actions. This prevents accidental data loss and ensures users are aware of the permanence of the action.
+  - *Conflict 3: Feedback Mechanism:* Toast vs Snackbar. *Decision:* Leveraged a `SharedFlow` event channel in `InsightsViewModel` to trigger a floating `SnackbarHost` confirmation. This provides a professional "material-compliant" success indicator after asynchronous repository writes.
+- **Final Decision:** Add IconButton row (Edit/Delete) to headers. Shift text fields to active `StitchTextField` inputs during edit mode. Unified the administrative logic across `InsightsScreen` and `ClientProfileDetailScreen`.
+- **Impact:** `DetailViewerSheets.kt`, `InsightsViewModel.kt`, `InsightsScreen.kt`, `ClientProfileDetailViewModel.kt`, `ClientProfileDetailScreen.kt`.
+
 ### ⚠️ Build Errors & Resolutions
+- **Error:** Bracing mismatch in `DetailViewerSheets.kt` causing unresolved references.
+- **Cause:** Incorrect nested block closures in `NoteViewerSheet` after adding the `isEditingMode` conditional.
+- **Resolution:** Manually audited and refactored the Composable hierarchy to ensure all blocks are correctly closed and `FullScreenImagePreview` remains accessible.
+
 - **Error:** `No parameter with name 'receiptPaths' found` in `InsightsScreen.kt`.
 - **Cause:** Renamed the parameter in `NewCashTransactionSheet` signature to `receiptPaths` for consistency, but the call site was still trying to pass to `attachmentPaths`.
 - **Resolution:** Synchronized the call sites in `InsightsScreen.kt` and `ConnectionsListScreen.kt` to use `receiptPaths` for transaction sheets while keeping `attachmentPaths` for note sheets.

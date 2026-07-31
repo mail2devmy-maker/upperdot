@@ -76,6 +76,9 @@ class InsightsViewModel(
     private val _selectedTransaction = MutableStateFlow<TransactionEntity?>(null)
     val selectedTransaction: StateFlow<TransactionEntity?> = _selectedTransaction.asStateFlow()
 
+    private val _eventFlow = MutableSharedFlow<String>()
+    val eventFlow = _eventFlow.asSharedFlow()
+
     val searchedContacts: StateFlow<List<ContactSummary>> = _contactSearchQuery
         .debounce(300)
         .flatMapLatest { query ->
@@ -218,6 +221,48 @@ class InsightsViewModel(
 
     fun dismissTransactionViewer() {
         _selectedTransaction.value = null
+    }
+
+    fun deleteNote(note: NoteEntity) {
+        viewModelScope.launch(Dispatchers.IO) {
+            noteRepository.deleteNote(note)
+            _eventFlow.emit("✓ Item removed successfully!")
+            withContext(Dispatchers.Main) {
+                _selectedNote.value = null
+            }
+        }
+    }
+
+    fun updateNote(note: NoteEntity) {
+        viewModelScope.launch(Dispatchers.IO) {
+            noteRepository.updateNote(note)
+            _eventFlow.emit("✓ Note updated successfully!")
+            withContext(Dispatchers.Main) {
+                // Refresh the selected note to reflect changes in UI
+                _selectedNote.value = note
+            }
+        }
+    }
+
+    fun deleteTransaction(transaction: TransactionEntity) {
+        viewModelScope.launch(Dispatchers.IO) {
+            transactionRepository.deleteTransaction(transaction)
+            _eventFlow.emit("✓ Item removed successfully!")
+            withContext(Dispatchers.Main) {
+                _selectedTransaction.value = null
+            }
+        }
+    }
+
+    fun updateTransaction(transaction: TransactionEntity) {
+        viewModelScope.launch(Dispatchers.IO) {
+            transactionRepository.updateTransaction(transaction)
+            _eventFlow.emit("✓ Transaction updated successfully!")
+            withContext(Dispatchers.Main) {
+                // Refresh the selected transaction to reflect changes in UI
+                _selectedTransaction.value = transaction
+            }
+        }
     }
 
     fun saveNote(

@@ -100,6 +100,30 @@ class ClientProfileDetailViewModel(
         _isTransactionsExpanded.value = !_isTransactionsExpanded.value
     }
 
+    fun updateNote(note: NoteEntity) {
+        viewModelScope.launch {
+            noteRepository.updateNote(note)
+        }
+    }
+
+    fun deleteNote(note: NoteEntity) {
+        viewModelScope.launch {
+            noteRepository.deleteNote(note)
+        }
+    }
+
+    fun updateTransaction(transaction: TransactionEntity) {
+        viewModelScope.launch {
+            transactionRepository.updateTransaction(transaction)
+        }
+    }
+
+    fun deleteTransaction(transaction: TransactionEntity) {
+        viewModelScope.launch {
+            transactionRepository.deleteTransaction(transaction)
+        }
+    }
+
     fun deleteContact(onSuccess: () -> Unit) {
         val id = _contactId.value ?: return
         viewModelScope.launch {

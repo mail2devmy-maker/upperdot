@@ -83,7 +83,12 @@ fun ClientProfileDetailScreen(
         NoteViewerSheet(
             note = selectedNote!!,
             sheetState = sheetState,
-            onDismiss = { selectedNote = null }
+            onDismiss = { selectedNote = null },
+            onUpdate = viewModel::updateNote,
+            onDelete = { note ->
+                viewModel.deleteNote(note)
+                selectedNote = null
+            }
         )
     }
 
@@ -92,7 +97,12 @@ fun ClientProfileDetailScreen(
             transaction = selectedTransaction!!,
             currencySymbol = currencySymbol,
             sheetState = sheetState,
-            onDismiss = { selectedTransaction = null }
+            onDismiss = { selectedTransaction = null },
+            onUpdate = viewModel::updateTransaction,
+            onDelete = { trans ->
+                viewModel.deleteTransaction(trans)
+                selectedTransaction = null
+            }
         )
     }
 
