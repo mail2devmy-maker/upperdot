@@ -40,42 +40,6 @@ fun AddContactIdentityScreen(
     val currentStep by viewModel.currentStep.collectAsState()
     val showDiscardDialog by viewModel.showDiscardDialog.collectAsState()
 
-    var showNewGroupDialog by remember { mutableStateOf(false) }
-    var newGroupName by remember { mutableStateOf("") }
-
-    if (showNewGroupDialog) {
-        AlertDialog(
-            onDismissRequest = { showNewGroupDialog = false },
-            title = { Text("Create New Group", color = Color.White) },
-            text = {
-                OutlinedTextField(
-                    value = newGroupName,
-                    onValueChange = { newGroupName = it },
-                    placeholder = { Text("Group Name", color = Color.Gray) },
-                    colors = TextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedContainerColor = Surface,
-                        unfocusedContainerColor = Surface
-                    )
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    if (newGroupName.isNotBlank()) {
-                        viewModel.onCreateNewGroup(newGroupName)
-                        showNewGroupDialog = false
-                        newGroupName = ""
-                    }
-                }) { Text("Create", color = AccentCyan) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showNewGroupDialog = false }) { Text("Cancel", color = Color.Gray) }
-            },
-            containerColor = Surface
-        )
-    }
-
     if (showDiscardDialog) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissDiscardDialog() },
@@ -251,14 +215,8 @@ fun AddContactIdentityScreen(
                 // Group Dropdown
                 StitchDropdown(
                     selectedOption = if (groupName.isEmpty()) "Assign Group" else groupName,
-                    options = availableGroups.map { it.name } + "[ + Create New Group ]",
-                    onOptionSelected = { 
-                        if (it == "[ + Create New Group ]") {
-                            showNewGroupDialog = true
-                        } else {
-                            viewModel.onGroupNameChange(it)
-                        }
-                    },
+                    options = availableGroups.map { it.name },
+                    onOptionSelected = viewModel::onGroupNameChange,
                     leadingIcon = Icons.Default.Groups,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -267,13 +225,20 @@ fun AddContactIdentityScreen(
 
                 // Tag Dropdown (Dependent on Group)
                 val selectedGroupTags = availableGroups.find { it.name == groupName }?.tags?.map { it.name } ?: emptyList()
+                val isTagEnabled = groupName.isNotEmpty() && selectedGroupTags.isNotEmpty()
+                val tagLabel = when {
+                    groupName.isEmpty() -> "Select Tag (Optional)"
+                    selectedGroupTags.isEmpty() -> "No tags available"
+                    tagName.isEmpty() -> "Select Tag (Optional)"
+                    else -> tagName
+                }
                 
                 StitchDropdown(
-                    selectedOption = if (tagName.isEmpty()) "Select Tag (Optional)" else tagName,
+                    selectedOption = tagLabel,
                     options = selectedGroupTags,
                     onOptionSelected = viewModel::onTagNameChange,
                     leadingIcon = Icons.Default.Tag,
-                    enabled = groupName.isNotEmpty() && selectedGroupTags.isNotEmpty(),
+                    enabled = isTagEnabled,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
