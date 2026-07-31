@@ -714,6 +714,15 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Final Decision:** Use `LaunchedEffect` for action execution and state reset; enforce 0.65f positional threshold.
 - **Impact:** `ConnectionsListScreen.kt`.
 
+### 2024-05-20 - Swipe-to-Call State Loop Resolution
+- **Context/Goal:** Fix a critical state loop where the phone intent would auto-fire upon tab navigation due to the card remaining in the `DismissedToEnd` state.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Interaction Deadlock:* Previous logic returned `false` in `confirmValueChange` while executing the intent. This vetoed the state transition but occasionally caused the gesture engine to freeze or stutter because the animation never "reached" a terminal state.
+  - *Conflict 2: Auto-Dialing on Resume:* If the card stayed in `DismissedToEnd`, the `LaunchedEffect` would re-trigger when the screen was re-composed or resumed from the backstack. *Decision:* Updated `confirmValueChange` to return `true` for both `StartToEnd` and `Settled` values. This allows the card to fully transition to the active anchor and then be programmatically snapped back to `Settled` inside the `LaunchedEffect`.
+  - *Conflict 3: Intent API preference:* Replaced `.toUri()` extension with explicit `Uri.parse()` to align with strict telephony intent requirements provided in the SRS.
+- **Final Decision:** Use a "Fire-and-Reset" pattern in `LaunchedEffect` and allow state confirmation in `confirmValueChange`.
+- **Impact:** `ConnectionsListScreen.kt`.
+
 ### ⚠️ Build Errors & Resolutions
 - **Error:** Bracing mismatch in `DetailViewerSheets.kt` causing unresolved references.
 - **Cause:** Incorrect nested block closures in `NoteViewerSheet` after adding the `isEditingMode` conditional.

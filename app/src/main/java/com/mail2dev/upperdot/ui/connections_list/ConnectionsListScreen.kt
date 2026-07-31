@@ -3,6 +3,7 @@ package com.mail2dev.upperdot.ui.connections_list
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -26,7 +27,6 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.core.net.toUri
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -328,30 +328,30 @@ fun ContactCard(
         val widthPx = with(density) { maxWidth.toPx() }
         
         val dismissState = rememberSwipeToDismissBoxState(
-            confirmValueChange = { value ->
-                // Allow state transition to DismissedToEnd
-                value == SwipeToDismissBoxValue.StartToEnd
+            confirmValueChange = { value -> 
+                // Allow transition to DismissedToEnd and back to Settled
+                value == SwipeToDismissBoxValue.StartToEnd || value == SwipeToDismissBoxValue.Settled
             },
             positionalThreshold = { totalDistance -> totalDistance * 0.65f } // Massive 65% Boundary Lock
         )
 
-        // EXECUTION & AUTO-RESET: Trigger call and return to settled state
+        // EXECUTION & AUTO-RESET: Trigger call and return to settled state safely
         LaunchedEffect(dismissState.currentValue) {
             if (dismissState.currentValue == SwipeToDismissBoxValue.StartToEnd) {
                 if (contact.primaryPhone.isNotEmpty()) {
                     val intent = Intent(Intent.ACTION_CALL).apply {
-                        data = "tel:${contact.primaryPhone}".toUri()
+                        data = Uri.parse("tel:${contact.primaryPhone}")
                     }
                     if (ContextCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
                         context.startActivity(intent)
                     } else {
                         val dialIntent = Intent(Intent.ACTION_DIAL).apply {
-                            data = "tel:${contact.primaryPhone}".toUri()
+                            data = Uri.parse("tel:${contact.primaryPhone}")
                         }
                         context.startActivity(dialIntent)
                     }
                 }
-                // Smoothly snap back to settled position
+                // Automatically reset the card back to closed cleanly
                 dismissState.snapTo(SwipeToDismissBoxValue.Settled)
             }
         }
