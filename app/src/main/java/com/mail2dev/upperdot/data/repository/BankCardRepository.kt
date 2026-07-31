@@ -17,6 +17,10 @@ class BankCardRepository(private val bankCardDao: BankCardDao) {
         bankCardDao.insertCards(cards)
     }
 
+    suspend fun updateCard(card: BankCardEntity) {
+        bankCardDao.updateCard(card)
+    }
+
     suspend fun deleteCard(card: BankCardEntity) {
         bankCardDao.deleteCard(card)
     }

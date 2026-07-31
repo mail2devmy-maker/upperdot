@@ -11,6 +11,7 @@ import com.mail2dev.upperdot.data.repository.BankCardRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class BankCard(
     val id: String,
@@ -33,6 +34,9 @@ class DigitalWalletViewModel(private val repository: BankCardRepository) : ViewM
     private val _showAddCardSheet = MutableStateFlow(false)
     val showAddCardSheet: StateFlow<Boolean> = _showAddCardSheet.asStateFlow()
 
+    private val _editingCard = MutableStateFlow<BankCardEntity?>(null)
+    val editingCard: StateFlow<BankCardEntity?> = _editingCard.asStateFlow()
+
     private val _showQuickWalletSheet = MutableStateFlow(false)
     val showQuickWalletSheet: StateFlow<Boolean> = _showQuickWalletSheet.asStateFlow()
 
@@ -49,6 +53,15 @@ class DigitalWalletViewModel(private val repository: BankCardRepository) : ViewM
 
     fun dismissAddCardSheet() {
         _showAddCardSheet.value = false
+        _editingCard.value = null
+    }
+
+    fun prepareEditCard(cardId: String) {
+        viewModelScope.launch {
+            val card = repository.allCards.first().find { it.id == cardId }
+            _editingCard.value = card
+            _showAddCardSheet.value = true
+        }
     }
 
     fun onQuickWalletRequested() {
@@ -61,16 +74,32 @@ class DigitalWalletViewModel(private val repository: BankCardRepository) : ViewM
 
     fun saveCard(bankName: String, holderName: String, accountNumber: String, color: Long, swiftBic: String?, qrPath: String?) {
         viewModelScope.launch(Dispatchers.IO) {
-            val entity = BankCardEntity(
-                bankName = bankName,
-                accountNumber = accountNumber,
-                cardHolderName = holderName,
-                themeColor = color,
-                swiftBic = swiftBic,
-                qrImagePath = qrPath
-            )
-            repository.insertCard(entity)
-            _showAddCardSheet.value = false
+            val currentEditingCard = _editingCard.value
+            if (currentEditingCard != null) {
+                val updatedEntity = currentEditingCard.copy(
+                    bankName = bankName,
+                    accountNumber = accountNumber,
+                    cardHolderName = holderName,
+                    themeColor = color,
+                    swiftBic = swiftBic,
+                    qrImagePath = qrPath,
+                    lastModifiedAt = System.currentTimeMillis()
+                )
+                repository.updateCard(updatedEntity)
+            } else {
+                val entity = BankCardEntity(
+                    bankName = bankName,
+                    accountNumber = accountNumber,
+                    cardHolderName = holderName,
+                    themeColor = color,
+                    swiftBic = swiftBic,
+                    qrImagePath = qrPath
+                )
+                repository.insertCard(entity)
+            }
+            withContext(Dispatchers.Main) {
+                dismissAddCardSheet()
+            }
         }
     }
 

@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.mail2dev.upperdot.data.local.entity.BankCardEntity
 import com.mail2dev.upperdot.ui.components.StitchTextField
 import com.mail2dev.upperdot.ui.theme.*
 import com.mail2dev.upperdot.utils.StorageUtils
@@ -33,13 +34,14 @@ import java.io.File
 @Composable
 fun NewBankCardSheet(
     onDismiss: () -> Unit,
-    onSave: (String, String, String, Long, String?, String?) -> Unit
+    onSave: (String, String, String, Long, String?, String?) -> Unit,
+    editingCard: BankCardEntity? = null
 ) {
-    var bankName by remember { mutableStateOf("") }
-    var holderName by remember { mutableStateOf("") }
-    var accountNumber by remember { mutableStateOf("") }
-    var swiftBic by remember { mutableStateOf("") }
-    var qrPath by remember { mutableStateOf<String?>(null) }
+    var bankName by remember { mutableStateOf(editingCard?.bankName ?: "") }
+    var holderName by remember { mutableStateOf(editingCard?.cardHolderName ?: "") }
+    var accountNumber by remember { mutableStateOf(editingCard?.accountNumber ?: "") }
+    var swiftBic by remember { mutableStateOf(editingCard?.swiftBic ?: "") }
+    var qrPath by remember { mutableStateOf<String?>(editingCard?.qrImagePath) }
     
     val context = LocalContext.current
     val qrLauncher = rememberLauncherForActivityResult(
@@ -59,7 +61,11 @@ fun NewBankCardSheet(
         PositiveGreen,
         NegativeRed
     )
-    var selectedColor by remember { mutableStateOf(themeColors[0]) }
+    var selectedColor by remember { 
+        mutableStateOf(
+            if (editingCard != null) Color(editingCard.themeColor.toInt()) else themeColors[0]
+        ) 
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -74,7 +80,7 @@ fun NewBankCardSheet(
                 .padding(bottom = 32.dp)
         ) {
             Text(
-                text = "New Bank Card",
+                text = if (editingCard == null) "New Bank Card" else "Edit Bank Card",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White

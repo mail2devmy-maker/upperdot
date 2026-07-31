@@ -15,6 +15,9 @@ interface BankCardDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCards(cards: List<BankCardEntity>)
 
+    @Update
+    suspend fun updateCard(card: BankCardEntity)
+
     @Delete
     suspend fun deleteCard(card: BankCardEntity)
 
