@@ -27,6 +27,7 @@ import com.mail2dev.upperdot.ui.components.UpperDotBottomNavigation
 import com.mail2dev.upperdot.ui.new_cash_transaction.NewCashTransactionSheet
 import com.mail2dev.upperdot.ui.new_relationship_note.NewRelationshipNoteSheet
 import com.mail2dev.upperdot.ui.theme.*
+import kotlinx.coroutines.flow.collectLatest
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -54,6 +55,13 @@ fun InsightsScreen(
     val selectedNote by viewModel.selectedNote.collectAsState()
     val selectedTransaction by viewModel.selectedTransaction.collectAsState()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(Unit) {
+        viewModel.eventFlow.collectLatest { message ->
+            snackbarHostState.showSnackbar(message)
+        }
+    }
 
     if (showAddNoteSheet) {
         NewRelationshipNoteSheet(
@@ -97,7 +105,9 @@ fun InsightsScreen(
         NoteViewerSheet(
             note = selectedNote!!,
             sheetState = sheetState,
-            onDismiss = viewModel::dismissNoteViewer
+            onDismiss = viewModel::dismissNoteViewer,
+            onUpdate = viewModel::updateNote,
+            onDelete = viewModel::deleteNote
         )
     }
 
@@ -106,11 +116,14 @@ fun InsightsScreen(
             transaction = selectedTransaction!!,
             currencySymbol = currencySymbol,
             sheetState = sheetState,
-            onDismiss = viewModel::dismissTransactionViewer
+            onDismiss = viewModel::dismissTransactionViewer,
+            onUpdate = viewModel::updateTransaction,
+            onDelete = viewModel::deleteTransaction
         )
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             UpperDotBottomNavigation(
                 currentRoute = "insights",
