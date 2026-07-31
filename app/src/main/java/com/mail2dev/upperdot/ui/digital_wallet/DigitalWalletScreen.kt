@@ -32,13 +32,15 @@ fun DigitalWalletScreen(
     val bankCards by viewModel.bankCards.collectAsState()
     val isPremium by viewModel.isPremium.collectAsState()
     val showAddCardSheet by viewModel.showAddCardSheet.collectAsState()
+    val editingCard by viewModel.editingCard.collectAsState()
 
     if (showAddCardSheet) {
         NewBankCardSheet(
             onDismiss = viewModel::dismissAddCardSheet,
             onSave = { bank, holder, number, color, swift, qr -> 
                 viewModel.saveCard(bank, holder, number, color, swift, qr)
-            }
+            },
+            editingCard = editingCard
         )
     }
 
@@ -124,7 +126,7 @@ fun DigitalWalletScreen(
             items(bankCards, key = { it.id }) { card ->
                 BankCardItem(
                     card = card,
-                    onEdit = { /* TODO */ },
+                    onEdit = { viewModel.prepareEditCard(card.id) },
                     onDelete = { viewModel.onDeleteCard(card.id) }
                 )
             }

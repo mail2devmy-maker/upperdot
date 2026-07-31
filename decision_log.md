@@ -566,3 +566,12 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   - *Conflict 2: QR Scanner Success Rate:* Small QR codes on standard screen brightness are often difficult for retail scanners. *Decision:* Implemented an immersive full-screen `Dialog` for the QR code. Tapping the card triggers this dialog, which uses `attributes.screenBrightness = 1.0f` to temporarily force maximum system brightness, resetting automatically upon dismissal via `DisposableEffect`.
 - **Final Decision:** Use a full-screen `Dialog` with pure black background and window brightness override. Refined the share button position to `Alignment.CenterEnd` next to the QR card to optimize layout balance.
 - **Impact:** `QuickWalletOverlaySheet.kt`.
+
+### 2024-05-20 - Digital Wallet Editing Pipeline
+- **Context/Goal:** Complete the editing state pipeline for bank cards in the Digital Wallet.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Shared Input State:* Should the sheet manage its own state or use the VM? *Decision:* Sheet maintains local `remember` states for inputs but pre-populates them from the `editingCard` passed down from the VM. This keeps the sheet component decoupled while allowing robust editing.
+  - *Conflict 2: Update vs Insert:* How to handle modifications in Room? *Decision:* Added an `editingCard` tracker to `DigitalWalletViewModel`. The `saveCard` logic now branches: if `editingCard` is non-null, it performs an `updateCard` operation using the existing ID; otherwise, it inserts a new record.
+  - *Conflict 3: UI Feedback:* Naming the sheet title. *Decision:* Dynamically toggle the header between "New Bank Card" and "Edit Bank Card" based on the nullability of the `editingCard` state.
+- **Final Decision:** Implement `updateCard` in DAO/Repository and wire the Cyan Pencil icon to a new `prepareEditCard` flow in the ViewModel.
+- **Impact:** `DigitalWalletViewModel.kt`, `DigitalWalletScreen.kt`, `NewBankCardSheet.kt`, `BankCardDao.kt`, `BankCardRepository.kt`.
