@@ -47,55 +47,36 @@ fun ConnectionsListScreen(
     val preSelectedContact by viewModel.preSelectedContact.collectAsState()
     val contactSearchQuery by viewModel.contactSearchQuery.collectAsState()
     val searchedContacts by viewModel.searchedContacts.collectAsState()
-
-    // Temporary media state for sheets in this screen
-    var selectedAttachments by remember { mutableStateOf(listOf<String>()) }
-    fun addAttachment(path: String) { selectedAttachments = selectedAttachments + path }
-    fun removeAttachment(index: Int) { 
-        val list = selectedAttachments.toMutableList()
-        if (index < list.size) {
-            list.removeAt(index)
-            selectedAttachments = list
-        }
-    }
-    fun clearMedia() { selectedAttachments = emptyList() }
+    val selectedAttachments by viewModel.selectedAttachments.collectAsState()
 
     if (showAddNoteSheet) {
         NewRelationshipNoteSheet(
-            onDismiss = {
-                viewModel.dismissAddNoteSheet()
-                clearMedia()
-            },
-            onSave = { contactId, title, content, attachments, voice ->
-                viewModel.saveNote(contactId, title, content, attachments, voice)
-                clearMedia()
+            onDismiss = viewModel::dismissAddNoteSheet,
+            onSave = { contactId, title, content, _, voice ->
+                viewModel.saveNote(contactId, title, content, voice)
             },
             contactSearchQuery = contactSearchQuery,
             onContactSearchQueryChange = viewModel::onContactSearchQueryChanged,
             searchedContacts = searchedContacts.map { com.mail2dev.upperdot.ui.insights.ContactSummary(it.id, it.fullName) },
             attachmentPaths = selectedAttachments,
-            onAddAttachment = ::addAttachment,
-            onRemoveAttachment = ::removeAttachment,
+            onAddAttachment = viewModel::addAttachmentPath,
+            onRemoveAttachment = viewModel::removeAttachmentPath,
             initialContact = preSelectedContact?.let { com.mail2dev.upperdot.ui.insights.ContactSummary(it.id, it.fullName) }
         )
     }
 
     if (showAddTransactionSheet) {
         NewCashTransactionSheet(
-            onDismiss = {
-                viewModel.dismissAddTransactionSheet()
-                clearMedia()
-            },
-            onSave = { contactId, isRevenue, title, amount, detail, attachments, voice ->
-                viewModel.saveTransaction(contactId, isRevenue, title, amount, detail, attachments, voice)
-                clearMedia()
+            onDismiss = viewModel::dismissAddTransactionSheet,
+            onSave = { contactId, isRevenue, title, amount, detail, _, voice ->
+                viewModel.saveTransaction(contactId, isRevenue, title, amount, detail, voice)
             },
             contactSearchQuery = contactSearchQuery,
             onContactSearchQueryChange = viewModel::onContactSearchQueryChanged,
             searchedContacts = searchedContacts.map { com.mail2dev.upperdot.ui.insights.ContactSummary(it.id, it.fullName) },
             attachmentPaths = selectedAttachments,
-            onAddAttachment = ::addAttachment,
-            onRemoveAttachment = ::removeAttachment,
+            onAddAttachment = viewModel::addAttachmentPath,
+            onRemoveAttachment = viewModel::removeAttachmentPath,
             initialContact = preSelectedContact?.let { com.mail2dev.upperdot.ui.insights.ContactSummary(it.id, it.fullName) }
         )
     }

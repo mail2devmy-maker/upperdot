@@ -12,6 +12,9 @@ class TransactionRepository(private val transactionDao: TransactionDao) {
     fun getTransactionsForContact(contactId: Long): Flow<List<TransactionEntity>> = 
         transactionDao.getTransactionsForContact(contactId)
 
+    suspend fun getTransactionById(id: Long): TransactionEntity? = 
+        transactionDao.getTransactionById(id)
+
     suspend fun insertTransaction(transaction: TransactionEntity) {
         transactionDao.insertTransaction(transaction)
     }
