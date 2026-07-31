@@ -111,6 +111,14 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Final Decision:** Use an internal `editingContactId` reference in the ViewModel to drive the branching logic between creation and updates, ensuring ID continuity for relational data (notes/transactions).
 - **Impact:** `AddContactViewModel.kt`, `MainActivity.kt` updated.
 
+### 2024-05-20 - Form Selection Gating Refactor
+- **Context/Goal:** Refine group and tag selection logic in `AddContactIdentityScreen.kt` to streamline user flow and enforce valid data entry.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Group Creation Access:* Should users create groups inline? *Decision:* Removed the "[ + Create New Group ]" option from the wizard. Users must now manage groups via the dedicated Relationship Hierarchy Manager, reducing wizard clutter and ensuring intentional hierarchy design.
+  - *Conflict 2: Dynamic Field State:* How to handle groups without tags? *Decision:* Implemented "Smart Disabling" for the Tag dropdown. If a selected group has no child tags, the dropdown is disabled (`enabled = false`) and its label is updated to "No tags available", providing clear visual feedback instead of an empty list.
+- **Final Decision:** Restricted group selection to existing entries and automated tag field states based on hierarchy depth.
+- **Impact:** `AddContactIdentityScreen.kt` updated.
+
 ### ⚠️ Build Errors & Resolutions
 - **Error:** `Unresolved reference: toFormattedDate` in `ClientProfileDetailScreen.kt`.
 - **Cause:** Missing utility function for formatting `Long` timestamps into user-friendly date strings.
