@@ -584,3 +584,11 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   - *Conflict 3: Copy Feedback:* How to confirm the clipboard action? *Decision:* Integrated `Toast` as a non-intrusive confirmation message that triggers immediately after `LocalClipboardManager` sets the text.
 - **Final Decision:** Use `Intent.ACTION_SEND` with `FileProvider` for sharing and `Toast` for clipboard confirmation.
 - **Impact:** `QuickWalletOverlaySheet.kt`, `AndroidManifest.xml`, `res/xml/file_paths.xml`.
+
+### 2024-05-20 - Authentic Bank Color Themes
+- **Context/Goal:** Expand card theme customization with authentic retail banking colors and ensure end-to-end state synchronization.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Palette Authenticity:* Standard 6-color palette vs authentic hex. *Decision:* Replaced with a horizontally scrollable `LazyRow` featuring 12 curated hex colors, including **Maybank Yellow (#FFC72C)**, **CIMB Maroon (#8C0B12)**, **RHB Blue (#005EA6)**, and **Public Bank Red (#ED1C24)**. This provides a more professional and recognizable CRM experience.
+  - *Conflict 2: Dynamic Color Application:* Static container colors vs database-driven background. *Decision:* Updated `BankCardItem` (Screen) and `QuickCardDisplay` (Overlay) to read the `themeColor` hex string directly from the model. The card background and the Quick Wallet share button now dynamically adapt to the saved color, ensuring visual continuity.
+- **Final Decision:** Use a 12-color authentic palette and wire `CardDefaults.cardColors(containerColor = Color(card.themeColor.toInt()))` across all display surfaces.
+- **Impact:** `NewBankCardSheet.kt`, `DigitalWalletScreen.kt`, `QuickWalletOverlaySheet.kt`.
