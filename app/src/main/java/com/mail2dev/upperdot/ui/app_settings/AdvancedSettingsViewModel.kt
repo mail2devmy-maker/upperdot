@@ -41,6 +41,12 @@ sealed class VcfImportState {
     object Success : VcfImportState()
 }
 
+sealed class SettingsUiEvent {
+    object Loading : SettingsUiEvent()
+    data class Success(val message: String) : SettingsUiEvent()
+    data class Error(val message: String) : SettingsUiEvent()
+}
+
 class AdvancedSettingsViewModel(
     private val contactRepository: ContactRepository,
     private val noteRepository: NoteRepository,
@@ -90,6 +96,9 @@ class AdvancedSettingsViewModel(
 
     private val _vcfImportState = MutableStateFlow<VcfImportState>(VcfImportState.Idle)
     val vcfImportState: StateFlow<VcfImportState> = _vcfImportState.asStateFlow()
+
+    private val _eventFlow = MutableSharedFlow<SettingsUiEvent>()
+    val eventFlow = _eventFlow.asSharedFlow()
 
     fun toggleSyncOverWifi(enabled: Boolean) {
         _syncOverWifi.value = enabled
@@ -166,20 +175,28 @@ class AdvancedSettingsViewModel(
     }
 
     suspend fun exportDatabase(filesDir: File, outputStream: OutputStream) {
+        _eventFlow.emit(SettingsUiEvent.Loading)
         withContext(Dispatchers.IO) {
-            val backup = DatabaseBackup(
-                contacts = contactRepository.allContacts.first(),
-                notes = noteRepository.allNotes.first(),
-                transactions = transactionRepository.allTransactions.first(),
-                bankCards = bankCardRepository.allCards.first(),
-                preferences = preferenceRepository.preferences.first()
-            )
-            val json = Json.encodeToString(backup)
-            BackupUtils.createZipBackup(filesDir, json, outputStream)
+            try {
+                val backup = DatabaseBackup(
+                    contacts = contactRepository.allContacts.first(),
+                    notes = noteRepository.allNotes.first(),
+                    transactions = transactionRepository.allTransactions.first(),
+                    bankCards = bankCardRepository.allCards.first(),
+                    preferences = preferenceRepository.preferences.first()
+                )
+                val json = Json.encodeToString(backup)
+                BackupUtils.createZipBackup(filesDir, json, outputStream)
+                _eventFlow.emit(SettingsUiEvent.Success("✓ Database backup zip generated!"))
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _eventFlow.emit(SettingsUiEvent.Error("✕ Database backup failed"))
+            }
         }
     }
 
     suspend fun importDatabase(filesDir: File, inputStream: InputStream) {
+        _eventFlow.emit(SettingsUiEvent.Loading)
         withContext(Dispatchers.IO) {
             try {
                 val json = BackupUtils.restoreZipBackup(filesDir, inputStream)
@@ -198,9 +215,14 @@ class AdvancedSettingsViewModel(
                     transactionRepository.insertTransactions(backup.transactions)
                     bankCardRepository.insertCards(backup.bankCards)
                     backup.preferences?.let { preferenceRepository.savePreferences(it) }
+                    
+                    _eventFlow.emit(SettingsUiEvent.Success("✓ Complete workspace restored successfully!"))
+                } else {
+                    _eventFlow.emit(SettingsUiEvent.Error("✕ Restore failed: Invalid backup file"))
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+                _eventFlow.emit(SettingsUiEvent.Error("✕ Restore failed"))
             }
         }
     }
@@ -211,35 +233,46 @@ class AdvancedSettingsViewModel(
 
     fun onVcfSelected(inputStream: InputStream) {
         viewModelScope.launch(Dispatchers.IO) {
-            val text = inputStream.bufferedReader().use { it.readText() }
-            val incomingContacts = parseVcf(text)
+            try {
+                val text = inputStream.bufferedReader().use { it.readText() }
+                val incomingContacts = parseVcf(text)
 
-            val allExisting = contactRepository.allContacts.first()
-            val conflicts = mutableListOf<Pair<ContactEntity, ContactEntity>>()
-            val nonConflicts = mutableListOf<ContactEntity>()
+                if (incomingContacts.isEmpty()) {
+                    _eventFlow.emit(SettingsUiEvent.Error("✕ No valid contacts found in VCF"))
+                    return@launch
+                }
 
-            for (incoming in incomingContacts) {
-                val existing = allExisting.find { ex ->
-                    incoming.phoneNumbers.any { inPh ->
-                        ex.phoneNumbers.any { exPh ->
-                            ContactUtils.isSamePhoneNumber(inPh, exPh)
+                val allExisting = contactRepository.allContacts.first()
+                val conflicts = mutableListOf<Pair<ContactEntity, ContactEntity>>()
+                val nonConflicts = mutableListOf<ContactEntity>()
+
+                for (incoming in incomingContacts) {
+                    val existing = allExisting.find { ex ->
+                        incoming.phoneNumbers.any { inPh ->
+                            ex.phoneNumbers.any { exPh ->
+                                ContactUtils.isSamePhoneNumber(inPh, exPh)
+                            }
                         }
                     }
+                    if (existing != null) {
+                        conflicts.add(existing to incoming)
+                    } else {
+                        nonConflicts.add(incoming)
+                    }
                 }
-                if (existing != null) {
-                    conflicts.add(existing to incoming)
-                } else {
-                    nonConflicts.add(incoming)
-                }
-            }
 
-            if (conflicts.isNotEmpty()) {
-                _vcfImportState.value = VcfImportState.Conflict(conflicts, nonConflicts)
-            } else {
-                for (contact in nonConflicts) {
-                    contactRepository.insertContact(contact)
+                if (conflicts.isNotEmpty()) {
+                    _vcfImportState.value = VcfImportState.Conflict(conflicts, nonConflicts)
+                } else {
+                    for (contact in nonConflicts) {
+                        contactRepository.insertContact(contact)
+                    }
+                    _vcfImportState.value = VcfImportState.Success
+                    _eventFlow.emit(SettingsUiEvent.Success("✓ VCF Contacts imported successfully!"))
                 }
-                _vcfImportState.value = VcfImportState.Success
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _eventFlow.emit(SettingsUiEvent.Error("✕ VCF Import failed"))
             }
         }
     }
@@ -249,28 +282,34 @@ class AdvancedSettingsViewModel(
         if (currentState !is VcfImportState.Conflict) return
 
         viewModelScope.launch(Dispatchers.IO) {
-            // Always insert non-conflicts
-            for (contact in currentState.nonConflicts) {
-                contactRepository.insertContact(contact)
-            }
+            try {
+                // Always insert non-conflicts
+                for (contact in currentState.nonConflicts) {
+                    contactRepository.insertContact(contact)
+                }
 
-            when (strategy) {
-                "OVERWRITE" -> {
-                    for ((existing, incoming) in currentState.conflicts) {
-                        val updated = incoming.copy(id = existing.id) // Preserve ID to keep linked records
-                        contactRepository.updateContact(updated)
+                when (strategy) {
+                    "OVERWRITE" -> {
+                        for ((existing, incoming) in currentState.conflicts) {
+                            val updated = incoming.copy(id = existing.id) // Preserve ID to keep linked records
+                            contactRepository.updateContact(updated)
+                        }
+                    }
+                    "DUPLICATE" -> {
+                        for ((_, incoming) in currentState.conflicts) {
+                            contactRepository.insertContact(incoming)
+                        }
+                    }
+                    "SKIP" -> {
+                        // Do nothing for conflicts
                     }
                 }
-                "DUPLICATE" -> {
-                    for ((_, incoming) in currentState.conflicts) {
-                        contactRepository.insertContact(incoming)
-                    }
-                }
-                "SKIP" -> {
-                    // Do nothing for conflicts
-                }
+                _vcfImportState.value = VcfImportState.Success
+                _eventFlow.emit(SettingsUiEvent.Success("✓ VCF Contacts imported successfully!"))
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _eventFlow.emit(SettingsUiEvent.Error("✕ VCF Import resolution failed"))
             }
-            _vcfImportState.value = VcfImportState.Success
         }
     }
 

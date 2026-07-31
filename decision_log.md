@@ -653,3 +653,11 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Error:** `Unresolved reference: border` in `QuickWalletOverlaySheet.kt`.
 - **Cause:** Missing import for `androidx.compose.foundation.border` after adding glassmorphic border glows.
 - **Resolution:** Manually added the `border` import to the file.
+
+### 2024-05-20 - Responsive Status Notification Engine
+- **Context/Goal:** Implement a unified snackbar notification system in Advanced Settings to provide real-time feedback for file-based operations.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Interaction Feedback:* Alerts vs Snackbars. *Decision:* Used Material 3 `SnackbarHost` for non-blocking feedback. This allows users to continue interacting with the settings while receiving confirmation of background tasks like backup generation or contact import.
+  - *Conflict 2: Event Broadcasting:* State vs Events. *Decision:* Implemented `SettingsUiEvent` sealed class and a `MutableSharedFlow` event channel. Unlike standard state, events are only processed once, which is ideal for triggering snackbars without duplicate notifications on recomposition.
+- **Final Decision:** Use `SharedFlow` for one-time UI events and a themed `SnackbarHost` in the screen's `Scaffold`.
+- **Impact:** `AdvancedSettingsViewModel.kt`, `AdvancedSettingsScreen.kt`.
