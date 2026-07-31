@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 data class FullContactProfile(
-    val id: String = "",
+    val id: Long = 0L,
     val fullName: String = "",
     val nicknames: String = "",
     val phoneNumbers: List<String> = emptyList(),
@@ -37,7 +37,7 @@ class ClientProfileDetailViewModel : ViewModel() {
     private val _isTransactionsExpanded = MutableStateFlow(true)
     val isTransactionsExpanded: StateFlow<Boolean> = _isTransactionsExpanded.asStateFlow()
 
-    fun loadContact(id: String) {
+    fun loadContact(id: Long) {
         viewModelScope.launch {
             // TODO: Load from Room DB
             // For now, setting dummy data matching user screenshots

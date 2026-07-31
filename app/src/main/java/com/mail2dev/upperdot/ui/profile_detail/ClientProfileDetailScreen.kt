@@ -26,9 +26,9 @@ import com.mail2dev.upperdot.ui.theme.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ClientProfileDetailScreen(
-    contactId: String,
+    contactId: Long,
     onNavigateBack: () -> Unit,
-    onEditContact: (String) -> Unit,
+    onEditContact: (Long) -> Unit,
     viewModel: ClientProfileDetailViewModel
 ) {
     val contact by viewModel.contactProfile.collectAsState()
