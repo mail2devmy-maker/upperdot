@@ -680,6 +680,15 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Final Decision:** Add IconButton row (Edit/Delete) to headers. Shift text fields to active `StitchTextField` inputs during edit mode. Unified the administrative logic across `InsightsScreen` and `ClientProfileDetailScreen`.
 - **Impact:** `DetailViewerSheets.kt`, `InsightsViewModel.kt`, `InsightsScreen.kt`, `ClientProfileDetailViewModel.kt`, `ClientProfileDetailScreen.kt`.
 
+### 2024-05-20 - High-Friction Swipe-to-Call Tuning
+- **Context/Goal:** Optimize the swipe-to-call interaction in `ConnectionsListScreen` to prevent accidental pocket calls and prioritize vertical scrolling.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Activation Sensitivity:* 40% threshold was too easy to trigger. *Decision:* Increased to a strict 60% positional threshold. The user must intentionally drag the card well past the center line to commit to the action.
+  - *Conflict 2: Trigger Logic:* Immediate vs Release. *Decision:* Wired the `Intent.ACTION_CALL` strictly to the release gesture (confirmValueChange). If the user lets go before the 60% mark, the card snaps back without firing the intent.
+  - *Conflict 3: Visual Feedback:* Static vs Proportional. *Decision:* Implemented dynamic opacity fading for the green background and call icon. The visibility scales with the swipe progress, providing a clear "arming" metaphor before reaching the active zone.
+- **Final Decision:** Use 0.6f positional threshold and `dismissState.progress` driven alpha for background rendering.
+- **Impact:** `ConnectionsListScreen.kt`.
+
 ### ⚠️ Build Errors & Resolutions
 - **Error:** Bracing mismatch in `DetailViewerSheets.kt` causing unresolved references.
 - **Cause:** Incorrect nested block closures in `NoteViewerSheet` after adding the `isEditingMode` conditional.

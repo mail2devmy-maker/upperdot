@@ -324,6 +324,7 @@ fun ContactCard(
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             if (value == SwipeToDismissBoxValue.StartToEnd) {
+                // EXECUTION LOCK: Fires strictly on release Past 60% threshold
                 if (contact.primaryPhone.isNotEmpty()) {
                     val intent = Intent(Intent.ACTION_CALL).apply {
                         data = Uri.parse("tel:${contact.primaryPhone}")
@@ -331,33 +332,36 @@ fun ContactCard(
                     if (ContextCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
                         context.startActivity(intent)
                     } else {
-                        // Fallback to dialer if permission not granted for some reason
                         val dialIntent = Intent(Intent.ACTION_DIAL).apply {
                             data = Uri.parse("tel:${contact.primaryPhone}")
                         }
                         context.startActivity(dialIntent)
                     }
                 }
-                false // Reset to settled
+                false // Reset to settled with spring animation
             } else {
                 false
             }
         },
-        positionalThreshold = { it * 0.4f }
+        positionalThreshold = { it * 0.6f } // Strict 60% Boundary
     )
 
     SwipeToDismissBox(
         state = dismissState,
         backgroundContent = {
-            val color = if (dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd) {
-                Color(0xFF4CAF50)
-            } else {
-                Color.Transparent
-            }
+            // Visual Opacity Fading based on swipe progress
+            val progress = if (dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd) {
+                dismissState.progress
+            } else 0f
+            
+            val alpha = progress.coerceIn(0f, 1f)
+            val backgroundColor = Color(0xFF4CAF50).copy(alpha = alpha)
+            val iconColor = Color.White.copy(alpha = alpha)
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(color, RoundedCornerShape(24.dp))
+                    .background(backgroundColor, RoundedCornerShape(24.dp))
                     .padding(horizontal = 24.dp),
                 contentAlignment = Alignment.CenterStart
             ) {
@@ -365,7 +369,7 @@ fun ContactCard(
                     Icon(
                         imageVector = Icons.Default.Call,
                         contentDescription = "Call",
-                        tint = Color.White
+                        tint = iconColor
                     )
                 }
             }
