@@ -22,7 +22,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -320,150 +323,152 @@ fun ContactCard(
 ) {
     var isExpanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val density = LocalDensity.current
     
-    // Use a Ref to avoid circular reference during state initialization
-    val stateRef = remember { mutableStateOf<SwipeToDismissBoxState?>(null) }
+    // Track the physical offset of the card manually to ignore velocity flings
+    var currentCardOffset by remember { mutableStateOf(0f) }
     
-    val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { value ->
-            val isDismissedToEnd = value == SwipeToDismissBoxValue.StartToEnd
-            // STRICT VELOCITY GATING: Only execute if we are swiping right AND we have actually crossed the 60% threshold positionally.
-            // This prevents "fast slides" from auto-completing via velocity alone.
-            val currentProgress = stateRef.value?.progress ?: 0f
-            val reachedThreshold = currentProgress >= 0.6f
-            
-            if (isDismissedToEnd && reachedThreshold) {
-                // EXECUTION LOCK: Fires strictly on release Past 60% threshold
-                if (contact.primaryPhone.isNotEmpty()) {
-                    val intent = Intent(Intent.ACTION_CALL).apply {
-                        data = Uri.parse("tel:${contact.primaryPhone}")
-                    }
-                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
-                        context.startActivity(intent)
-                    } else {
-                        val dialIntent = Intent(Intent.ACTION_DIAL).apply {
+    BoxWithConstraints {
+        val widthPx = with(density) { maxWidth.toPx() }
+        
+        val dismissState = rememberSwipeToDismissBoxState(
+            confirmValueChange = { value ->
+                val isDismissedToEnd = value == SwipeToDismissBoxValue.StartToEnd
+                
+                // PHYSICAL OFFSET CHECK: Strictly check the current drag distance in pixels.
+                // We ignore velocity flings by checking the last recorded position from onGloballyPositioned.
+                val reachedPhysicalThreshold = currentCardOffset >= widthPx * 0.6f
+                
+                if (isDismissedToEnd && reachedPhysicalThreshold) {
+                    // EXECUTION LOCK: Fires strictly on release Past 60% PHYSICAL threshold
+                    if (contact.primaryPhone.isNotEmpty()) {
+                        val intent = Intent(Intent.ACTION_CALL).apply {
                             data = Uri.parse("tel:${contact.primaryPhone}")
                         }
-                        context.startActivity(dialIntent)
-                    }
-                }
-                false // Reset to settled with spring animation
-            } else {
-                false
-            }
-        },
-        positionalThreshold = { totalDistance -> totalDistance * 0.60f } // Strict 60% Boundary Lock
-    )
-    
-    // Update the ref so the lambda can access the state during gestures
-    SideEffect {
-        stateRef.value = dismissState
-    }
-
-    SwipeToDismissBox(
-        state = dismissState,
-        backgroundContent = {
-            // Visual Opacity Fading based on swipe progress
-            val progress = if (dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd) {
-                dismissState.progress
-            } else 0f
-            
-            val alpha = progress.coerceIn(0f, 1f)
-            val backgroundColor = Color(0xFF4CAF50).copy(alpha = alpha)
-            val iconColor = Color.White.copy(alpha = alpha)
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(backgroundColor, RoundedCornerShape(24.dp))
-                    .padding(horizontal = 24.dp),
-                contentAlignment = Alignment.CenterStart
-            ) {
-                if (dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd) {
-                    Icon(
-                        imageVector = Icons.Default.Call,
-                        contentDescription = "Call",
-                        tint = iconColor
-                    )
-                }
-            }
-        },
-        enableDismissFromEndToStart = false,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onLongPress = { isExpanded = !isExpanded },
-                        onTap = { onClick() }
-                    )
-                },
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Surface)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Surface(
-                        shape = CircleShape,
-                        color = Color.DarkGray,
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                text = contact.fullName.take(1).uppercase(),
-                                color = AccentCyan,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 20.sp
-                            )
+                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
+                            context.startActivity(intent)
+                        } else {
+                            val dialIntent = Intent(Intent.ACTION_DIAL).apply {
+                                data = Uri.parse("tel:${contact.primaryPhone}")
+                            }
+                            context.startActivity(dialIntent)
                         }
                     }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column {
-                        Text(
-                            text = contact.fullName,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
-                        )
-                        if (contact.nicknames.isNotEmpty()) {
-                            Text(
-                                text = contact.nicknames.joinToString(", "),
-                                color = TextSecondary,
-                                fontSize = 12.sp
-                            )
-                        }
-                    }
+                    false // Reset to settled with spring animation
+                } else {
+                    false // Accidental short flicks (velocity flings) are neutralized here
                 }
+            },
+            positionalThreshold = { totalDistance -> totalDistance * 0.60f } // Strict 60% Boundary Lock
+        )
+
+        SwipeToDismissBox(
+            state = dismissState,
+            backgroundContent = {
+                // Visual Opacity Fading based on physical progress
+                val progress = (currentCardOffset / widthPx).coerceIn(0f, 1f)
                 
-                AnimatedVisibility(
-                    visible = isExpanded,
-                    enter = expandVertically() + fadeIn(),
-                    exit = shrinkVertically() + fadeOut()
+                val alpha = progress.coerceIn(0f, 1f)
+                val backgroundColor = Color(0xFF4CAF50).copy(alpha = alpha)
+                val iconColor = Color.White.copy(alpha = alpha)
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(backgroundColor, RoundedCornerShape(24.dp))
+                        .padding(horizontal = 24.dp),
+                    contentAlignment = Alignment.CenterStart
                 ) {
-                    Column {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        HorizontalDivider(color = Color.DarkGray.copy(alpha = 0.3f))
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
+                    if (dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd) {
+                        Icon(
+                            imageVector = Icons.Default.Call,
+                            contentDescription = "Call",
+                            tint = iconColor
+                        )
+                    }
+                }
+            },
+            enableDismissFromEndToStart = false,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onGloballyPositioned { coordinates ->
+                        // Record the current visual offset of the card
+                        currentCardOffset = coordinates.positionInParent().x
+                    }
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onLongPress = { isExpanded = !isExpanded },
+                            onTap = { onClick() }
+                        )
+                    },
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Surface)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color.DarkGray,
+                            modifier = Modifier.size(48.dp)
                         ) {
-                            QuickActionButton(
-                                icon = Icons.Default.NoteAdd,
-                                text = "Add Note",
-                                onClick = onAddNote
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = contact.fullName.take(1).uppercase(),
+                                    color = AccentCyan,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 20.sp
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column {
+                            Text(
+                                text = contact.fullName,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
                             )
-                            QuickActionButton(
-                                icon = Icons.Default.ReceiptLong,
-                                text = "Add Trans",
-                                onClick = onAddTransaction
-                            )
+                            if (contact.nicknames.isNotEmpty()) {
+                                Text(
+                                    text = contact.nicknames.joinToString(", "),
+                                    color = TextSecondary,
+                                    fontSize = 12.sp
+                                )
+                            }
+                        }
+                    }
+                    
+                    AnimatedVisibility(
+                        visible = isExpanded,
+                        enter = expandVertically() + fadeIn(),
+                        exit = shrinkVertically() + fadeOut()
+                    ) {
+                        Column {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            HorizontalDivider(color = Color.DarkGray.copy(alpha = 0.3f))
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
+                                QuickActionButton(
+                                    icon = Icons.Default.NoteAdd,
+                                    text = "Add Note",
+                                    onClick = onAddNote
+                                )
+                                QuickActionButton(
+                                    icon = Icons.Default.ReceiptLong,
+                                    text = "Add Trans",
+                                    onClick = onAddTransaction
+                                )
+                            }
                         }
                     }
                 }
