@@ -37,6 +37,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import android.media.MediaRecorder
 import java.io.File
+import com.mail2dev.upperdot.utils.StorageUtils
 import androidx.compose.foundation.BorderStroke
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -76,7 +77,12 @@ fun NewCashTransactionSheet(
     val attachmentLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
-        uri?.let { onAddAttachment(it.toString()) }
+        uri?.let { 
+            val internalPath = StorageUtils.copyUriToInternalStorage(context, it)
+            if (internalPath != null) {
+                onAddAttachment(internalPath)
+            }
+        }
     }
 
     // Voice Recording State
