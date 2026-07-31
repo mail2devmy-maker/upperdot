@@ -68,6 +68,7 @@ fun ConnectionsListScreen(
             attachmentPaths = selectedAttachments,
             onAddAttachment = viewModel::addAttachmentPath,
             onRemoveAttachment = viewModel::removeAttachmentPath,
+            currencySymbol = currencySymbol,
             initialContact = preSelectedContact?.let { com.mail2dev.upperdot.ui.insights.ContactSummary(it.id, it.fullName) },
             isContactLocked = preSelectedContact != null
         )

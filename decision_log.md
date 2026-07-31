@@ -628,6 +628,12 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Impact:** `InsightsViewModel.kt`, `InsightsScreen.kt`, `ConnectionsListViewModel.kt`, `ConnectionsListScreen.kt`, `ClientProfileDetailViewModel.kt`, `ClientProfileDetailScreen.kt`, `NewCashTransactionSheet.kt`, `DetailViewerSheets.kt`, `MainActivity.kt`.
 
 ### ⚠️ Build Errors & Resolutions
+- **Error:** `No parameter with name 'currencySymbol' found` in `InsightsScreen.kt` and `NewRelationshipNoteSheet.kt`.
+- **Cause:** Incomplete parameter synchronization across Composable signatures and their navigation call sites in `MainActivity.kt`.
+- **Resolution:**
+  1. Updated `MainActivity.kt` navigation graph to correctly provide the `InsightsViewModel` with its required `PreferenceRepository` dependency.
+  2. Synchronized `NewRelationshipNoteSheet` and `NewCashTransactionSheet` signatures to consistently accept the `currencySymbol` parameter across all screens (`InsightsScreen` and `ConnectionsListScreen`).
+  3. Fixed a missing `Locale` import in `InsightsScreen.kt` to resolve formatting warnings.
 - **Error:** `Unresolved reference: border` in `QuickWalletOverlaySheet.kt`.
 - **Cause:** Missing import for `androidx.compose.foundation.border` after adding glassmorphic border glows.
 - **Resolution:** Manually added the `border` import to the file.
