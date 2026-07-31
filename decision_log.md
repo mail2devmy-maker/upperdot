@@ -732,6 +732,14 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Final Decision:** Implement a custom `Box` layout with the card offset by raw pixel tracking and 65% release-gating logic.
 - **Impact:** `ConnectionsListScreen.kt`.
 
+### 2024-05-20 - Local Disk Diagnostic Size Calculators
+- **Context/Goal:** Fix the "frozen" 0.00 MB values in the Database Diagnostics Info section by implementing actual disk scanning logic.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Storage Scope:* Scanning all of `filesDir` vs specific subfolders. *Decision:* Implemented a recursive walk of `context.filesDir` to accumulate the total usage of all internal app assets (attachments, voice, etc.). This provides a comprehensive view of the app's physical storage footprint.
+  - *Conflict 2: Real-time Updates:* Periodic vs manual refresh. *Decision:* Implemented a `updateStorageDiagnostics` routine triggered on screen entry, after cache clearance, and after database restores. This ensures the UI remains reactively synchronized with the physical file system.
+- **Final Decision:** Use `File.length()` for the database file and a recursive `walkTopDown()` for internal storage, exposing results as MB-formatted `StateFlow` strings.
+- **Impact:** `AdvancedSettingsViewModel.kt`, `AdvancedSettingsScreen.kt`.
+
 ### ⚠️ Build Errors & Resolutions
 - **Error:** Bracing mismatch in `DetailViewerSheets.kt` causing unresolved references.
 - **Cause:** Incorrect nested block closures in `NoteViewerSheet` after adding the `isEditingMode` conditional.
