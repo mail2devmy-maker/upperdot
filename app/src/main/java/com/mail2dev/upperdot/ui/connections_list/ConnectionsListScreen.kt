@@ -1,5 +1,9 @@
 package com.mail2dev.upperdot.ui.connections_list
 
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,10 +22,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mail2dev.upperdot.ui.components.UpperDotBottomNavigation
 import com.mail2dev.upperdot.ui.new_cash_transaction.NewCashTransactionSheet
@@ -300,6 +306,7 @@ fun ConnectionsList(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ContactCard(
     contact: ContactSummary,
@@ -309,80 +316,134 @@ fun ContactCard(
     onAddTransaction: () -> Unit
 ) {
     var isExpanded by remember { mutableStateOf(false) }
+    val context = LocalContext.current
     
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onLongPress = { isExpanded = !isExpanded },
-                    onTap = { onClick() }
-                )
-            },
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    shape = CircleShape,
-                    color = Color.DarkGray,
-                    modifier = Modifier.size(48.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = contact.fullName.take(1).uppercase(),
-                            color = AccentCyan,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp
-                        )
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            if (value == SwipeToDismissBoxValue.StartToEnd) {
+                if (contact.primaryPhone.isNotEmpty()) {
+                    val intent = Intent(Intent.ACTION_CALL).apply {
+                        data = Uri.parse("tel:${contact.primaryPhone}")
+                    }
+                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
+                        context.startActivity(intent)
+                    } else {
+                        // Fallback to dialer if permission not granted for some reason
+                        val dialIntent = Intent(Intent.ACTION_DIAL).apply {
+                            data = Uri.parse("tel:${contact.primaryPhone}")
+                        }
+                        context.startActivity(dialIntent)
                     }
                 }
-                Spacer(modifier = Modifier.width(16.dp))
-                Column {
-                    Text(
-                        text = contact.fullName,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
+                false // Reset to settled
+            } else {
+                false
+            }
+        },
+        positionalThreshold = { it * 0.4f }
+    )
+
+    SwipeToDismissBox(
+        state = dismissState,
+        backgroundContent = {
+            val color = if (dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd) {
+                Color(0xFF4CAF50)
+            } else {
+                Color.Transparent
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(color, RoundedCornerShape(24.dp))
+                    .padding(horizontal = 24.dp),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                if (dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd) {
+                    Icon(
+                        imageVector = Icons.Default.Call,
+                        contentDescription = "Call",
+                        tint = Color.White
                     )
-                    if (contact.nicknames.isNotEmpty()) {
-                        Text(
-                            text = contact.nicknames.joinToString(", "),
-                            color = TextSecondary,
-                            fontSize = 12.sp
-                        )
-                    }
                 }
             }
-            
-            AnimatedVisibility(
-                visible = isExpanded,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut()
+        },
+        enableDismissFromEndToStart = false,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onLongPress = { isExpanded = !isExpanded },
+                        onTap = { onClick() }
+                    )
+                },
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Surface)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
             ) {
-                Column {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    HorizontalDivider(color = Color.DarkGray.copy(alpha = 0.3f))
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = Color.DarkGray,
+                        modifier = Modifier.size(48.dp)
                     ) {
-                        QuickActionButton(
-                            icon = Icons.Default.NoteAdd,
-                            text = "Add Note",
-                            onClick = onAddNote
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = contact.fullName.take(1).uppercase(),
+                                color = AccentCyan,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 20.sp
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column {
+                        Text(
+                            text = contact.fullName,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
                         )
-                        QuickActionButton(
-                            icon = Icons.Default.ReceiptLong,
-                            text = "Add Trans",
-                            onClick = onAddTransaction
-                        )
+                        if (contact.nicknames.isNotEmpty()) {
+                            Text(
+                                text = contact.nicknames.joinToString(", "),
+                                color = TextSecondary,
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+                }
+                
+                AnimatedVisibility(
+                    visible = isExpanded,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    Column {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        HorizontalDivider(color = Color.DarkGray.copy(alpha = 0.3f))
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            QuickActionButton(
+                                icon = Icons.Default.NoteAdd,
+                                text = "Add Note",
+                                onClick = onAddNote
+                            )
+                            QuickActionButton(
+                                icon = Icons.Default.ReceiptLong,
+                                text = "Add Trans",
+                                onClick = onAddTransaction
+                            )
+                        }
                     }
                 }
             }

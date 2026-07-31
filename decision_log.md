@@ -531,3 +531,21 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   - *Theme Integrity:* Confirmed zero hardcoded color violations; all components strictly inherit from the Stitch Dark Theme tokens.
 - **Final Decision:** Architecture validated as complete and SRS-compliant. Ready for deployment preparation.
 - **Impact:** Project baseline established.
+
+### 2024-05-20 - High-Fidelity Interaction Utilities
+- **Context/Goal:** Introduce automated runtime call permission requests and a high-performance swipe-to-call gesture in the Connections List.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Permission Prompt Timing:* Immediate on launch vs deferred. *Decision:* Automated check on initialization (MainActivity) with a theme-compliant AlertDialog. This ensures that the user is informed and has granted permission before attempting the swipe gesture, preventing silent failures.
+  - *Conflict 2: Swipe Gesture UX:* Double-sided swipe vs single-direction. *Decision:* Strictly allow swiping to the right (StartToEnd) to avoid accidental deletion gestures or cluttering the card with multiple actions.
+  - *Conflict 3: Positional Thresholding:* Standard 30% vs strict 40%. *Decision:* Enforced a 40% threshold to ensure intentionality. The card background reveals a high-contrast Green (#4CAF50) surface with a center-aligned call icon for clear affordance.
+- **Final Decision:** Implement `CallPermissionHandler` in `MainActivity.kt` and `SwipeToDismissBox` in `ConnectionsListScreen.kt`. Use `Intent.ACTION_CALL` for immediate execution and return the card to its settled state upon completion.
+- **Impact:** `MainActivity.kt`, `ConnectionsListScreen.kt`, `AndroidManifest.xml` (added `CALL_PHONE` and telephony hardware feature).
+
+### ⚠️ Build Errors & Resolutions
+- **Error:** `Permission exists without corresponding hardware <uses-feature android:name="android.hardware.telephony" android:required="false" />` in `AndroidManifest.xml`.
+- **Cause:** Adding `CALL_PHONE` permission requires declaring the telephony hardware feature for devices that might not support cellular calling (e.g., tablets).
+- **Resolution:** Added `<uses-feature android:name="android.hardware.telephony" android:required="false" />` to the manifest.
+
+- **Error:** `rememberSwipeToDismissBoxState` and `confirmValueChange` deprecation warnings in `ConnectionsListScreen.kt`.
+- **Cause:** Using older SwipeToDismiss API patterns in Material 3.
+- **Resolution:** Retained the usage as it is the most straightforward way to implement the "reset to settled" requirement via the boolean return value.
