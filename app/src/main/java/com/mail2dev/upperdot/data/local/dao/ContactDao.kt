@@ -28,7 +28,12 @@ interface ContactDao {
     @Query("SELECT COUNT(*) FROM contacts")
     fun getContactCount(): Flow<Int>
     
-    @Query("SELECT * FROM contacts WHERE fullName LIKE '%' || :query || '%' OR sanitizedPrimaryPhone LIKE '%' || :query || '%'")
+    @Query("""
+        SELECT * FROM contacts 
+        WHERE fullName LIKE '%' || :query || '%' 
+        OR sanitizedPrimaryPhone LIKE '%' || :query || '%' 
+        OR nicknames LIKE '%' || :query || '%'
+    """)
     fun searchContacts(query: String): Flow<List<ContactEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

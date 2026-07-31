@@ -740,6 +740,14 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Final Decision:** Use `File.length()` for the database file and a recursive `walkTopDown()` for internal storage, exposing results as MB-formatted `StateFlow` strings.
 - **Impact:** `AdvancedSettingsViewModel.kt`, `AdvancedSettingsScreen.kt`.
 
+### 2024-05-20 - Multi-Column Wildcard Search Optimization
+- **Context/Goal:** Update the dashboard search logic to include nicknames in the discovery process, ensuring that alternate names match connection cards.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Search Scope:* Initial implementation only matched the `fullName` column, making contacts with known aliases (e.g., 'Test' for 'Seth') undiscoverable via search. *Decision:* Refactored the `searchContacts` DAO query to perform a dual-column scan using an `OR` constraint.
+  - *Conflict 2: Type Matching:* Nicknames are stored as JSON strings via TypeConverters. *Decision:* Applied a standard SQLite `LIKE` operator with wildcard wrappers (`'%' || :query || '%'`). This effectively scans the serialized nickname array string, allowing partial and full nickname matches without complex JSON parsing during the real-time stream.
+- **Final Decision:** Expand `ContactDao.searchContacts` to include `nicknames` in the `WHERE` clause.
+- **Impact:** `ContactDao.kt`.
+
 ### ⚠️ Build Errors & Resolutions
 - **Error:** Bracing mismatch in `DetailViewerSheets.kt` causing unresolved references.
 - **Cause:** Incorrect nested block closures in `NoteViewerSheet` after adding the `isEditingMode` conditional.
