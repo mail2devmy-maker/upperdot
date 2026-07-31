@@ -5,6 +5,7 @@ import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
@@ -23,6 +24,7 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -34,6 +36,10 @@ import coil.compose.AsyncImage
 import com.mail2dev.upperdot.ui.digital_wallet.BankCard
 import com.mail2dev.upperdot.ui.theme.*
 import java.io.File
+
+fun formatAccountNumber(number: String): String {
+    return number.replace(" ", "").chunked(4).joinToString(" ")
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -116,6 +122,7 @@ fun QuickCardDisplay(
     onCopy: () -> Unit
 ) {
     var showFullScreenQr by remember { mutableStateOf(false) }
+    val bankColor = Color(card.themeColor.toInt())
 
     if (showFullScreenQr) {
         FullScreenQrDialog(
@@ -125,10 +132,28 @@ fun QuickCardDisplay(
     }
 
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp)
+            .background(Surface, RoundedCornerShape(24.dp))
+            .border(
+                width = 2.dp,
+                color = bankColor.copy(alpha = 0.30f),
+                shape = RoundedCornerShape(24.dp)
+            )
+            .background(bankColor.copy(alpha = 0.20f), RoundedCornerShape(24.dp))
+            .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = card.bankName, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Text(
+            text = card.bankName.uppercase(),
+            color = Color.White,
+            style = TextStyle(
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.5.sp
+            )
+        )
         Text(text = card.cardHolderName, color = TextSecondary, fontSize = 14.sp)
         
         Spacer(modifier = Modifier.height(24.dp))
@@ -167,14 +192,15 @@ fun QuickCardDisplay(
                 }
             }
 
-            // Relocated Share Action Button
+            // Glassmorphic Share Action Button
             val context = LocalContext.current
             Surface(
                 shape = CircleShape,
-                color = Color(card.themeColor.toInt()),
+                color = Color.White.copy(alpha = 0.15f),
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
-                    .size(48.dp)
+                    .size(52.dp)
+                    .border(1.dp, Color.White.copy(alpha = 0.3f), CircleShape)
                     .clickable { 
                         if (card.qrImagePath != null) {
                             val file = File(card.qrImagePath)
@@ -207,8 +233,8 @@ fun QuickCardDisplay(
                     Icon(
                         imageVector = Icons.Default.Share,
                         contentDescription = "Share",
-                        tint = Color.Black,
-                        modifier = Modifier.size(20.dp)
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp)
                     )
                 }
             }
@@ -221,15 +247,15 @@ fun QuickCardDisplay(
             onClick = onCopy,
             shape = RoundedCornerShape(20.dp),
             color = Color.Black.copy(alpha = 0.3f),
-            modifier = Modifier.height(40.dp)
+            modifier = Modifier.height(44.dp)
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 16.dp),
+                modifier = Modifier.padding(horizontal = 20.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.ContentCopy, contentDescription = null, tint = TextSecondary, modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.ContentCopy, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(12.dp))
-                Text(text = card.accountNumber, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Text(text = formatAccountNumber(card.accountNumber), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
         }
     }

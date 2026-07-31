@@ -592,3 +592,17 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   - *Conflict 2: Dynamic Color Application:* Static container colors vs database-driven background. *Decision:* Updated `BankCardItem` (Screen) and `QuickCardDisplay` (Overlay) to read the `themeColor` hex string directly from the model. The card background and the Quick Wallet share button now dynamically adapt to the saved color, ensuring visual continuity.
 - **Final Decision:** Use a 12-color authentic palette and wire `CardDefaults.cardColors(containerColor = Color(card.themeColor.toInt()))` across all display surfaces.
 - **Impact:** `NewBankCardSheet.kt`, `DigitalWalletScreen.kt`, `QuickWalletOverlaySheet.kt`.
+
+### 2024-05-20 - Premium Matte Glassmorphic Transformation
+- **Context/Goal:** Elevate the wallet card design with a premium matte glassmorphic finish and sophisticated typography.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Background Rendering:* Solid colors looked too flat for a premium CRM. *Decision:* Implemented a matte tint glassmorphism (Acrylic) using `#1E1E1E` as the base and layering the bank color with 20% alpha.
+  - *Conflict 2: Visual Depth:* How to make cards pop on pure black? *Decision:* Applied an "Ambient Neon Floating Glow" using a 2dp border with 30% alpha of the bank's theme color.
+  - *Conflict 3: Share Button UX:* The cyan button clashed with glassmorphic cards. *Decision:* Redesigned the share button as a frosted semi-transparent white acrylic glass circle (15% alpha) with a thin white outline.
+- **Final Decision:** Use layered background alpha blends and neon border glows. Applied sophisticated uppercase typography with expanded letter-spacing (1.5sp) for bank titles and grouped account number formatting.
+- **Impact:** `DigitalWalletScreen.kt`, `QuickWalletOverlaySheet.kt`.
+
+### ⚠️ Build Errors & Resolutions
+- **Error:** `Unresolved reference: border` in `QuickWalletOverlaySheet.kt`.
+- **Cause:** Missing import for `androidx.compose.foundation.border` after adding glassmorphic border glows.
+- **Resolution:** Manually added the `border` import to the file.
