@@ -60,7 +60,20 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Final Decision:** Implement `AddContactIdentityScreen`. Maintain shared VM state. Utilize `PrimaryYellow` for the "X" Close and `AccentCyan` for active tab/headers.
 - **Impact:** `AddContactIdentityScreen.kt`, `AddContactViewModel.kt` (updated with setters), `MainActivity.kt` routes.
 
+### 2024-05-20 - Profile Detail Historical Timelines & Viewer Overlays
+- **Context/Goal:** Activate real-time historical timelines (Notes & Transactions) within the Profile Detail View with high-density summary rows and read-only viewer overlays.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Data Integration:* Hardcoded counts vs reactive streams. *Decision:* Injected `NoteRepository` and `TransactionRepository` into `ClientProfileDetailViewModel`. Used `flatMapLatest` on the active `contactId` to stream live results from Room, ensuring counts in accordion headers are always accurate.
+  - *Conflict 2: Summary Row Density:* How much info to show in the list? *Decision:* Implemented "High-Density" rows. Notes show Title + Date with tiny icons for Voice/Attachments. Transactions show Title + Date with color-coded signed amounts (+Green/-Red) for immediate financial context.
+  - *Conflict 3: Viewer Sheet Implementation:* Separate screen vs Bottom Sheet. *Decision:* Used `ModalBottomSheet` (viewer overlays) to maintain context. Sheets are "read-only" versions of the creation forms, including full content areas, voice playback placeholders, and attachment previews.
+- **Final Decision:** Implement reactive wiring in ViewModel and `LazyColumn` row components in Screen. Used `ModalBottomSheet` with `skipPartiallyExpanded = true` for viewer overlays.
+- **Impact:** `ClientProfileDetailViewModel.kt`, `ClientProfileDetailScreen.kt`, `MainActivity.kt` update, `DateUtils.kt` created.
+
 ### ⚠️ Build Errors & Resolutions
+- **Error:** `Unresolved reference: toFormattedDate` in `ClientProfileDetailScreen.kt`.
+- **Cause:** Missing utility function for formatting `Long` timestamps into user-friendly date strings.
+- **Resolution:** Created `com.mail2dev.upperdot.utils.DateUtils.kt` with a `Long.toFormattedDate()` extension function using `SimpleDateFormat`.
+
 - **Error:** `Conflicting overloads: fun WizardTabRow(...)` and `Unresolved reference: it` in `AddContactIdentityScreen.kt`.
 - **Cause:** Duplicated `WizardTabRow` and `StitchTextField` across both `AddContactCoreInfoScreen.kt` and the new `AddContactComponents.kt` file. Additionally, `StitchTextField` was missing a `modifier` parameter in its shared definition, causing a signature mismatch in the Identity screen.
 - **Resolution:**
