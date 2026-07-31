@@ -26,7 +26,7 @@ data class TransactionEntity(
     val amount: Double,
     val isRevenue: Boolean,
     val detail: String,
-    val attachmentPaths: List<String> = emptyList(),
+    val receiptPaths: List<String> = emptyList(),
     val voiceRecordingPath: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val lastModifiedAt: Long = System.currentTimeMillis(),

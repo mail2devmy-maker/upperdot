@@ -259,7 +259,7 @@ class InsightsViewModel(
                 amount = amount.toDoubleOrNull() ?: 0.0,
                 isRevenue = isRevenue,
                 detail = detail,
-                attachmentPaths = attachments,
+                receiptPaths = attachments,
                 voiceRecordingPath = voicePath
             )
             transactionRepository.insertTransaction(transaction)
@@ -300,5 +300,5 @@ private fun TransactionWithContact.toEntry() = TransactionEntry(
     amount = String.format(Locale.getDefault(), "%.2f", transaction.amount),
     isRevenue = transaction.isRevenue,
     timestamp = transaction.createdAt.toFormattedDate(),
-    attachmentCount = transaction.attachmentPaths.size
+    attachmentCount = transaction.receiptPaths.size
 )

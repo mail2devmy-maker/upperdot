@@ -5,6 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -114,14 +116,17 @@ fun NoteViewerSheet(
                 Spacer(modifier = Modifier.height(24.dp))
                 Text("Attachments", color = AccentCyan, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    note.attachmentPaths.forEach { path ->
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(note.attachmentPaths) { path ->
                         AsyncImage(
                             model = File(path),
                             contentDescription = null,
                             modifier = Modifier
                                 .size(64.dp)
-                                .clip(RoundedCornerShape(8.dp))
+                                .clip(RoundedCornerShape(12.dp))
                                 .background(Color.DarkGray)
                                 .clickable { fullScreenImagePath = path },
                             contentScale = ContentScale.Crop
@@ -212,21 +217,27 @@ fun TransactionViewerSheet(
                 fontSize = 14.sp
             )
 
-            if (transaction.attachmentPaths.isNotEmpty()) {
+            if (transaction.receiptPaths.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(24.dp))
-                Text("Receipt", color = AccentCyan, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text("Receipts", color = AccentCyan, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
-                AsyncImage(
-                    model = File(transaction.attachmentPaths.first()),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(Color.DarkGray)
-                        .clickable { fullScreenImagePath = transaction.attachmentPaths.first() },
-                    contentScale = ContentScale.Crop
-                )
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(transaction.receiptPaths) { path ->
+                        AsyncImage(
+                            model = File(path),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color.DarkGray)
+                                .clickable { fullScreenImagePath = path },
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                }
             }
         }
     }

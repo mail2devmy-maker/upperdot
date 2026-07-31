@@ -48,7 +48,7 @@ fun NewCashTransactionSheet(
     contactSearchQuery: String,
     onContactSearchQueryChange: (String) -> Unit,
     searchedContacts: List<ContactSummary>,
-    attachmentPaths: List<String>,
+    receiptPaths: List<String>,
     onAddAttachment: (String) -> Unit,
     onRemoveAttachment: (Int) -> Unit,
     currencySymbol: String,
@@ -334,7 +334,7 @@ fun NewCashTransactionSheet(
             // Voice and Attachments Section
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "Receipts / Attachments (${attachmentPaths.size})",
+                    text = "Receipts / Attachments (${receiptPaths.size})",
                     color = TextSecondary,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
@@ -347,7 +347,7 @@ fun NewCashTransactionSheet(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    itemsIndexed(attachmentPaths) { index, path ->
+                    itemsIndexed(receiptPaths) { index, path ->
                         Box(modifier = Modifier.size(64.dp)) {
                             AsyncImage(
                                 model = path,
@@ -428,7 +428,7 @@ fun NewCashTransactionSheet(
             Button(
                 onClick = { 
                     selectedContact?.let { contact ->
-                        onSave(contact.id, isRevenue, title, amount, detail, attachmentPaths, voiceRecordingPath)
+                        onSave(contact.id, isRevenue, title, amount, detail, receiptPaths, voiceRecordingPath)
                     }
                 },
                 modifier = Modifier

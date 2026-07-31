@@ -85,7 +85,7 @@ fun InsightsScreen(
             contactSearchQuery = contactSearchQuery,
             onContactSearchQueryChange = viewModel::onContactSearchQueryChanged,
             searchedContacts = searchedContacts,
-            attachmentPaths = selectedAttachments,
+            receiptPaths = selectedAttachments,
             onAddAttachment = viewModel::addAttachmentPath,
             onRemoveAttachment = viewModel::removeAttachmentPath,
             currencySymbol = currencySymbol,
