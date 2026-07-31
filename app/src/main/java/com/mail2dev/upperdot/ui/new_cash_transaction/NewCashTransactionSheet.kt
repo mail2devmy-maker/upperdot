@@ -25,10 +25,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.mail2dev.upperdot.ui.components.StitchDropdown
 import com.mail2dev.upperdot.ui.components.StitchTextField
 import com.mail2dev.upperdot.ui.insights.ContactSummary
 import com.mail2dev.upperdot.ui.theme.*
@@ -36,6 +36,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import android.media.MediaRecorder
 import java.io.File
+import androidx.compose.foundation.BorderStroke
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,8 +57,10 @@ fun NewCashTransactionSheet(
     var title by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
     var detail by remember { mutableStateOf("") }
-    var isSearchDropdownExpanded by remember { mutableStateOf(false) }
     
+    // Picker State
+    var showPickerOverlay by remember { mutableStateOf(false) }
+
     // Date Picker State
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState(
@@ -151,44 +154,84 @@ fun NewCashTransactionSheet(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Searchable Contact Picker
+            // Overhauled Read-Only Contact Picker with Search Overlay
             Column(modifier = Modifier.fillMaxWidth()) {
-                StitchTextField(
-                    value = if (selectedContact != null && !isSearchDropdownExpanded) selectedContact!!.fullName else contactSearchQuery,
-                    onValueChange = {
-                        if (selectedContact != null) selectedContact = null
-                        onContactSearchQueryChange(it)
-                        isSearchDropdownExpanded = true
-                    },
-                    placeholder = "Search Contact (Mandatory)",
-                    leadingIcon = Icons.Default.Person,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                // Primary Read-Only Field (Button-like)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .background(Surface, RoundedCornerShape(16.dp))
+                        .clickable { showPickerOverlay = !showPickerOverlay }
+                        .padding(horizontal = 16.dp),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Person, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = selectedContact?.fullName ?: "Select Contact (Mandatory)",
+                            color = if (selectedContact != null) Color.White else TextSecondary,
+                            fontSize = 14.sp
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        Icon(
+                            imageVector = if (showPickerOverlay) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                            contentDescription = null,
+                            tint = TextSecondary
+                        )
+                    }
+                }
 
-                if (isSearchDropdownExpanded && searchedContacts.isNotEmpty()) {
+                if (showPickerOverlay) {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(max = 200.dp)
-                            .padding(top = 4.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = Surface)
+                            .padding(top = 8.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(containerColor = Surface),
+                        border = BorderStroke(1.dp, Color.DarkGray.copy(alpha = 0.5f))
                     ) {
-                        LazyColumn {
-                            items(searchedContacts) { contact ->
-                                Text(
-                                    text = contact.fullName,
-                                    color = Color.White,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            selectedContact = contact
-                                            onContactSearchQueryChange(contact.fullName)
-                                            isSearchDropdownExpanded = false
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            // Internal Search Input
+                            StitchTextField(
+                                value = contactSearchQuery,
+                                onValueChange = onContactSearchQueryChange,
+                                placeholder = "Type to filter contacts...",
+                                leadingIcon = Icons.Default.Search,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            
+                            Spacer(modifier = Modifier.height(12.dp))
+                            
+                            Box(modifier = Modifier.heightIn(max = 240.dp)) {
+                                if (searchedContacts.isEmpty() && contactSearchQuery.isNotEmpty()) {
+                                    Text(
+                                        text = "No contacts found",
+                                        color = TextSecondary,
+                                        modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                                        textAlign = TextAlign.Center
+                                    )
+                                } else {
+                                    LazyColumn {
+                                        items(searchedContacts) { contact ->
+                                            Text(
+                                                text = contact.fullName,
+                                                color = Color.White,
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clickable {
+                                                        selectedContact = contact
+                                                        showPickerOverlay = false
+                                                        onContactSearchQueryChange("") // Reset query
+                                                    }
+                                                    .padding(16.dp),
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            HorizontalDivider(color = Color.DarkGray.copy(alpha = 0.3f))
                                         }
-                                        .padding(16.dp)
-                                )
-                                HorizontalDivider(color = Color.DarkGray.copy(alpha = 0.3f))
+                                    }
+                                }
                             }
                         }
                     }

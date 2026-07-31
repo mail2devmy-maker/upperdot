@@ -136,14 +136,15 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   4. Updated the state binding to ensure selecting a contact correctly links their `id` and `fullName` to the active note or transaction.
   5. Refactored the `save` logic to use the selected contact's ID for database persistence.
 
-- **Error:** Searching for contacts in `NewRelationshipNoteSheet` and `NewCashTransactionSheet` allowed submitting non-existent names, causing orphan data.
-- **Cause:** The UI logic didn't strictly separate the typed query from a verified database selection, and the "Save" buttons were enabled even without a verified contact object.
+- **Error:** Contact selection in `NewRelationshipNoteSheet` and `NewCashTransactionSheet` allowed arbitrary typed text, potentially creating orphan data.
+- **Cause:** The contact search field was interactive and didn't strictly enforce selection from the database results.
 - **Resolution:**
-  1. Implemented a strict verification policy in `NewRelationshipNoteSheet.kt` and `NewCashTransactionSheet.kt`.
-  2. Separated the search query string from the `selectedContact` state object.
-  3. Configured the contact input field to only display a verified `fullName` once an item from the search dropdown is explicitly clicked.
-  4. Enforced button validation: "Save Relationship Note" and "Finalize Transaction" are now completely disabled if `selectedContact` is null, preventing the creation of orphan records.
-  5. Wired the `onValueChange` handler to immediately clear the verified selection if the user modifies the search text, requiring a fresh selection from the results list.
+  1. Overhauled the contact selection UI to be completely **read-only** at the top level.
+  2. Implemented a toggleable **Search Picker Overlay** that appears when the read-only field is tapped.
+  3. Placed the `StitchTextField` search input *inside* the overlay, isolating it from the primary form state.
+  4. Enforced strict selection: Users can only associate a contact by explicitly clicking an item from the verified search results list.
+  5. Updated validation logic: The "Save" and "Finalize" buttons remain strictly disabled if no contact is selected, even if there is text in the internal search field.
+  6. Added visual feedback with `ArrowDropUp`/`ArrowDropDown` icons to indicate the picker's state.
 
 - **Error:** Incomplete functionality in `NewCashTransactionSheet` (missing Date Picker, Receipt Attachments, and Voice Recorder).
 - **Cause:** These features were not yet implemented in the cash transaction flow, leading to UX inconsistency with the relationship notes flow.
