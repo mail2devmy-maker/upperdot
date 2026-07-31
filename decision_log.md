@@ -175,6 +175,15 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   5. Implemented `deleteAll()` and bulk `insert()` methods in all DAOs and repositories to support clean database overwrites during restore.
 - **Impact:** `AdvancedSettingsScreen.kt`, `AdvancedSettingsViewModel.kt`, all Entity files, all Dao/Repository files.
 
+- **Feature:** Functional Sync Connectivity Settings.
+- **Context/Goal:** Enable "Sync Over Wi-Fi Only" and configurable "Sync Frequency" (1h, 6h, 12h, 24h, or Manual) in Advanced App Settings.
+- **Decision:**
+  1. Implemented `cancelPeriodicSync()` in `SyncManager.kt` using WorkManager's `cancelUniqueWork`.
+  2. Updated `AdvancedSettingsViewModel.kt` to handle the "Manual" frequency option and re-schedule or cancel sync tasks dynamically based on user selection and Wi-Fi toggle.
+  3. Implemented reactive selection dialogs for Sync Frequency and Currency Selection in `AdvancedSettingsScreen.kt`.
+  4. Wired the UI controls to the ViewModel to ensure real-time application of sync constraints.
+- **Impact:** `SyncManager.kt`, `AdvancedSettingsViewModel.kt`, `AdvancedSettingsScreen.kt`.
+
 - **Feature:** Live User Profile Data Integration.
 - **Context/Goal:** Display real Google Account information and dynamic repository counts in the My Profile tab.
 - **Decision:**

@@ -36,7 +36,69 @@ fun AdvancedSettingsScreen(
     val currencySymbol by viewModel.currencySymbol.collectAsState()
     val diagnostics by viewModel.diagnostics.collectAsState()
     val showClearCacheDialog by viewModel.showClearCacheDialog.collectAsState()
+    val showFrequencyDialog by viewModel.showFrequencyDialog.collectAsState()
+    val showCurrencyDialog by viewModel.showCurrencyDialog.collectAsState()
     val vcfImportState by viewModel.vcfImportState.collectAsState()
+
+    if (showFrequencyDialog) {
+        val options = listOf("1h", "6h", "12h", "24h", "Manual")
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissFrequencyDialog() },
+            title = { Text("Sync Frequency", color = Color.White) },
+            text = {
+                Column {
+                    options.forEach { option ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { viewModel.onSyncFrequencySelected(option) }
+                                .padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = option == syncFrequency,
+                                onClick = { viewModel.onSyncFrequencySelected(option) },
+                                colors = RadioButtonDefaults.colors(selectedColor = AccentCyan)
+                            )
+                            Text(text = option, color = Color.White, modifier = Modifier.padding(start = 8.dp))
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            containerColor = Surface
+        )
+    }
+
+    if (showCurrencyDialog) {
+        val options = listOf("$", "RM", "€", "£", "¥")
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissCurrencyDialog() },
+            title = { Text("Currency Selection", color = Color.White) },
+            text = {
+                Column {
+                    options.forEach { option ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { viewModel.onCurrencySelected(option) }
+                                .padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = option == currencySymbol,
+                                onClick = { viewModel.onCurrencySelected(option) },
+                                colors = RadioButtonDefaults.colors(selectedColor = AccentCyan)
+                            )
+                            Text(text = option, color = Color.White, modifier = Modifier.padding(start = 8.dp))
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            containerColor = Surface
+        )
+    }
 
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
@@ -251,7 +313,7 @@ fun AdvancedSettingsScreen(
                             icon = Icons.Default.Sync,
                             title = "Sync Frequency",
                             value = syncFrequency,
-                            onClick = { /* TODO */ }
+                            onClick = { viewModel.requestFrequencyChange() }
                         )
                     }
                 }
@@ -279,7 +341,7 @@ fun AdvancedSettingsScreen(
                         icon = Icons.Default.Language,
                         title = "Currency Selection",
                         value = currencySymbol,
-                        onClick = { /* TODO */ }
+                        onClick = { viewModel.requestCurrencyChange() }
                     )
                 }
             }
