@@ -94,6 +94,14 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Final Decision:** Use conditional UI rendering and modifier application based on the `isContactLocked` flag to enforce context-specific input restrictions.
 - **Impact:** `NewRelationshipNoteSheet.kt`, `NewCashTransactionSheet.kt`, `ConnectionsListScreen.kt`, `InsightsScreen.kt`.
 
+### 2024-05-20 - Insights Data Mapping & SQL Join Correction
+- **Context/Goal:** Fix a critical data mapping failure where the contact name on Insights note/transaction cards was hardcoded to "test" instead of dynamically reflecting the linked contact.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Relational Resolution:* Should contact names be resolved in the ViewModel or DAO? *Decision:* Implemented `INNER JOIN` logic directly in `NoteDao` and `TransactionDao`. This is more efficient for large datasets as it leverages SQLite's relational engine and returns a unified `NoteWithContact`/`TransactionWithContact` POJO, reducing the need for iterative lookups in the ViewModel.
+  - *Conflict 2: Filter Synchronization:* The existing Insights filter was ignoring the `contactName` parameter. *Decision:* Updated the `flatMapLatest` pipeline in `InsightsViewModel` to strictly respect the `_selectedContactFilter` StateFlow, applying an additional `map { list -> list.filter { ... } }` layer to the database stream.
+- **Final Decision:** Use SQLite Inner Joins to dynamically resolve contact names from the `contacts` table based on `contactId`.
+- **Impact:** `NoteDao.kt`, `TransactionDao.kt`, `NoteRepository.kt`, `TransactionRepository.kt`, `InsightsViewModel.kt` updated. `NoteWithContact.kt` and `TransactionWithContact.kt` models created.
+
 ### ⚠️ Build Errors & Resolutions
 - **Error:** `Unresolved reference: toFormattedDate` in `ClientProfileDetailScreen.kt`.
 - **Cause:** Missing utility function for formatting `Long` timestamps into user-friendly date strings.

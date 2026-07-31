@@ -4,9 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mail2dev.upperdot.data.local.entity.NoteEntity
 import com.mail2dev.upperdot.data.local.entity.TransactionEntity
+import com.mail2dev.upperdot.data.local.model.NoteWithContact
+import com.mail2dev.upperdot.data.local.model.TransactionWithContact
 import com.mail2dev.upperdot.data.repository.ContactRepository
 import com.mail2dev.upperdot.data.repository.NoteRepository
 import com.mail2dev.upperdot.data.repository.TransactionRepository
+import com.mail2dev.upperdot.utils.toFormattedDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
@@ -109,11 +112,17 @@ class InsightsViewModel(
 
     val notes: StateFlow<List<NoteEntry>> = combine(_searchQuery, _selectedContactFilter) { query, filter ->
         query to filter
-    }.flatMapLatest { (query, _) ->
-        if (query.isEmpty()) {
-            noteRepository.allNotes
+    }.flatMapLatest { (query, filter) ->
+        val flow = if (query.isEmpty()) {
+            noteRepository.allNotesWithContact
         } else {
-            noteRepository.searchNotes(query)
+            noteRepository.searchNotesWithContact(query)
+        }
+        
+        if (filter != null) {
+            flow.map { list -> list.filter { it.contactName == filter } }
+        } else {
+            flow
         }
     }.map { entities -> 
         entities.map { it.toEntry() } 
@@ -121,11 +130,17 @@ class InsightsViewModel(
 
     val transactions: StateFlow<List<TransactionEntry>> = combine(_searchQuery, _selectedContactFilter) { query, filter ->
         query to filter
-    }.flatMapLatest { (query, _) ->
-        if (query.isEmpty()) {
-            transactionRepository.allTransactions
+    }.flatMapLatest { (query, filter) ->
+        val flow = if (query.isEmpty()) {
+            transactionRepository.allTransactionsWithContact
         } else {
-            transactionRepository.searchTransactions(query)
+            transactionRepository.searchTransactionsWithContact(query)
+        }
+
+        if (filter != null) {
+            flow.map { list -> list.filter { it.contactName == filter } }
+        } else {
+            flow
         }
     }.map { entities ->
         entities.map { it.toEntry() }
@@ -260,24 +275,24 @@ private fun com.mail2dev.upperdot.data.local.entity.ContactEntity.toSummary() = 
     fullName = fullName
 )
 
-private fun NoteEntity.toEntry() = NoteEntry(
-    id = id,
-    contactId = contactId,
-    contactName = "test", // Resolver needed
-    title = title,
-    content = content,
-    timestamp = "Jul 28, 2026 • 02:28 AM", // Formatter needed
-    attachmentCount = attachmentPaths.size
+private fun NoteWithContact.toEntry() = NoteEntry(
+    id = note.id,
+    contactId = note.contactId,
+    contactName = contactName,
+    title = note.title,
+    content = note.content,
+    timestamp = note.createdAt.toFormattedDate(),
+    attachmentCount = note.attachmentPaths.size
 )
 
-private fun TransactionEntity.toEntry() = TransactionEntry(
-    id = id,
-    contactId = contactId,
-    contactName = "test", // Resolver needed
-    title = title,
-    detail = detail,
-    amount = String.format(Locale.getDefault(), "%.2f", amount),
-    isRevenue = isRevenue,
-    timestamp = "Jul 28, 2026 • 11:28 AM", // Formatter needed
-    attachmentCount = attachmentPaths.size
+private fun TransactionWithContact.toEntry() = TransactionEntry(
+    id = transaction.id,
+    contactId = transaction.contactId,
+    contactName = contactName,
+    title = transaction.title,
+    detail = transaction.detail,
+    amount = String.format(Locale.getDefault(), "%.2f", transaction.amount),
+    isRevenue = transaction.isRevenue,
+    timestamp = transaction.createdAt.toFormattedDate(),
+    attachmentCount = transaction.attachmentPaths.size
 )

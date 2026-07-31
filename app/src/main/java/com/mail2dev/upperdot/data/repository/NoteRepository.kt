@@ -2,11 +2,13 @@ package com.mail2dev.upperdot.data.repository
 
 import com.mail2dev.upperdot.data.local.dao.NoteDao
 import com.mail2dev.upperdot.data.local.entity.NoteEntity
+import com.mail2dev.upperdot.data.local.model.NoteWithContact
 import kotlinx.coroutines.flow.Flow
 
 class NoteRepository(private val noteDao: NoteDao) {
 
     val allNotes: Flow<List<NoteEntity>> = noteDao.getAllNotes()
+    val allNotesWithContact: Flow<List<NoteWithContact>> = noteDao.getAllNotesWithContact()
     val noteCount: Flow<Int> = noteDao.getNoteCount()
 
     fun getNotesForContact(contactId: Long): Flow<List<NoteEntity>> = noteDao.getNotesForContact(contactId)
@@ -34,4 +36,6 @@ class NoteRepository(private val noteDao: NoteDao) {
     }
 
     fun searchNotes(query: String): Flow<List<NoteEntity>> = noteDao.searchNotes(query)
+
+    fun searchNotesWithContact(query: String): Flow<List<NoteWithContact>> = noteDao.searchNotesWithContact(query)
 }

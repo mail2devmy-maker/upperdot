@@ -2,13 +2,19 @@ package com.mail2dev.upperdot.data.local.dao
 
 import androidx.room.*
 import com.mail2dev.upperdot.data.local.entity.TransactionEntity
+import com.mail2dev.upperdot.data.local.model.TransactionWithContact
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TransactionDao {
 
-    @Query("SELECT * FROM transactions ORDER BY createdAt DESC")
-    fun getAllTransactions(): Flow<List<TransactionEntity>>
+    @Query("""
+        SELECT transactions.*, contacts.fullName as contactName 
+        FROM transactions 
+        INNER JOIN contacts ON transactions.contactId = contacts.id 
+        ORDER BY transactions.createdAt DESC
+    """)
+    fun getAllTransactionsWithContact(): Flow<List<TransactionWithContact>>
 
     @Query("SELECT * FROM transactions WHERE contactId = :contactId ORDER BY createdAt DESC")
     fun getTransactionsForContact(contactId: Long): Flow<List<TransactionEntity>>
@@ -33,6 +39,20 @@ interface TransactionDao {
 
     @Query("SELECT COUNT(*) FROM transactions")
     fun getTransactionCount(): Flow<Int>
+
+    @Query("""
+        SELECT transactions.*, contacts.fullName as contactName 
+        FROM transactions 
+        INNER JOIN contacts ON transactions.contactId = contacts.id 
+        WHERE transactions.title LIKE '%' || :query || '%' 
+        OR transactions.detail LIKE '%' || :query || '%' 
+        OR contacts.fullName LIKE '%' || :query || '%'
+        ORDER BY transactions.createdAt DESC
+    """)
+    fun searchTransactionsWithContact(query: String): Flow<List<TransactionWithContact>>
+
+    @Query("SELECT * FROM transactions")
+    fun getAllTransactions(): Flow<List<TransactionEntity>>
 
     @Query("""
         SELECT * FROM transactions 
