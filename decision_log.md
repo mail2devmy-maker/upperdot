@@ -175,6 +175,15 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   5. Implemented `deleteAll()` and bulk `insert()` methods in all DAOs and repositories to support clean database overwrites during restore.
 - **Impact:** `AdvancedSettingsScreen.kt`, `AdvancedSettingsViewModel.kt`, all Entity files, all Dao/Repository files.
 
+- **Feature:** Live User Profile Data Integration.
+- **Context/Goal:** Display real Google Account information and dynamic repository counts in the My Profile tab.
+- **Decision:**
+  1. Refactored `ProfileSettingsViewModel.kt` to inject `GoogleAuthService` and all historical repositories.
+  2. Updated `loadUserData` to fetch the display name and email from the last signed-in Google account using `authService.getLastSignedInAccount`.
+  3. Implemented a `combine` operator to reactively stream the total counts of Contacts, Notes, and Transactions from Room DB.
+  4. Wired the ViewModel factory in `MainActivity.kt` to provide all necessary dependencies to `ProfileSettingsViewModel`.
+- **Impact:** `ProfileSettingsViewModel.kt`, `MainActivity.kt`.
+
 - **Error:** Incomplete functionality in `NewCashTransactionSheet` (missing Date Picker, Receipt Attachments, and Voice Recorder).
 - **Cause:** These features were not yet implemented in the cash transaction flow, leading to UX inconsistency with the relationship notes flow.
 - **Resolution:**
