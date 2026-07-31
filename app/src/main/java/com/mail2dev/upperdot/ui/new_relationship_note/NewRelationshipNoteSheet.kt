@@ -41,7 +41,7 @@ import androidx.compose.foundation.lazy.items
 @Composable
 fun NewRelationshipNoteSheet(
     onDismiss: () -> Unit,
-    onSave: (String, String, String, List<String>, String?) -> Unit,
+    onSave: (Long, String, String, List<String>, String?) -> Unit,
     contactSearchQuery: String,
     onContactSearchQueryChange: (String) -> Unit,
     searchedContacts: List<ContactSummary>,

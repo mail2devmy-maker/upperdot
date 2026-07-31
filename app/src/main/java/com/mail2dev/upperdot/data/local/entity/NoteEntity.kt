@@ -19,8 +19,8 @@ import java.util.UUID
     indices = [Index(value = ["contactId"])]
 )
 data class NoteEntity(
-    @PrimaryKey val id: String = UUID.randomUUID().toString(),
-    val contactId: String,
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val contactId: Long,
     val title: String,
     val content: String,
     val attachmentPaths: List<String> = emptyList(), // Stored as JSON string via TypeConverter

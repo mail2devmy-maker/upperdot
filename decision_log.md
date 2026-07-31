@@ -136,7 +136,7 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   4. Updated the state binding to ensure selecting a contact correctly links their `id` and `fullName` to the active note or transaction.
   5. Refactored the `save` logic to use the selected contact's ID for database persistence.
 
-- **Error:** Contact selection in `NewRelationshipNoteSheet` and `NewCashTransactionSheet` allowed arbitrary typed text, potentially creating orphan data.
+- **Error:** Searching for contacts in `NewRelationshipNoteSheet` and `NewCashTransactionSheet` allowed submitting non-existent names, causing orphan data.
 - **Cause:** The contact search field was interactive and didn't strictly enforce selection from the database results.
 - **Resolution:**
   1. Overhauled the contact selection UI to be completely **read-only** at the top level.
@@ -145,6 +145,15 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   4. Enforced strict selection: Users can only associate a contact by explicitly clicking an item from the verified search results list.
   5. Updated validation logic: The "Save" and "Finalize" buttons remain strictly disabled if no contact is selected, even if there is text in the internal search field.
   6. Added visual feedback with `ArrowDropUp`/`ArrowDropDown` icons to indicate the picker's state.
+
+- **Feature:** Enabled VCF Contact Import with Duplicate Detection.
+- **Context/Goal:** Allow users to bulk-load contacts from .vcf files with a "Smart Number Matcher" and conflict resolution.
+- **Decision:**
+  1. Implemented a basic VCF parser in `AdvancedSettingsViewModel.kt` to extract Name, Phone, and Email.
+  2. Created `ContactUtils.kt` with a `smartSanitize` logic to compare phone numbers by stripping symbols and country codes (Smart Number Matcher).
+  3. Implemented a conflict resolution flow: if matching numbers are found, a dialog appears presenting 3 options: "Overwrite Existing", "Keep Both (Duplicate)", and "Skip Conflicts".
+  4. Fixed a type mismatch error: Updated `NoteEntity` and `TransactionEntity` to use `Long` for `contactId` to match the auto-generated `ContactEntity.id`, ensuring database integrity for the "Overwrite" strategy.
+- **Impact:** `AdvancedSettingsScreen.kt`, `AdvancedSettingsViewModel.kt`, `ContactUtils.kt`, and all historical entities.
 
 - **Error:** Incomplete functionality in `NewCashTransactionSheet` (missing Date Picker, Receipt Attachments, and Voice Recorder).
 - **Cause:** These features were not yet implemented in the cash transaction flow, leading to UX inconsistency with the relationship notes flow.

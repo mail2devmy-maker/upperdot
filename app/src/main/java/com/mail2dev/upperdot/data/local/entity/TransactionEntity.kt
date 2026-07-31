@@ -19,8 +19,8 @@ import java.util.UUID
     indices = [Index(value = ["contactId"])]
 )
 data class TransactionEntity(
-    @PrimaryKey val id: String = UUID.randomUUID().toString(),
-    val contactId: String,
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val contactId: Long,
     val title: String,
     val amount: Double,
     val isRevenue: Boolean,
