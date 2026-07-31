@@ -558,3 +558,11 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   - *Conflict 3: Data Integrity:* Updating the schema/VM. *Decision:* Updated `BankCardEntity` to include `swiftBic` and `qrImagePath`, and refactored `saveCard` in `DigitalWalletViewModel` to persist these rich media paths.
 - **Final Decision:** Use `ActivityResultContracts.GetContent()` for picking and `StorageUtils` for local cloning.
 - **Impact:** `NewBankCardSheet.kt`, `DigitalWalletViewModel.kt`, `DigitalWalletScreen.kt`, `BankCardEntity.kt`.
+
+### 2024-05-20 - Quick Wallet Overlay Optimization
+- **Context/Goal:** Refine `QuickWalletOverlaySheet.kt` for better scanner visibility and layout.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Share Button Placement:* The floating share button was overlapping the QR code card. *Decision:* Relocated it beneath the account number pill to ensure the QR code area remains unobstructed and the layout follows a clean vertical hierarchy.
+  - *Conflict 2: QR Scanner Success Rate:* Small QR codes on standard screen brightness are often difficult for retail scanners. *Decision:* Implemented an immersive full-screen `Dialog` for the QR code. Tapping the card triggers this dialog, which uses `attributes.screenBrightness = 1.0f` to temporarily force maximum system brightness, resetting automatically upon dismissal via `DisposableEffect`.
+- **Final Decision:** Use a full-screen `Dialog` with pure black background and window brightness override.
+- **Impact:** `QuickWalletOverlaySheet.kt`.
