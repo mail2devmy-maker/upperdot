@@ -83,7 +83,7 @@ fun ConnectionsListScreen(
             contactSearchQuery = contactSearchQuery,
             onContactSearchQueryChange = viewModel::onContactSearchQueryChanged,
             searchedContacts = searchedContacts.map { com.mail2dev.upperdot.ui.insights.ContactSummary(it.id, it.fullName) },
-            attachmentPaths = selectedAttachments,
+            receiptPaths = selectedAttachments,
             onAddAttachment = viewModel::addAttachmentPath,
             onRemoveAttachment = viewModel::removeAttachmentPath,
             currencySymbol = currencySymbol,

@@ -661,3 +661,21 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   - *Conflict 2: Event Broadcasting:* State vs Events. *Decision:* Implemented `SettingsUiEvent` sealed class and a `MutableSharedFlow` event channel. Unlike standard state, events are only processed once, which is ideal for triggering snackbars without duplicate notifications on recomposition.
 - **Final Decision:** Use `SharedFlow` for one-time UI events and a themed `SnackbarHost` in the screen's `Scaffold`.
 - **Impact:** `AdvancedSettingsViewModel.kt`, `AdvancedSettingsScreen.kt`.
+
+### 2024-05-20 - Multi-Receipt Data Layer Refactor & Carousel UI
+- **Context/Goal:** Fix a data persistence bug where transactions only saved/rendered a single receipt, despite notes supporting multiple attachments.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Column Naming:* `attachmentPaths` vs `receiptPaths`. *Decision:* Renamed the `TransactionEntity` column to `receiptPaths` as per specific SRS polish requirements, while maintaining `attachmentPaths` for Notes to preserve logical separation between general notes and financial receipts.
+  - *Conflict 2: Database Migration:* Array serialization. *Decision:* Ensured the new `List<String>` column utilizes the existing `ListConverter` (@TypeConverters). This automatically serializes the array into a JSON string for Room storage, matching the Note module's proven architecture.
+  - *Conflict 3: Viewer UX:* Single Large Image vs LazyRow. *Decision:* Replaced the single-image placeholder in `TransactionViewerSheet` with a `LazyRow` carousel. This provides a unified "Visual Carousel" experience across Notes and Transactions, supporting horizontal swiping for multiple high-fidelity previews.
+- **Final Decision:** Use `List<String>` with `receiptPaths` naming and implement `LazyRow` carousels in both the creation sheet and the viewer sheet.
+- **Impact:** `TransactionEntity.kt`, `InsightsViewModel.kt`, `ConnectionsListViewModel.kt`, `NewCashTransactionSheet.kt`, `DetailViewerSheets.kt`, `InsightsScreen.kt`, `ConnectionsListScreen.kt`.
+
+### ⚠️ Build Errors & Resolutions
+- **Error:** `No parameter with name 'receiptPaths' found` in `InsightsScreen.kt`.
+- **Cause:** Renamed the parameter in `NewCashTransactionSheet` signature to `receiptPaths` for consistency, but the call site was still trying to pass to `attachmentPaths`.
+- **Resolution:** Synchronized the call sites in `InsightsScreen.kt` and `ConnectionsListScreen.kt` to use `receiptPaths` for transaction sheets while keeping `attachmentPaths` for note sheets.
+
+- **Error:** `Unresolved reference 'items'` and Composable invocation errors in `DetailViewerSheets.kt`.
+- **Cause:** Missing `LazyRow` imports and incorrect syntax for `items` extension when migrating from `Row` to `LazyRow`.
+- **Resolution:** Added `androidx.compose.foundation.lazy.LazyRow` and `androidx.compose.foundation.lazy.items` imports, and correctly wrapped the `AsyncImage` within the `items` lambda.

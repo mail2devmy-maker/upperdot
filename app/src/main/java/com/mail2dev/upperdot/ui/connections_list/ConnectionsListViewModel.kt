@@ -190,7 +190,7 @@ class ConnectionsListViewModel(
                 amount = amount.toDoubleOrNull() ?: 0.0,
                 isRevenue = isRevenue,
                 detail = detail,
-                attachmentPaths = attachments,
+                receiptPaths = attachments,
                 voiceRecordingPath = voice
             )
             transactionRepository.insertTransaction(transaction)
