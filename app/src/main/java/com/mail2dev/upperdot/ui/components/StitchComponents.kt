@@ -2,9 +2,12 @@ package com.mail2dev.upperdot.ui.components
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -48,6 +51,38 @@ fun FilterCapsule(
 }
 
 @Composable
+fun CompactSearchField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    modifier: Modifier = Modifier
+) {
+    TextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(48.dp)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(24.dp)),
+        placeholder = { Text(placeholder, color = TextSecondary, fontSize = 12.sp) },
+        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(18.dp)) },
+        shape = RoundedCornerShape(24.dp),
+        textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = Surface,
+            unfocusedContainerColor = Surface,
+            disabledContainerColor = Surface,
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            cursorColor = AccentCyan,
+            focusedTextColor = Color.White,
+            unfocusedTextColor = Color.White
+        ),
+        singleLine = true
+    )
+}
+
+@Composable
 fun StitchTextField(
     value: String,
     onValueChange: (String) -> Unit,
@@ -63,7 +98,8 @@ fun StitchTextField(
         onValueChange = onValueChange,
         modifier = modifier
             .fillMaxWidth()
-            .then(if (minLines > 1) Modifier.heightIn(min = 112.dp) else Modifier.height(56.dp)),
+            .then(if (minLines > 1) Modifier.heightIn(min = 112.dp) else Modifier.height(56.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp)),
         placeholder = { Text(placeholder, color = TextSecondary, fontSize = 14.sp) },
         leadingIcon = leadingIcon?.let {
             { Icon(it, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(20.dp)) }

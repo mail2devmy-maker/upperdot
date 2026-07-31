@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.mail2dev.upperdot.ui.components.CompactSearchField
 import com.mail2dev.upperdot.ui.components.StitchTextField
 import com.mail2dev.upperdot.ui.insights.ContactSummary
 import com.mail2dev.upperdot.ui.theme.*
@@ -190,19 +191,18 @@ fun NewCashTransactionSheet(
                             .padding(top = 8.dp),
                         shape = RoundedCornerShape(24.dp),
                         colors = CardDefaults.cardColors(containerColor = Surface),
-                        border = BorderStroke(1.dp, Color.DarkGray.copy(alpha = 0.5f))
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                     ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            // Internal Search Input
-                            StitchTextField(
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            // Sleek Compact Internal Search Input
+                            CompactSearchField(
                                 value = contactSearchQuery,
                                 onValueChange = onContactSearchQueryChange,
                                 placeholder = "Type to filter contacts...",
-                                leadingIcon = Icons.Default.Search,
                                 modifier = Modifier.fillMaxWidth()
                             )
                             
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
                             
                             Box(modifier = Modifier.heightIn(max = 240.dp)) {
                                 if (searchedContacts.isEmpty() && contactSearchQuery.isNotEmpty()) {
