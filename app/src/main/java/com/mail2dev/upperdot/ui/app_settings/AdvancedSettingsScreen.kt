@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mail2dev.upperdot.ui.theme.*
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,6 +40,7 @@ fun AdvancedSettingsScreen(
     val showFrequencyDialog by viewModel.showFrequencyDialog.collectAsState()
     val showCurrencyDialog by viewModel.showCurrencyDialog.collectAsState()
     val vcfImportState by viewModel.vcfImportState.collectAsState()
+    val scope = rememberCoroutineScope()
 
     if (showFrequencyDialog) {
         val options = listOf("1h", "6h", "12h", "24h", "Manual")
@@ -104,9 +106,9 @@ fun AdvancedSettingsScreen(
         contract = ActivityResultContracts.CreateDocument("application/zip")
     ) { uri ->
         uri?.let {
-            context.contentResolver.openOutputStream(it)?.use { stream ->
-                viewModel.exportDatabase(context.filesDir, stream) {
-                    // Export complete
+            scope.launch {
+                context.contentResolver.openOutputStream(it)?.use { stream ->
+                    viewModel.exportDatabase(context.filesDir, stream)
                 }
             }
         }
@@ -116,9 +118,9 @@ fun AdvancedSettingsScreen(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
         uri?.let {
-            context.contentResolver.openInputStream(it)?.use { stream ->
-                viewModel.importDatabase(context.filesDir, stream) {
-                    // Success callback
+            scope.launch {
+                context.contentResolver.openInputStream(it)?.use { stream ->
+                    viewModel.importDatabase(context.filesDir, stream)
                 }
             }
         }

@@ -9,7 +9,6 @@ import com.mail2dev.upperdot.data.repository.ContactRepository
 import com.mail2dev.upperdot.data.repository.NoteRepository
 import com.mail2dev.upperdot.data.repository.PreferenceRepository
 import com.mail2dev.upperdot.data.repository.TransactionRepository
-import androidx.compose.material3.ExperimentalMaterial3Api
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -32,7 +31,7 @@ sealed class ConnectionsUIState {
     data class Success(val contacts: List<ContactSummary>) : ConnectionsUIState()
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalCoroutinesApi::class, FlowPreview::class)
+@OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
 class ConnectionsListViewModel(
     private val repository: ContactRepository,
     private val noteRepository: NoteRepository,
