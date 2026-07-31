@@ -157,7 +157,7 @@ fun RootNavigation() {
         }
 
         composable("client_profile/{contactId}") { backStackEntry ->
-            val contactId = backStackEntry.arguments?.getString("contactId") ?: ""
+            val contactId = backStackEntry.arguments?.getString("contactId")?.toLongOrNull() ?: 0L
             val profileViewModel: ClientProfileDetailViewModel = viewModel()
             ClientProfileDetailScreen(
                 contactId = contactId,
