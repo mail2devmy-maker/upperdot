@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mail2dev.upperdot.ui.components.UpperDotBottomNavigation
+import com.mail2dev.upperdot.ui.new_cash_transaction.NewCashTransactionSheet
+import com.mail2dev.upperdot.ui.new_relationship_note.NewRelationshipNoteSheet
 import com.mail2dev.upperdot.ui.theme.AccentCyan
 import com.mail2dev.upperdot.ui.theme.PrimaryYellow
 import com.mail2dev.upperdot.ui.theme.Surface
@@ -32,13 +34,71 @@ import com.mail2dev.upperdot.ui.theme.TextSecondary
 @Composable
 fun ConnectionsListScreen(
     onNavigate: (String) -> Unit,
-    onNavigateToContact: (String) -> Unit,
+    onNavigateToContact: (Long) -> Unit,
     onNavigateToAddContact: () -> Unit,
     viewModel: ConnectionsListViewModel = viewModel()
 ) {
     val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedFilter by viewModel.selectedFilter.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
+    
+    val showAddNoteSheet by viewModel.showAddNoteSheet.collectAsState()
+    val showAddTransactionSheet by viewModel.showAddTransactionSheet.collectAsState()
+    val preSelectedContact by viewModel.preSelectedContact.collectAsState()
+    val contactSearchQuery by viewModel.contactSearchQuery.collectAsState()
+    val searchedContacts by viewModel.searchedContacts.collectAsState()
+
+    // Temporary media state for sheets in this screen
+    var selectedAttachments by remember { mutableStateOf(listOf<String>()) }
+    fun addAttachment(path: String) { selectedAttachments = selectedAttachments + path }
+    fun removeAttachment(index: Int) { 
+        val list = selectedAttachments.toMutableList()
+        if (index < list.size) {
+            list.removeAt(index)
+            selectedAttachments = list
+        }
+    }
+    fun clearMedia() { selectedAttachments = emptyList() }
+
+    if (showAddNoteSheet) {
+        NewRelationshipNoteSheet(
+            onDismiss = {
+                viewModel.dismissAddNoteSheet()
+                clearMedia()
+            },
+            onSave = { contactId, title, content, attachments, voice ->
+                viewModel.saveNote(contactId, title, content, attachments, voice)
+                clearMedia()
+            },
+            contactSearchQuery = contactSearchQuery,
+            onContactSearchQueryChange = viewModel::onContactSearchQueryChanged,
+            searchedContacts = searchedContacts.map { com.mail2dev.upperdot.ui.insights.ContactSummary(it.id, it.fullName) },
+            attachmentPaths = selectedAttachments,
+            onAddAttachment = ::addAttachment,
+            onRemoveAttachment = ::removeAttachment,
+            initialContact = preSelectedContact?.let { com.mail2dev.upperdot.ui.insights.ContactSummary(it.id, it.fullName) }
+        )
+    }
+
+    if (showAddTransactionSheet) {
+        NewCashTransactionSheet(
+            onDismiss = {
+                viewModel.dismissAddTransactionSheet()
+                clearMedia()
+            },
+            onSave = { contactId, isRevenue, title, amount, detail, attachments, voice ->
+                viewModel.saveTransaction(contactId, isRevenue, title, amount, detail, attachments, voice)
+                clearMedia()
+            },
+            contactSearchQuery = contactSearchQuery,
+            onContactSearchQueryChange = viewModel::onContactSearchQueryChanged,
+            searchedContacts = searchedContacts.map { com.mail2dev.upperdot.ui.insights.ContactSummary(it.id, it.fullName) },
+            attachmentPaths = selectedAttachments,
+            onAddAttachment = ::addAttachment,
+            onRemoveAttachment = ::removeAttachment,
+            initialContact = preSelectedContact?.let { com.mail2dev.upperdot.ui.insights.ContactSummary(it.id, it.fullName) }
+        )
+    }
 
     Scaffold(
         bottomBar = {
@@ -236,10 +296,10 @@ fun EmptyConnectionsView() {
 @Composable
 fun ConnectionsList(
     contacts: List<ContactSummary>,
-    onContactClick: (String) -> Unit,
+    onContactClick: (Long) -> Unit,
     onDialClick: (ContactSummary) -> Unit,
-    onAddNote: (String) -> Unit,
-    onAddTransaction: (String) -> Unit
+    onAddNote: (Long) -> Unit,
+    onAddTransaction: (Long) -> Unit
 ) {
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -257,7 +317,6 @@ fun ConnectionsList(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ContactCard(
     contact: ContactSummary,
@@ -267,9 +326,6 @@ fun ContactCard(
     onAddTransaction: () -> Unit
 ) {
     var isExpanded by remember { mutableStateOf(false) }
-    
-    // We'll use a custom swipe-to-dial implementation later.
-    // For now, let's implement the card structure and long press expansion.
     
     Card(
         modifier = Modifier
@@ -328,7 +384,7 @@ fun ContactCard(
             ) {
                 Column {
                     Spacer(modifier = Modifier.height(16.dp))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    HorizontalDivider(color = Color.DarkGray.copy(alpha = 0.3f))
                     Spacer(modifier = Modifier.height(16.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),

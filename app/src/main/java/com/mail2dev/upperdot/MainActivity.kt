@@ -85,7 +85,11 @@ fun RootNavigation() {
             val connectionsViewModel: ConnectionsListViewModel = viewModel(
                 factory = viewModelFactory {
                     initializer {
-                        ConnectionsListViewModel(app.contactRepository)
+                        ConnectionsListViewModel(
+                            app.contactRepository,
+                            app.noteRepository,
+                            app.transactionRepository
+                        )
                     }
                 }
             )
