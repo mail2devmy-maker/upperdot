@@ -355,7 +355,8 @@ fun RootNavigation() {
                             app.noteRepository,
                             app.transactionRepository,
                             app.bankCardRepository,
-                            app.syncManager
+                            app.syncManager,
+                            app.preferenceRepository
                         )
                     }
                 }

@@ -610,6 +610,15 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Final Decision:** Use a centered `Row` with 16dp spacing and reduced component dimensions to maintain safe zone integrity.
 - **Impact:** `QuickWalletOverlaySheet.kt`.
 
+### 2024-05-20 - Live Preference Persistence & Sync Re-scheduling
+- **Context/Goal:** Ensure Advanced Settings (Wi-Fi, Sync Frequency, Currency) are persisted to disk and actively trigger WorkManager re-scheduling.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Storage Strategy:* SharedPreferences vs Room. *Decision:* Implemented `PreferenceEntity` in Room to keep the data layer unified and support simple backup/restore of all user settings as per previous design decisions.
+  - *Conflict 2: Reactive UI:* MutableStateFlow vs Repository Stream. *Decision:* ViewModel initializes `MutableStateFlow` from the database on startup and uses an immediate "Write-Through" pattern: UI changes trigger a background save to the database, ensuring choices are never lost upon navigation.
+  - *Conflict 3: Sync Adaptability:* Manual worker cancellation vs Update Policy. *Decision:* Leveraged `ExistingPeriodicWorkPolicy.UPDATE` in `SyncManager.kt`. This allows WorkManager to dynamically adjust the interval and network constraints (NetworkType.UNMETERED for Wi-Fi only) without losing the existing execution state unless necessary.
+- **Final Decision:** Use Room for settings persistence and `ExistingPeriodicWorkPolicy.UPDATE` for live constraint adaptation.
+- **Impact:** `AdvancedSettingsViewModel.kt`, `PreferenceEntity.kt`, `PreferenceDao.kt`, `PreferenceRepository.kt`, `SyncManager.kt`, `AppDatabase.kt`, `UpperDotApp.kt`, `MainActivity.kt`.
+
 ### ⚠️ Build Errors & Resolutions
 - **Error:** `Unresolved reference: border` in `QuickWalletOverlaySheet.kt`.
 - **Cause:** Missing import for `androidx.compose.foundation.border` after adding glassmorphic border glows.

@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.*
 
 import com.mail2dev.upperdot.data.local.DatabaseBackup
 import com.mail2dev.upperdot.data.local.entity.ContactEntity
+import com.mail2dev.upperdot.data.local.entity.PreferenceEntity
+import com.mail2dev.upperdot.data.repository.PreferenceRepository
 import com.mail2dev.upperdot.util.ContactUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -41,7 +43,8 @@ class AdvancedSettingsViewModel(
     private val noteRepository: NoteRepository,
     private val transactionRepository: TransactionRepository,
     private val bankCardRepository: BankCardRepository,
-    private val syncManager: SyncManager
+    private val syncManager: SyncManager,
+    private val preferenceRepository: PreferenceRepository
 ) : ViewModel() {
 
     private val _syncOverWifi = MutableStateFlow(true)
@@ -52,6 +55,16 @@ class AdvancedSettingsViewModel(
 
     private val _currencySymbol = MutableStateFlow("$")
     val currencySymbol: StateFlow<String> = _currencySymbol.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            preferenceRepository.preferences.collectLatest { prefs ->
+                _syncOverWifi.value = prefs.syncOverWifi
+                _syncFrequency.value = prefs.syncFrequency
+                _currencySymbol.value = prefs.currencySymbol
+            }
+        }
+    }
 
     val diagnostics: StateFlow<DatabaseDiagnostics> = combine(
         contactRepository.contactCount,
@@ -77,13 +90,26 @@ class AdvancedSettingsViewModel(
 
     fun toggleSyncOverWifi(enabled: Boolean) {
         _syncOverWifi.value = enabled
+        savePreferences()
         updateSyncSchedule()
     }
 
     fun onSyncFrequencySelected(frequency: String) {
         _syncFrequency.value = frequency
         _showFrequencyDialog.value = false
+        savePreferences()
         updateSyncSchedule()
+    }
+
+    private fun savePreferences() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val prefs = PreferenceEntity(
+                syncOverWifi = _syncOverWifi.value,
+                syncFrequency = _syncFrequency.value,
+                currencySymbol = _currencySymbol.value
+            )
+            preferenceRepository.savePreferences(prefs)
+        }
     }
 
     private fun updateSyncSchedule() {
@@ -104,6 +130,7 @@ class AdvancedSettingsViewModel(
     fun onCurrencySelected(symbol: String) {
         _currencySymbol.value = symbol
         _showCurrencyDialog.value = false
+        savePreferences()
     }
 
     fun requestClearCache() {
