@@ -2,11 +2,15 @@ package com.mail2dev.upperdot.ui.profile_detail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mail2dev.upperdot.data.local.entity.NoteEntity
+import com.mail2dev.upperdot.data.local.entity.TransactionEntity
+import com.mail2dev.upperdot.data.repository.ContactRepository
+import com.mail2dev.upperdot.data.repository.NoteRepository
+import com.mail2dev.upperdot.data.repository.TransactionRepository
 import com.mail2dev.upperdot.ui.add_contact.BankAccount
 import com.mail2dev.upperdot.ui.add_contact.SocialProfile
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 data class FullContactProfile(
@@ -21,15 +25,56 @@ data class FullContactProfile(
     val companyName: String = "",
     val businessCategory: String = "",
     val officeAddress: String = "",
-    val bankAccounts: List<BankAccount> = emptyList(),
-    val noteCount: Int = 0,
-    val transactionCount: Int = 0
+    val bankAccounts: List<BankAccount> = emptyList()
 )
 
-class ClientProfileDetailViewModel : ViewModel() {
+class ClientProfileDetailViewModel(
+    private val contactRepository: ContactRepository,
+    private val noteRepository: NoteRepository,
+    private val transactionRepository: TransactionRepository
+) : ViewModel() {
 
-    private val _contactProfile = MutableStateFlow<FullContactProfile?>(null)
-    val contactProfile: StateFlow<FullContactProfile?> = _contactProfile.asStateFlow()
+    private val _contactId = MutableStateFlow<Long?>(null)
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val contactProfile: StateFlow<FullContactProfile?> = _contactId
+        .filterNotNull()
+        .flatMapLatest { id ->
+            flow {
+                val contact = contactRepository.getContactById(id)
+                if (contact != null) {
+                    emit(FullContactProfile(
+                        id = contact.id,
+                        fullName = contact.fullName,
+                        nicknames = contact.nicknames.joinToString(", "),
+                        phoneNumbers = contact.phoneNumbers,
+                        emails = contact.emails,
+                        socialProfiles = contact.socialProfiles,
+                        group = contact.groupName,
+                        tag = contact.tagName ?: "",
+                        companyName = contact.companyName ?: "",
+                        businessCategory = contact.businessCategory,
+                        officeAddress = contact.physicalAddress ?: "",
+                        bankAccounts = contact.bankAccounts
+                    ))
+                } else {
+                    emit(null)
+                }
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val notes: StateFlow<List<NoteEntity>> = _contactId
+        .filterNotNull()
+        .flatMapLatest { id -> noteRepository.getNotesForContact(id) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val transactions: StateFlow<List<TransactionEntity>> = _contactId
+        .filterNotNull()
+        .flatMapLatest { id -> transactionRepository.getTransactionsForContact(id) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _isNotesExpanded = MutableStateFlow(true)
     val isNotesExpanded: StateFlow<Boolean> = _isNotesExpanded.asStateFlow()
@@ -38,24 +83,7 @@ class ClientProfileDetailViewModel : ViewModel() {
     val isTransactionsExpanded: StateFlow<Boolean> = _isTransactionsExpanded.asStateFlow()
 
     fun loadContact(id: Long) {
-        viewModelScope.launch {
-            // TODO: Load from Room DB
-            // For now, setting dummy data matching user screenshots
-            _contactProfile.value = FullContactProfile(
-                id = id,
-                fullName = "hdhdh",
-                nicknames = "hdhdg",
-                phoneNumbers = listOf("9797999"),
-                emails = listOf("phoneaiman@gmail.com"),
-                companyName = "gsgsg",
-                businessCategory = "GENERAL",
-                officeAddress = "hzhdh",
-                bankAccounts = listOf(BankAccount("MAYBANK", "ysgsgsg", "6565959")),
-                socialProfiles = listOf(SocialProfile("WHATSAPP", "vdhdhdb")),
-                group = "Family",
-                tag = "Cousin"
-            )
-        }
+        _contactId.value = id
     }
 
     fun toggleNotes() {
@@ -67,7 +95,13 @@ class ClientProfileDetailViewModel : ViewModel() {
     }
 
     fun deleteContact(onSuccess: () -> Unit) {
-        // TODO: Delete from Room and Drive
-        onSuccess()
+        val id = _contactId.value ?: return
+        viewModelScope.launch {
+            val contact = contactRepository.getContactById(id)
+            if (contact != null) {
+                contactRepository.deleteContact(contact)
+                onSuccess()
+            }
+        }
     }
 }

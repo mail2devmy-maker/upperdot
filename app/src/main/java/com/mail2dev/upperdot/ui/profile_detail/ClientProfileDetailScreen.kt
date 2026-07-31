@@ -6,7 +6,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -18,10 +17,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mail2dev.upperdot.data.local.entity.NoteEntity
+import com.mail2dev.upperdot.data.local.entity.TransactionEntity
 import com.mail2dev.upperdot.ui.theme.*
+import com.mail2dev.upperdot.utils.toFormattedDate
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,9 +35,16 @@ fun ClientProfileDetailScreen(
     viewModel: ClientProfileDetailViewModel
 ) {
     val contact by viewModel.contactProfile.collectAsState()
+    val notes by viewModel.notes.collectAsState()
+    val transactions by viewModel.transactions.collectAsState()
     val isNotesExpanded by viewModel.isNotesExpanded.collectAsState()
     val isTransactionsExpanded by viewModel.isTransactionsExpanded.collectAsState()
+    
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var selectedNote by remember { mutableStateOf<NoteEntity?>(null) }
+    var selectedTransaction by remember { mutableStateOf<TransactionEntity?>(null) }
+
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     LaunchedEffect(contactId) {
         viewModel.loadContact(contactId)
@@ -63,6 +73,22 @@ fun ClientProfileDetailScreen(
             containerColor = Surface,
             titleContentColor = Color.White,
             textContentColor = Color.White
+        )
+    }
+
+    if (selectedNote != null) {
+        NoteViewerSheet(
+            note = selectedNote!!,
+            sheetState = sheetState,
+            onDismiss = { selectedNote = null }
+        )
+    }
+
+    if (selectedTransaction != null) {
+        TransactionViewerSheet(
+            transaction = selectedTransaction!!,
+            sheetState = sheetState,
+            onDismiss = { selectedTransaction = null }
         )
     }
 
@@ -212,21 +238,18 @@ fun ClientProfileDetailScreen(
                 // RELATIONSHIP NOTES
                 item {
                     CollapsibleSection(
-                        title = "RELATIONSHIP NOTES (${profile.noteCount})",
+                        title = "RELATIONSHIP NOTES (${notes.size})",
                         isExpanded = isNotesExpanded,
                         onToggle = viewModel::toggleNotes
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 32.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "No relationship notes recorded yet.",
-                                color = TextSecondary,
-                                fontSize = 14.sp
-                            )
+                        if (notes.isEmpty()) {
+                            EmptyStatePlaceholder("No relationship notes recorded yet.")
+                        } else {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                notes.forEach { note ->
+                                    NoteRow(note = note, onClick = { selectedNote = note })
+                                }
+                            }
                         }
                     }
                     Spacer(modifier = Modifier.height(16.dp))
@@ -235,24 +258,324 @@ fun ClientProfileDetailScreen(
                 // TRANSACTION LEDGER
                 item {
                     CollapsibleSection(
-                        title = "TRANSACTION LEDGER (${profile.transactionCount})",
+                        title = "TRANSACTION LEDGER (${transactions.size})",
                         isExpanded = isTransactionsExpanded,
                         onToggle = viewModel::toggleTransactions
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 32.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "No financial transactions recorded yet.",
-                                color = TextSecondary,
-                                fontSize = 14.sp
-                            )
+                        if (transactions.isEmpty()) {
+                            EmptyStatePlaceholder("No financial transactions recorded yet.")
+                        } else {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                transactions.forEach { transaction ->
+                                    TransactionRow(transaction = transaction, onClick = { selectedTransaction = transaction })
+                                }
+                            }
                         }
                     }
                     Spacer(modifier = Modifier.height(32.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun NoteRow(note: NoteEntity, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Surface)
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = note.title,
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = note.createdAt.toFormattedDate(),
+                    color = TextSecondary,
+                    fontSize = 11.sp
+                )
+            }
+            
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (note.voiceRecordingPath != null) {
+                    Icon(
+                        Icons.Default.Mic,
+                        contentDescription = null,
+                        tint = AccentCyan,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                if (note.attachmentPaths.isNotEmpty()) {
+                    Icon(
+                        Icons.Default.AttachFile,
+                        contentDescription = null,
+                        tint = AccentCyan,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun TransactionRow(transaction: TransactionEntity, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Surface)
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = transaction.title,
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = transaction.createdAt.toFormattedDate(),
+                    color = TextSecondary,
+                    fontSize = 11.sp
+                )
+            }
+
+            val amountText = if (transaction.isRevenue) {
+                "+$${String.format(Locale.getDefault(), "%.2f", transaction.amount)}"
+            } else {
+                "-$${String.format(Locale.getDefault(), "%.2f", transaction.amount)}"
+            }
+            val amountColor = if (transaction.isRevenue) PositiveGreen else NegativeRed
+
+            Text(
+                text = amountText,
+                color = amountColor,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+@Composable
+fun EmptyStatePlaceholder(text: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 32.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            color = TextSecondary,
+            fontSize = 14.sp
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun NoteViewerSheet(
+    note: NoteEntity,
+    sheetState: SheetState,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = Surface,
+        dragHandle = { BottomSheetDefaults.DragHandle(color = Color.Gray) }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp)
+                .padding(bottom = 32.dp)
+        ) {
+            Text(
+                text = note.title,
+                color = Color.White,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = note.createdAt.toFormattedDate(),
+                color = TextSecondary,
+                fontSize = 12.sp
+            )
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 100.dp, max = 300.dp),
+                shape = RoundedCornerShape(16.dp),
+                color = Color.Black.copy(alpha = 0.3f)
+            ) {
+                Box(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = note.content,
+                        color = Color.White,
+                        fontSize = 14.sp
+                    )
+                }
+            }
+
+            if (note.voiceRecordingPath != null) {
+                Spacer(modifier = Modifier.height(24.dp))
+                Text("Voice Memo", color = AccentCyan, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(8.dp))
+                // Voice playback placeholder
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color.DarkGray.copy(alpha = 0.5f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.White)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(4.dp)
+                                .background(Color.Gray, CircleShape)
+                        )
+                    }
+                }
+            }
+
+            if (note.attachmentPaths.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(24.dp))
+                Text("Attachments", color = AccentCyan, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(8.dp))
+                // Attachment carousel placeholder
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    note.attachmentPaths.forEach { _ ->
+                        Surface(
+                            modifier = Modifier.size(60.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color.DarkGray
+                        ) {
+                            Icon(Icons.Default.Image, contentDescription = null, tint = Color.Gray, modifier = Modifier.padding(16.dp))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TransactionViewerSheet(
+    transaction: TransactionEntity,
+    sheetState: SheetState,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = Surface,
+        dragHandle = { BottomSheetDefaults.DragHandle(color = Color.Gray) }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp)
+                .padding(bottom = 32.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = transaction.title,
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = transaction.createdAt.toFormattedDate(),
+                        color = TextSecondary,
+                        fontSize = 12.sp
+                    )
+                }
+                
+                val amountText = if (transaction.isRevenue) {
+                    "+$${String.format(Locale.getDefault(), "%.2f", transaction.amount)}"
+                } else {
+                    "-$${String.format(Locale.getDefault(), "%.2f", transaction.amount)}"
+                }
+                val amountColor = if (transaction.isRevenue) PositiveGreen else NegativeRed
+                
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = amountColor.copy(alpha = 0.1f)
+                ) {
+                    Text(
+                        text = amountText,
+                        color = amountColor,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            Text("Details", color = AccentCyan, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = transaction.detail,
+                color = Color.White,
+                fontSize = 14.sp
+            )
+
+            if (transaction.attachmentPaths.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(24.dp))
+                Text("Receipt", color = AccentCyan, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(8.dp))
+                Surface(
+                    modifier = Modifier.fillMaxWidth().height(200.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.DarkGray
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.ReceiptLong, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(48.dp))
+                    }
                 }
             }
         }

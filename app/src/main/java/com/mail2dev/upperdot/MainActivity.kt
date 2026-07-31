@@ -162,7 +162,17 @@ fun RootNavigation() {
 
         composable("client_profile/{contactId}") { backStackEntry ->
             val contactId = backStackEntry.arguments?.getString("contactId")?.toLongOrNull() ?: 0L
-            val profileViewModel: ClientProfileDetailViewModel = viewModel()
+            val profileViewModel: ClientProfileDetailViewModel = viewModel(
+                factory = viewModelFactory {
+                    initializer {
+                        ClientProfileDetailViewModel(
+                            app.contactRepository,
+                            app.noteRepository,
+                            app.transactionRepository
+                        )
+                    }
+                }
+            )
             ClientProfileDetailScreen(
                 contactId = contactId,
                 onNavigateBack = { navController.popBackStack() },
