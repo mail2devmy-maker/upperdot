@@ -73,10 +73,18 @@ class ConnectionsListViewModel(
     val uiState: StateFlow<ConnectionsUIState> = combine(_searchQuery, _selectedFilter) { query, filter ->
         query to filter
     }.flatMapLatest { (query, filter) ->
-        if (query.isEmpty()) {
+        val contactsFlow = if (query.isEmpty()) {
             repository.allContacts
         } else {
             repository.searchContacts(query)
+        }
+        
+        contactsFlow.map { list ->
+            if (filter == "All") {
+                list
+            } else {
+                list.filter { it.groupName == filter }
+            }
         }
     }.map { entities ->
         if (entities.isEmpty()) {

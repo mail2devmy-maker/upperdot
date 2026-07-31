@@ -119,6 +119,13 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Final Decision:** Restricted group selection to existing entries and automated tag field states based on hierarchy depth.
 - **Impact:** `AddContactIdentityScreen.kt` updated.
 
+### 2024-05-20 - Capsule Stream Filtering Fix
+- **Context/Goal:** Fix a bug where clicking filter capsules (Family, Work, etc.) changed the UI color but failed to filter the contacts in `ConnectionsListScreen`.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Filtering Level:* ViewModel vs Database. *Decision:* Implemented filtering in the ViewModel's `uiState` reactive pipeline. By combining `searchQuery` and `selectedFilter` using `flatMapLatest`, the UI now dynamically reacts to both text input and capsule selections without requiring complex nested DAO queries.
+- **Final Decision:** Use Kotlin Coroutines `combine` and `flatMapLatest` to apply the `groupName` predicate to the incoming repository stream.
+- **Impact:** `ConnectionsListViewModel.kt` updated.
+
 ### ⚠️ Build Errors & Resolutions
 - **Error:** `Unresolved reference: toFormattedDate` in `ClientProfileDetailScreen.kt`.
 - **Cause:** Missing utility function for formatting `Long` timestamps into user-friendly date strings.
