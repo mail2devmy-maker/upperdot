@@ -101,12 +101,12 @@ fun AdvancedSettingsScreen(
     }
 
     val exportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/json")
+        contract = ActivityResultContracts.CreateDocument("application/zip")
     ) { uri ->
         uri?.let {
-            viewModel.exportDatabase { json ->
-                context.contentResolver.openOutputStream(it)?.use { stream ->
-                    stream.write(json.toByteArray())
+            context.contentResolver.openOutputStream(it)?.use { stream ->
+                viewModel.exportDatabase(context.filesDir, stream) {
+                    // Export complete
                 }
             }
         }
@@ -117,9 +117,8 @@ fun AdvancedSettingsScreen(
     ) { uri ->
         uri?.let {
             context.contentResolver.openInputStream(it)?.use { stream ->
-                val json = stream.bufferedReader().use { it.readText() }
-                viewModel.importDatabase(json) {
-                    // Success callback if needed
+                viewModel.importDatabase(context.filesDir, stream) {
+                    // Success callback
                 }
             }
         }
@@ -254,8 +253,8 @@ fun AdvancedSettingsScreen(
                         SettingsListItem(
                             icon = Icons.Default.CloudUpload,
                             title = "Export Database Backup",
-                            subtitle = "Save a secure JSON snapshot",
-                            onClick = { exportLauncher.launch("upperdot_backup_${System.currentTimeMillis()}.json") }
+                            subtitle = "Save a secure ZIP snapshot",
+                            onClick = { exportLauncher.launch("upperdot_backup_${System.currentTimeMillis()}.zip") }
                         )
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.DarkGray.copy(alpha = 0.3f))
                         SettingsListItem(
