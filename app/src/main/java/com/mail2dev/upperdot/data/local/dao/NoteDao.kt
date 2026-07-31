@@ -11,19 +11,25 @@ interface NoteDao {
     fun getAllNotes(): Flow<List<NoteEntity>>
 
     @Query("SELECT * FROM notes WHERE contactId = :contactId ORDER BY createdAt DESC")
-    fun getNotesForContact(contactId: String): Flow<List<NoteEntity>>
+    fun getNotesForContact(contactId: Long): Flow<List<NoteEntity>>
 
     @Query("SELECT * FROM notes WHERE id = :id")
-    suspend fun getNoteById(id: String): NoteEntity?
+    suspend fun getNoteById(id: Long): NoteEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertNote(note: NoteEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertNotes(notes: List<NoteEntity>)
 
     @Update
     suspend fun updateNote(note: NoteEntity)
 
     @Delete
     suspend fun deleteNote(note: NoteEntity)
+
+    @Query("DELETE FROM notes")
+    suspend fun deleteAll()
 
     @Query("SELECT COUNT(*) FROM notes")
     fun getNoteCount(): Flow<Int>

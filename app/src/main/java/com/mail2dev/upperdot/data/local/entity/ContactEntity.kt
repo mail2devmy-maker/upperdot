@@ -4,8 +4,10 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.mail2dev.upperdot.ui.add_contact.BankAccount
 import com.mail2dev.upperdot.ui.add_contact.SocialProfile
+import kotlinx.serialization.Serializable
 
 @Entity(tableName = "contacts")
+@Serializable
 data class ContactEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val fullName: String,

@@ -38,6 +38,31 @@ fun AdvancedSettingsScreen(
     val showClearCacheDialog by viewModel.showClearCacheDialog.collectAsState()
     val vcfImportState by viewModel.vcfImportState.collectAsState()
 
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        uri?.let {
+            viewModel.exportDatabase { json ->
+                context.contentResolver.openOutputStream(it)?.use { stream ->
+                    stream.write(json.toByteArray())
+                }
+            }
+        }
+    }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let {
+            context.contentResolver.openInputStream(it)?.use { stream ->
+                val json = stream.bufferedReader().use { it.readText() }
+                viewModel.importDatabase(json) {
+                    // Success callback if needed
+                }
+            }
+        }
+    }
+
     val vcfPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
@@ -168,14 +193,14 @@ fun AdvancedSettingsScreen(
                             icon = Icons.Default.CloudUpload,
                             title = "Export Database Backup",
                             subtitle = "Save a secure JSON snapshot",
-                            onClick = { viewModel.exportDatabase() }
+                            onClick = { exportLauncher.launch("upperdot_backup_${System.currentTimeMillis()}.json") }
                         )
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.DarkGray.copy(alpha = 0.3f))
                         SettingsListItem(
                             icon = Icons.Default.CloudDownload,
                             title = "Import Database Restore",
                             subtitle = "Overwrite local data with backup",
-                            onClick = { viewModel.importDatabase() }
+                            onClick = { importLauncher.launch(arrayOf("application/json")) }
                         )
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.DarkGray.copy(alpha = 0.3f))
                         SettingsListItem(

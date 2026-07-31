@@ -30,4 +30,10 @@ interface ContactDao {
     
     @Query("SELECT * FROM contacts WHERE fullName LIKE '%' || :query || '%' OR sanitizedPrimaryPhone LIKE '%' || :query || '%'")
     fun searchContacts(query: String): Flow<List<ContactEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertContacts(contacts: List<ContactEntity>)
+
+    @Query("DELETE FROM contacts")
+    suspend fun deleteAll()
 }

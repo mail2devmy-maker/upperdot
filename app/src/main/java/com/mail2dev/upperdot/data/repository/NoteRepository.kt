@@ -9,12 +9,16 @@ class NoteRepository(private val noteDao: NoteDao) {
     val allNotes: Flow<List<NoteEntity>> = noteDao.getAllNotes()
     val noteCount: Flow<Int> = noteDao.getNoteCount()
 
-    fun getNotesForContact(contactId: String): Flow<List<NoteEntity>> = noteDao.getNotesForContact(contactId)
+    fun getNotesForContact(contactId: Long): Flow<List<NoteEntity>> = noteDao.getNotesForContact(contactId)
 
-    suspend fun getNoteById(id: String): NoteEntity? = noteDao.getNoteById(id)
+    suspend fun getNoteById(id: Long): NoteEntity? = noteDao.getNoteById(id)
 
     suspend fun insertNote(note: NoteEntity) {
         noteDao.insertNote(note)
+    }
+
+    suspend fun insertNotes(notes: List<NoteEntity>) {
+        noteDao.insertNotes(notes)
     }
 
     suspend fun updateNote(note: NoteEntity) {
@@ -23,6 +27,10 @@ class NoteRepository(private val noteDao: NoteDao) {
 
     suspend fun deleteNote(note: NoteEntity) {
         noteDao.deleteNote(note)
+    }
+
+    suspend fun deleteAll() {
+        noteDao.deleteAll()
     }
 
     fun searchNotes(query: String): Flow<List<NoteEntity>> = noteDao.searchNotes(query)
