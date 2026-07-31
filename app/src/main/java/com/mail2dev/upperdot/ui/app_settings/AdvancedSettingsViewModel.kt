@@ -165,8 +165,8 @@ class AdvancedSettingsViewModel(
         _showClearCacheDialog.value = false
     }
 
-    fun exportDatabase(filesDir: File, outputStream: OutputStream, onComplete: () -> Unit) {
-        viewModelScope.launch(Dispatchers.IO) {
+    suspend fun exportDatabase(filesDir: File, outputStream: OutputStream) {
+        withContext(Dispatchers.IO) {
             val backup = DatabaseBackup(
                 contacts = contactRepository.allContacts.first(),
                 notes = noteRepository.allNotes.first(),
@@ -176,14 +176,11 @@ class AdvancedSettingsViewModel(
             )
             val json = Json.encodeToString(backup)
             BackupUtils.createZipBackup(filesDir, json, outputStream)
-            withContext(Dispatchers.Main) {
-                onComplete()
-            }
         }
     }
 
-    fun importDatabase(filesDir: File, inputStream: InputStream, onSuccess: () -> Unit) {
-        viewModelScope.launch(Dispatchers.IO) {
+    suspend fun importDatabase(filesDir: File, inputStream: InputStream) {
+        withContext(Dispatchers.IO) {
             try {
                 val json = BackupUtils.restoreZipBackup(filesDir, inputStream)
                 if (json != null) {
@@ -201,10 +198,6 @@ class AdvancedSettingsViewModel(
                     transactionRepository.insertTransactions(backup.transactions)
                     bankCardRepository.insertCards(backup.bankCards)
                     backup.preferences?.let { preferenceRepository.savePreferences(it) }
-
-                    withContext(Dispatchers.Main) {
-                        onSuccess()
-                    }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()

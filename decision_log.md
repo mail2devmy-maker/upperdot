@@ -637,6 +637,9 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Impact:** `AdvancedSettingsViewModel.kt`, `AdvancedSettingsScreen.kt`, `BackupUtils.kt`, `DatabaseBackup.kt`, `NewRelationshipNoteSheet.kt`, `NewCashTransactionSheet.kt`.
 
 ### ⚠️ Build Errors & Resolutions
+- **Error:** `java.io.IOException: Stream Closed` during database backup export.
+- **Cause:** The UI layer's `use` block was closing the `OutputStream` immediately after the ViewModel function returned, but before the background coroutine had finished writing the ZIP data.
+- **Resolution:** Refactored `exportDatabase` and `importDatabase` in `AdvancedSettingsViewModel.kt` to be `suspend` functions. Updated `AdvancedSettingsScreen.kt` to launch a coroutine and call these functions within the `use` block. This ensures the stream lifecycle is managed correctly and remains open until all writes (JSON data and binary attachments) are complete.
 - **Error:** `No parameter with name 'currencySymbol' found` in `InsightsScreen.kt` and `NewRelationshipNoteSheet.kt`.
 - **Cause:** Incomplete parameter synchronization across Composable signatures and their navigation call sites in `MainActivity.kt`.
 - **Resolution:**
