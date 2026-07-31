@@ -156,6 +156,14 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   5. Updated validation logic: The "Save" and "Finalize" buttons remain strictly disabled if no contact is selected, even if there is text in the internal search field.
   6. Added visual feedback with `ArrowDropUp`/`ArrowDropDown` icons to indicate the picker's state.
 
+- **UI Polish:** Sleek Compact Search and Defined Form Boundaries.
+- **Context/Goal:** Refine the layout based on device testing to improve visual clarity and space efficiency.
+- **Decision:**
+  1. Implemented `CompactSearchField` for search overlays, featuring a 48dp height, 24dp corner rounding, and thinner text sizes.
+  2. Updated `StitchTextField` to globally include a clear border using `MaterialTheme.colorScheme.outlineVariant`.
+  3. Ensured all primary input fields (Title, Content, etc.) are contained within defined `#1E1E1E` surface boundaries with 16dp rounding.
+- **Impact:** `StitchComponents.kt`, `NewRelationshipNoteSheet.kt`, `NewCashTransactionSheet.kt`.
+
 - **Feature:** Enabled VCF Contact Import with Duplicate Detection.
 - **Context/Goal:** Allow users to bulk-load contacts from .vcf files with a "Smart Number Matcher" and conflict resolution.
 - **Decision:**
