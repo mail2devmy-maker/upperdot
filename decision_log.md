@@ -723,6 +723,15 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Final Decision:** Use a "Fire-and-Reset" pattern in `LaunchedEffect` and allow state confirmation in `confirmValueChange`.
 - **Impact:** `ConnectionsListScreen.kt`.
 
+### 2024-05-20 - Custom Pointer Input Gesture Engine (Velocity Bypass)
+- **Context/Goal:** Completely neutralize velocity-based "fling" bugs in the swipe-to-call action by replacing `SwipeToDismissBox` with a custom pointer input handler.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Component Suitability:* `SwipeToDismissBox` (Material 3) is designed for dismiss-to-delete patterns and has internal velocity processing that makes tight positional gating unreliable for high-security actions like dialing.
+  - *Conflict 2: Absolute Spacing Logic:* To ensure zero accidental calls, the gesture must rely strictly on physical displacement. *Decision:* Implemented `Modifier.pointerInput` with `detectHorizontalDragGestures`. Used `Animatable(0f)` to track the horizontal offset in pixels, accumulating raw movement deltas while clamping strictly from 0 to screen width.
+  - *Conflict 3: Release-to-Dial Validation:* Accidental short flicks should not trigger the utility. *Decision:* Enforced a strict 65% physical drag percentage validation inside `onDragEnd`. If the card is released before crossing this boundary, it snaps back using a soft spring animation, completely ignoring flick velocity.
+- **Final Decision:** Implement a custom `Box` layout with the card offset by raw pixel tracking and 65% release-gating logic.
+- **Impact:** `ConnectionsListScreen.kt`.
+
 ### ⚠️ Build Errors & Resolutions
 - **Error:** Bracing mismatch in `DetailViewerSheets.kt` causing unresolved references.
 - **Cause:** Incorrect nested block closures in `NoteViewerSheet` after adding the `isEditingMode` conditional.

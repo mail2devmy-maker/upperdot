@@ -5,8 +5,11 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.compose.animation.*
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,6 +24,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -29,6 +33,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -39,6 +44,8 @@ import com.mail2dev.upperdot.ui.new_relationship_note.NewRelationshipNoteSheet
 import com.mail2dev.upperdot.ui.theme.AccentCyan
 import com.mail2dev.upperdot.ui.theme.Surface
 import com.mail2dev.upperdot.ui.theme.TextSecondary
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 @Composable
 fun ConnectionsListScreen(
@@ -309,7 +316,6 @@ fun ConnectionsList(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ContactCard(
     contact: ContactSummary,
@@ -320,149 +326,156 @@ fun ContactCard(
     var isExpanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val density = LocalDensity.current
+    val scope = rememberCoroutineScope()
     
-    // Track the physical offset of the card manually for visual opacity
-    var currentCardOffset by remember { mutableFloatStateOf(0f) }
+    // Track absolute physical spacing with complete velocity bypass
+    val offsetX = remember { Animatable(0f) }
     
-    BoxWithConstraints {
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
+    ) {
         val widthPx = with(density) { maxWidth.toPx() }
         
-        val dismissState = rememberSwipeToDismissBoxState(
-            confirmValueChange = { value -> 
-                // Allow transition to DismissedToEnd and back to Settled
-                value == SwipeToDismissBoxValue.StartToEnd || value == SwipeToDismissBoxValue.Settled
-            },
-            positionalThreshold = { totalDistance -> totalDistance * 0.65f } // Massive 65% Boundary Lock
-        )
-
-        // EXECUTION & AUTO-RESET: Trigger call and return to settled state safely
-        LaunchedEffect(dismissState.currentValue) {
-            if (dismissState.currentValue == SwipeToDismissBoxValue.StartToEnd) {
-                if (contact.primaryPhone.isNotEmpty()) {
-                    val intent = Intent(Intent.ACTION_CALL).apply {
-                        data = Uri.parse("tel:${contact.primaryPhone}")
-                    }
-                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
-                        context.startActivity(intent)
-                    } else {
-                        val dialIntent = Intent(Intent.ACTION_DIAL).apply {
-                            data = Uri.parse("tel:${contact.primaryPhone}")
-                        }
-                        context.startActivity(dialIntent)
-                    }
-                }
-                // Automatically reset the card back to closed cleanly
-                dismissState.snapTo(SwipeToDismissBoxValue.Settled)
-            }
+        // Render Background Controls (Green background + Icon)
+        val progress = (offsetX.value / widthPx).coerceIn(0f, 1f)
+        val alpha = progress.coerceIn(0f, 1f)
+        
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .background(Color(0xFF4CAF50).copy(alpha = alpha))
+                .padding(horizontal = 24.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Icon(
+                imageVector = Icons.Default.Call,
+                contentDescription = "Call",
+                tint = Color.White.copy(alpha = alpha)
+            )
         }
 
-        SwipeToDismissBox(
-            state = dismissState,
-            backgroundContent = {
-                // Visual Opacity Fading based on physical progress
-                val progress = (currentCardOffset / widthPx).coerceIn(0f, 1f)
-                
-                val alpha = progress.coerceIn(0f, 1f)
-                val backgroundColor = Color(0xFF4CAF50).copy(alpha = alpha)
-                val iconColor = Color.White.copy(alpha = alpha)
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(backgroundColor, RoundedCornerShape(24.dp))
-                        .padding(horizontal = 24.dp),
-                    contentAlignment = Alignment.CenterStart
+        // Primary Card Layer with Custom Pointer Input Engine
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .offset { IntOffset(offsetX.value.roundToInt(), 0) }
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures(
+                        onHorizontalDrag = { _, dragAmount ->
+                            scope.launch {
+                                // Accumulate raw movement delta, strictly clamped left-to-right
+                                val newValue = (offsetX.value + dragAmount).coerceIn(0f, widthPx)
+                                offsetX.snapTo(newValue)
+                            }
+                        },
+                        onDragEnd = {
+                            val percentage = offsetX.value / widthPx
+                            scope.launch {
+                                if (percentage > 0.65f) {
+                                    // STRICT VALIDATION: Paste 65% triggers off-screen animate + execution
+                                    offsetX.animateTo(widthPx)
+                                    
+                                    if (contact.primaryPhone.isNotEmpty()) {
+                                        val intent = Intent(Intent.ACTION_CALL).apply {
+                                            data = Uri.parse("tel:${contact.primaryPhone}")
+                                        }
+                                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
+                                            context.startActivity(intent)
+                                        } else {
+                                            val dialIntent = Intent(Intent.ACTION_DIAL).apply {
+                                                data = Uri.parse("tel:${contact.primaryPhone}")
+                                            }
+                                            context.startActivity(dialIntent)
+                                        }
+                                    }
+                                    
+                                    // Reset back to closed position smoothly
+                                    offsetX.animateTo(0f)
+                                } else {
+                                    // REJECTION: Snap back via soft spring
+                                    offsetX.animateTo(0f, spring())
+                                }
+                            }
+                        },
+                        onDragCancel = {
+                            scope.launch {
+                                offsetX.animateTo(0f, spring())
+                            }
+                        }
+                    )
+                }
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onLongPress = { isExpanded = !isExpanded },
+                        onTap = { onClick() }
+                    )
+                },
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Surface)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd) {
-                        Icon(
-                            imageVector = Icons.Default.Call,
-                            contentDescription = "Call",
-                            tint = iconColor
+                    Surface(
+                        shape = CircleShape,
+                        color = Color.DarkGray,
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = contact.fullName.take(1).uppercase(),
+                                color = AccentCyan,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 20.sp
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column {
+                        Text(
+                            text = contact.fullName,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
                         )
+                        if (contact.nicknames.isNotEmpty()) {
+                            Text(
+                                text = contact.nicknames.joinToString(", "),
+                                color = TextSecondary,
+                                fontSize = 12.sp
+                            )
+                        }
                     }
                 }
-            },
-            enableDismissFromEndToStart = false,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .onGloballyPositioned { coordinates ->
-                        // Record the current visual offset of the card
-                        currentCardOffset = coordinates.positionInParent().x
-                    }
-                    .pointerInput(Unit) {
-                        detectTapGestures(
-                            onLongPress = { isExpanded = !isExpanded },
-                            onTap = { onClick() }
-                        )
-                    },
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Surface)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
+                
+                AnimatedVisibility(
+                    visible = isExpanded,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = Color.DarkGray,
-                            modifier = Modifier.size(48.dp)
+                    Column {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        HorizontalDivider(color = Color.DarkGray.copy(alpha = 0.3f))
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = contact.fullName.take(1).uppercase(),
-                                    color = AccentCyan,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 20.sp
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column {
-                            Text(
-                                text = contact.fullName,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp
+                            QuickActionButton(
+                                icon = Icons.AutoMirrored.Filled.NoteAdd,
+                                text = "Add Note",
+                                onClick = onAddNote
                             )
-                            if (contact.nicknames.isNotEmpty()) {
-                                Text(
-                                    text = contact.nicknames.joinToString(", "),
-                                    color = TextSecondary,
-                                    fontSize = 12.sp
-                                )
-                            }
-                        }
-                    }
-                    
-                    AnimatedVisibility(
-                        visible = isExpanded,
-                        enter = expandVertically() + fadeIn(),
-                        exit = shrinkVertically() + fadeOut()
-                    ) {
-                        Column {
-                            Spacer(modifier = Modifier.height(16.dp))
-                            HorizontalDivider(color = Color.DarkGray.copy(alpha = 0.3f))
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceEvenly
-                            ) {
-                                QuickActionButton(
-                                    icon = Icons.AutoMirrored.Filled.NoteAdd,
-                                    text = "Add Note",
-                                    onClick = onAddNote
-                                )
-                                QuickActionButton(
-                                    icon = Icons.AutoMirrored.Filled.ReceiptLong,
-                                    text = "Add Trans",
-                                    onClick = onAddTransaction
-                                )
-                            }
+                            QuickActionButton(
+                                icon = Icons.AutoMirrored.Filled.ReceiptLong,
+                                text = "Add Trans",
+                                onClick = onAddTransaction
+                            )
                         }
                     }
                 }
