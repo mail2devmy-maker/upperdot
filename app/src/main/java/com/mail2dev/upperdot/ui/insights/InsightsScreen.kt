@@ -27,6 +27,7 @@ import com.mail2dev.upperdot.ui.components.UpperDotBottomNavigation
 import com.mail2dev.upperdot.ui.new_cash_transaction.NewCashTransactionSheet
 import com.mail2dev.upperdot.ui.new_relationship_note.NewRelationshipNoteSheet
 import com.mail2dev.upperdot.ui.theme.*
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -228,19 +229,19 @@ fun InsightsScreen(
                     ) {
                         MetricCard(
                             label = "Revenue",
-                            value = "$currencySymbol${String.format("%.2f", totalRevenue)}",
+                            value = "$currencySymbol${String.format(Locale.getDefault(), "%.2f", totalRevenue)}",
                             valueColor = PositiveGreen,
                             modifier = Modifier.weight(1f)
                         )
                         MetricCard(
                             label = "Expenses",
-                            value = "$currencySymbol${String.format("%.2f", totalExpenses)}",
+                            value = "$currencySymbol${String.format(Locale.getDefault(), "%.2f", totalExpenses)}",
                             valueColor = NegativeRed,
                             modifier = Modifier.weight(1f)
                         )
                         MetricCard(
                             label = "Net Profit",
-                            value = "$currencySymbol${String.format("%.2f", netProfit)}",
+                            value = "$currencySymbol${String.format(Locale.getDefault(), "%.2f", netProfit)}",
                             valueColor = AccentCyan,
                             modifier = Modifier.weight(1f)
                         )

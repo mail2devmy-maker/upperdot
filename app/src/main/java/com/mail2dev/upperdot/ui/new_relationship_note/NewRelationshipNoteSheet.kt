@@ -50,6 +50,7 @@ fun NewRelationshipNoteSheet(
     attachmentPaths: List<String>,
     onAddAttachment: (String) -> Unit,
     onRemoveAttachment: (Int) -> Unit,
+    currencySymbol: String,
     initialContact: ContactSummary? = null,
     isContactLocked: Boolean = false
 ) {
