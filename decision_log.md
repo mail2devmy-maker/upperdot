@@ -705,6 +705,15 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Final Decision:** Use `onGloballyPositioned` to track physical displacement and veto `confirmValueChange` if offset < 60% width.
 - **Impact:** `ConnectionsListScreen.kt`.
 
+### 2024-05-20 - Velocity-Immune Swipe Gesture Finalization
+- **Context/Goal:** Resolve freezing issues caused by Veto logic in `confirmValueChange` and implement a final, high-performance swipe-to-call pattern.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Interaction Deadlock:* Returning `false` inside `confirmValueChange` prevented the card from visually reaching the dismissed state, sometimes causing UI glitches or "freezes" in the gesture engine. *Decision:* Allow `confirmValueChange` to return `true` for valid `StartToEnd` transitions, but enforce a massive 65% `positionalThreshold` to block accidental short flings.
+  - *Conflict 2: Action Execution Timing:* Triggering the intent inside `confirmValueChange` was unreliable. *Decision:* Moved the execution logic to a `LaunchedEffect(dismissState.currentValue)`. This ensures the action only fires once the card has successfully reached the `StartToEnd` anchor.
+  - *Conflict 3: Visual Continuity:* Users expect the card to return to its original position after a utility action. *Decision:* Implemented an auto-reset mechanism using `dismissState.snapTo(Settled)` immediately after the intent is fired, ensuring the list remains clean and ready for further interaction.
+- **Final Decision:** Use `LaunchedEffect` for action execution and state reset; enforce 0.65f positional threshold.
+- **Impact:** `ConnectionsListScreen.kt`.
+
 ### ⚠️ Build Errors & Resolutions
 - **Error:** Bracing mismatch in `DetailViewerSheets.kt` causing unresolved references.
 - **Cause:** Incorrect nested block closures in `NoteViewerSheet` after adding the `isEditingMode` conditional.

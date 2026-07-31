@@ -3,7 +3,6 @@ package com.mail2dev.upperdot.ui.connections_list
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,6 +14,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -26,6 +26,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.core.net.toUri
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -36,7 +37,6 @@ import com.mail2dev.upperdot.ui.components.UpperDotBottomNavigation
 import com.mail2dev.upperdot.ui.new_cash_transaction.NewCashTransactionSheet
 import com.mail2dev.upperdot.ui.new_relationship_note.NewRelationshipNoteSheet
 import com.mail2dev.upperdot.ui.theme.AccentCyan
-import com.mail2dev.upperdot.ui.theme.PrimaryYellow
 import com.mail2dev.upperdot.ui.theme.Surface
 import com.mail2dev.upperdot.ui.theme.TextSecondary
 
@@ -191,7 +191,6 @@ fun ConnectionsListScreen(
                     ConnectionsList(
                         contacts = state.contacts,
                         onContactClick = onNavigateToContact,
-                        onDialClick = viewModel::onDialContact,
                         onAddNote = viewModel::onAddNote,
                         onAddTransaction = viewModel::onAddTransaction
                     )
@@ -292,7 +291,6 @@ fun EmptyConnectionsView() {
 fun ConnectionsList(
     contacts: List<ContactSummary>,
     onContactClick: (Long) -> Unit,
-    onDialClick: (ContactSummary) -> Unit,
     onAddNote: (Long) -> Unit,
     onAddTransaction: (Long) -> Unit
 ) {
@@ -304,7 +302,6 @@ fun ConnectionsList(
             ContactCard(
                 contact = contact,
                 onClick = { onContactClick(contact.id) },
-                onDial = { onDialClick(contact) },
                 onAddNote = { onAddNote(contact.id) },
                 onAddTransaction = { onAddTransaction(contact.id) }
             )
@@ -317,7 +314,6 @@ fun ConnectionsList(
 fun ContactCard(
     contact: ContactSummary,
     onClick: () -> Unit,
-    onDial: () -> Unit,
     onAddNote: () -> Unit,
     onAddTransaction: () -> Unit
 ) {
@@ -325,42 +321,40 @@ fun ContactCard(
     val context = LocalContext.current
     val density = LocalDensity.current
     
-    // Track the physical offset of the card manually to ignore velocity flings
-    var currentCardOffset by remember { mutableStateOf(0f) }
+    // Track the physical offset of the card manually for visual opacity
+    var currentCardOffset by remember { mutableFloatStateOf(0f) }
     
     BoxWithConstraints {
         val widthPx = with(density) { maxWidth.toPx() }
         
         val dismissState = rememberSwipeToDismissBoxState(
             confirmValueChange = { value ->
-                val isDismissedToEnd = value == SwipeToDismissBoxValue.StartToEnd
-                
-                // PHYSICAL OFFSET CHECK: Strictly check the current drag distance in pixels.
-                // We ignore velocity flings by checking the last recorded position from onGloballyPositioned.
-                val reachedPhysicalThreshold = currentCardOffset >= widthPx * 0.6f
-                
-                if (isDismissedToEnd && reachedPhysicalThreshold) {
-                    // EXECUTION LOCK: Fires strictly on release Past 60% PHYSICAL threshold
-                    if (contact.primaryPhone.isNotEmpty()) {
-                        val intent = Intent(Intent.ACTION_CALL).apply {
-                            data = Uri.parse("tel:${contact.primaryPhone}")
-                        }
-                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
-                            context.startActivity(intent)
-                        } else {
-                            val dialIntent = Intent(Intent.ACTION_DIAL).apply {
-                                data = Uri.parse("tel:${contact.primaryPhone}")
-                            }
-                            context.startActivity(dialIntent)
-                        }
-                    }
-                    false // Reset to settled with spring animation
-                } else {
-                    false // Accidental short flicks (velocity flings) are neutralized here
-                }
+                // Allow state transition to DismissedToEnd
+                value == SwipeToDismissBoxValue.StartToEnd
             },
-            positionalThreshold = { totalDistance -> totalDistance * 0.60f } // Strict 60% Boundary Lock
+            positionalThreshold = { totalDistance -> totalDistance * 0.65f } // Massive 65% Boundary Lock
         )
+
+        // EXECUTION & AUTO-RESET: Trigger call and return to settled state
+        LaunchedEffect(dismissState.currentValue) {
+            if (dismissState.currentValue == SwipeToDismissBoxValue.StartToEnd) {
+                if (contact.primaryPhone.isNotEmpty()) {
+                    val intent = Intent(Intent.ACTION_CALL).apply {
+                        data = "tel:${contact.primaryPhone}".toUri()
+                    }
+                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
+                        context.startActivity(intent)
+                    } else {
+                        val dialIntent = Intent(Intent.ACTION_DIAL).apply {
+                            data = "tel:${contact.primaryPhone}".toUri()
+                        }
+                        context.startActivity(dialIntent)
+                    }
+                }
+                // Smoothly snap back to settled position
+                dismissState.snapTo(SwipeToDismissBoxValue.Settled)
+            }
+        }
 
         SwipeToDismissBox(
             state = dismissState,
@@ -459,12 +453,12 @@ fun ContactCard(
                                 horizontalArrangement = Arrangement.SpaceEvenly
                             ) {
                                 QuickActionButton(
-                                    icon = Icons.Default.NoteAdd,
+                                    icon = Icons.AutoMirrored.Filled.NoteAdd,
                                     text = "Add Note",
                                     onClick = onAddNote
                                 )
                                 QuickActionButton(
-                                    icon = Icons.Default.ReceiptLong,
+                                    icon = Icons.AutoMirrored.Filled.ReceiptLong,
                                     text = "Add Trans",
                                     onClick = onAddTransaction
                                 )
