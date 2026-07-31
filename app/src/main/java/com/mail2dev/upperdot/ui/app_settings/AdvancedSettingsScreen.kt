@@ -1,5 +1,7 @@
 package com.mail2dev.upperdot.ui.app_settings
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -15,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -27,11 +30,65 @@ fun AdvancedSettingsScreen(
     onNavigateBack: () -> Unit,
     viewModel: AdvancedSettingsViewModel = viewModel()
 ) {
+    val context = LocalContext.current
     val syncOverWifi by viewModel.syncOverWifi.collectAsState()
     val syncFrequency by viewModel.syncFrequency.collectAsState()
     val currencySymbol by viewModel.currencySymbol.collectAsState()
     val diagnostics by viewModel.diagnostics.collectAsState()
     val showClearCacheDialog by viewModel.showClearCacheDialog.collectAsState()
+    val vcfImportState by viewModel.vcfImportState.collectAsState()
+
+    val vcfPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let {
+            context.contentResolver.openInputStream(it)?.let { stream ->
+                viewModel.onVcfSelected(stream)
+            }
+        }
+    }
+
+    if (vcfImportState is VcfImportState.Conflict) {
+        val conflict = vcfImportState as VcfImportState.Conflict
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissVcfDialog() },
+            title = { Text("Import Conflicts Found", color = Color.White) },
+            text = { 
+                Text(
+                    "We found ${conflict.conflicts.size} contacts that already exist in your directory. How would you like to resolve these?",
+                    color = Color.White
+                )
+            },
+            confirmButton = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = { viewModel.resolveVcfConflicts("OVERWRITE") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = AccentCyan, contentColor = Color.Black)
+                    ) { Text("Overwrite Existing") }
+                    
+                    Button(
+                        onClick = { viewModel.resolveVcfConflicts("DUPLICATE") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Surface, contentColor = Color.White)
+                    ) { Text("Keep Both (Duplicate)") }
+                    
+                    TextButton(
+                        onClick = { viewModel.resolveVcfConflicts("SKIP") },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Skip Conflicts", color = AccentCyan) }
+                }
+            },
+            containerColor = Surface
+        )
+    }
+
+    if (vcfImportState == VcfImportState.Success) {
+        LaunchedEffect(Unit) {
+            // Show toast or something
+            viewModel.dismissVcfDialog()
+        }
+    }
 
     if (showClearCacheDialog) {
         AlertDialog(
@@ -125,7 +182,7 @@ fun AdvancedSettingsScreen(
                             icon = Icons.Default.FileUpload,
                             title = "Import VCF Contacts",
                             subtitle = "Load external .vcf contact files",
-                            onClick = { viewModel.importVcf() }
+                            onClick = { vcfPickerLauncher.launch(arrayOf("text/vcard", "text/x-vcard")) }
                         )
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.DarkGray.copy(alpha = 0.3f))
                         SettingsListItem(

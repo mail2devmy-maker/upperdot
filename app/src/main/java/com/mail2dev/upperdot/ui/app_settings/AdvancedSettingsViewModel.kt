@@ -13,12 +13,24 @@ import com.mail2dev.upperdot.data.repository.TransactionRepository
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.*
 
+import com.mail2dev.upperdot.data.local.entity.ContactEntity
+import com.mail2dev.upperdot.util.ContactUtils
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import java.io.InputStream
+
 data class DatabaseDiagnostics(
     val vaultSize: String = "0.00 MB",
     val totalAttachmentUsage: String = "0.0 MB",
     val totalContactsCount: Int = 0,
     val walletCardsCount: Int = 0
 )
+
+sealed class VcfImportState {
+    object Idle : VcfImportState()
+    data class Conflict(val conflicts: List<Pair<ContactEntity, ContactEntity>>, val nonConflicts: List<ContactEntity>) : VcfImportState()
+    object Success : VcfImportState()
+}
 
 class AdvancedSettingsViewModel(
     private val contactRepository: ContactRepository,
@@ -49,6 +61,9 @@ class AdvancedSettingsViewModel(
 
     private val _showClearCacheDialog = MutableStateFlow(false)
     val showClearCacheDialog: StateFlow<Boolean> = _showClearCacheDialog.asStateFlow()
+
+    private val _vcfImportState = MutableStateFlow<VcfImportState>(VcfImportState.Idle)
+    val vcfImportState: StateFlow<VcfImportState> = _vcfImportState.asStateFlow()
 
     fun toggleSyncOverWifi(enabled: Boolean) {
         _syncOverWifi.value = enabled
@@ -97,6 +112,116 @@ class AdvancedSettingsViewModel(
     }
 
     fun importVcf() {
-        // TODO: Load .vcf files
+        // Triggered from UI via picker
+    }
+
+    fun onVcfSelected(inputStream: InputStream) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val text = inputStream.bufferedReader().use { it.readText() }
+            val incomingContacts = parseVcf(text)
+
+            val allExisting = contactRepository.allContacts.first()
+            val conflicts = mutableListOf<Pair<ContactEntity, ContactEntity>>()
+            val nonConflicts = mutableListOf<ContactEntity>()
+
+            for (incoming in incomingContacts) {
+                val existing = allExisting.find { ex ->
+                    incoming.phoneNumbers.any { inPh ->
+                        ex.phoneNumbers.any { exPh ->
+                            ContactUtils.isSamePhoneNumber(inPh, exPh)
+                        }
+                    }
+                }
+                if (existing != null) {
+                    conflicts.add(existing to incoming)
+                } else {
+                    nonConflicts.add(incoming)
+                }
+            }
+
+            if (conflicts.isNotEmpty()) {
+                _vcfImportState.value = VcfImportState.Conflict(conflicts, nonConflicts)
+            } else {
+                for (contact in nonConflicts) {
+                    contactRepository.insertContact(contact)
+                }
+                _vcfImportState.value = VcfImportState.Success
+            }
+        }
+    }
+
+    fun resolveVcfConflicts(strategy: String) {
+        val currentState = _vcfImportState.value
+        if (currentState !is VcfImportState.Conflict) return
+
+        viewModelScope.launch(Dispatchers.IO) {
+            // Always insert non-conflicts
+            for (contact in currentState.nonConflicts) {
+                contactRepository.insertContact(contact)
+            }
+
+            when (strategy) {
+                "OVERWRITE" -> {
+                    for ((existing, incoming) in currentState.conflicts) {
+                        val updated = incoming.copy(id = existing.id) // Preserve ID to keep linked records
+                        contactRepository.updateContact(updated)
+                    }
+                }
+                "DUPLICATE" -> {
+                    for ((_, incoming) in currentState.conflicts) {
+                        contactRepository.insertContact(incoming)
+                    }
+                }
+                "SKIP" -> {
+                    // Do nothing for conflicts
+                }
+            }
+            _vcfImportState.value = VcfImportState.Success
+        }
+    }
+
+    fun dismissVcfDialog() {
+        _vcfImportState.value = VcfImportState.Idle
+    }
+
+    private fun parseVcf(text: String): List<ContactEntity> {
+        val contacts = mutableListOf<ContactEntity>()
+        val vcards = text.split("BEGIN:VCARD")
+        for (vcard in vcards) {
+            if (vcard.isBlank() || !vcard.contains("END:VCARD")) continue
+            var name = ""
+            val phones = mutableListOf<String>()
+            val emails = mutableListOf<String>()
+
+            vcard.lines().forEach { line ->
+                when {
+                    line.startsWith("FN:") || line.startsWith("FN;") -> {
+                        name = line.substringAfter(":").trim()
+                    }
+                    line.startsWith("TEL") -> {
+                        phones.add(line.substringAfter(":").trim())
+                    }
+                    line.startsWith("EMAIL") -> {
+                        emails.add(line.substringAfter(":").trim())
+                    }
+                }
+            }
+
+            if (name.isNotEmpty()) {
+                contacts.add(
+                    ContactEntity(
+                        id = 0L,
+                        fullName = name,
+                        nicknames = emptyList(),
+                        phoneNumbers = phones,
+                        sanitizedPrimaryPhone = phones.firstOrNull()?.let { ContactUtils.smartSanitize(it) } ?: "",
+                        emails = emails,
+                        socialProfiles = emptyList(),
+                        bankAccounts = emptyList()
+                    )
+                )
+            }
+        }
+        return contacts
     }
 }

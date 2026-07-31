@@ -18,8 +18,8 @@ enum class InsightTab {
 }
 
 data class NoteEntry(
-    val id: String,
-    val contactId: String,
+    val id: Long,
+    val contactId: Long,
     val contactName: String,
     val title: String,
     val content: String,
@@ -28,8 +28,8 @@ data class NoteEntry(
 )
 
 data class TransactionEntry(
-    val id: String,
-    val contactId: String,
+    val id: Long,
+    val contactId: Long,
     val contactName: String,
     val title: String,
     val detail: String,
@@ -173,7 +173,7 @@ class InsightsViewModel(
     }
 
     fun saveNote(
-        contactId: String,
+        contactId: Long,
         title: String, 
         content: String, 
         attachments: List<String> = emptyList(), 
@@ -194,7 +194,7 @@ class InsightsViewModel(
     }
 
     fun saveTransaction(
-        contactId: String, 
+        contactId: Long, 
         isRevenue: Boolean, 
         title: String, 
         amount: String, 
@@ -220,12 +220,12 @@ class InsightsViewModel(
 }
 
 data class ContactSummary(
-    val id: String,
+    val id: Long,
     val fullName: String
 )
 
 private fun com.mail2dev.upperdot.data.local.entity.ContactEntity.toSummary() = ContactSummary(
-    id = id.toString(),
+    id = id,
     fullName = fullName
 )
 

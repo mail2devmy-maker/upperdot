@@ -42,7 +42,7 @@ import androidx.compose.foundation.BorderStroke
 @Composable
 fun NewCashTransactionSheet(
     onDismiss: () -> Unit,
-    onSave: (String, Boolean, String, String, String, List<String>, String?) -> Unit,
+    onSave: (Long, Boolean, String, String, String, List<String>, String?) -> Unit,
     contactSearchQuery: String,
     onContactSearchQueryChange: (String) -> Unit,
     searchedContacts: List<ContactSummary>,
