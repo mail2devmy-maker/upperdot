@@ -564,5 +564,5 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Conflicts & Alternatives Considered:**
   - *Conflict 1: Share Button Placement:* The floating share button was overlapping the QR code card. *Decision:* Relocated it beneath the account number pill to ensure the QR code area remains unobstructed and the layout follows a clean vertical hierarchy.
   - *Conflict 2: QR Scanner Success Rate:* Small QR codes on standard screen brightness are often difficult for retail scanners. *Decision:* Implemented an immersive full-screen `Dialog` for the QR code. Tapping the card triggers this dialog, which uses `attributes.screenBrightness = 1.0f` to temporarily force maximum system brightness, resetting automatically upon dismissal via `DisposableEffect`.
-- **Final Decision:** Use a full-screen `Dialog` with pure black background and window brightness override.
+- **Final Decision:** Use a full-screen `Dialog` with pure black background and window brightness override. Refined the share button position to `Alignment.CenterEnd` next to the QR card to optimize layout balance.
 - **Impact:** `QuickWalletOverlaySheet.kt`.
