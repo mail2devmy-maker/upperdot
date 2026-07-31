@@ -1,5 +1,8 @@
 package com.mail2dev.upperdot.ui.wallet_overlay
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,22 +19,38 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.mail2dev.upperdot.ui.components.StitchTextField
 import com.mail2dev.upperdot.ui.theme.*
+import com.mail2dev.upperdot.utils.StorageUtils
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewBankCardSheet(
     onDismiss: () -> Unit,
-    onSave: (String, String, String, Long) -> Unit
+    onSave: (String, String, String, Long, String?, String?) -> Unit
 ) {
     var bankName by remember { mutableStateOf("") }
     var holderName by remember { mutableStateOf("") }
     var accountNumber by remember { mutableStateOf("") }
     var swiftBic by remember { mutableStateOf("") }
+    var qrPath by remember { mutableStateOf<String?>(null) }
+    
+    val context = LocalContext.current
+    val qrLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let {
+            val path = StorageUtils.copyUriToInternalStorage(context, it, "qrcodes")
+            qrPath = path
+        }
+    }
     
     val themeColors = listOf(
         AccentCyan,
@@ -136,19 +155,47 @@ fun NewBankCardSheet(
 
             // Media Control
             Surface(
-                onClick = { /* Trigger QR Picker */ },
+                onClick = { qrLauncher.launch("image/*") },
                 shape = RoundedCornerShape(16.dp),
                 color = Color.Black.copy(alpha = 0.3f),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Icon(Icons.Default.QrCodeScanner, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(text = "Attach Payment QR", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                if (qrPath == null) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(Icons.Default.QrCodeScanner, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(text = "Attach Payment QR", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AsyncImage(
+                            model = File(qrPath!!),
+                            contentDescription = "QR Code Preview",
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .padding(8.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                        IconButton(
+                            onClick = { qrPath = null },
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(4.dp)
+                                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                                .size(24.dp)
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = "Remove", tint = Color.White, modifier = Modifier.size(16.dp))
+                        }
+                    }
                 }
             }
 
@@ -167,7 +214,7 @@ fun NewBankCardSheet(
                 }
 
                 Button(
-                    onClick = { onSave(bankName, holderName, accountNumber, selectedColor.toArgb().toLong()) },
+                    onClick = { onSave(bankName, holderName, accountNumber, selectedColor.toArgb().toLong(), swiftBic.takeIf { it.isNotEmpty() }, qrPath) },
                     modifier = Modifier
                         .weight(1f)
                         .height(56.dp),
