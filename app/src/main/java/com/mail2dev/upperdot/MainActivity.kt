@@ -290,6 +290,7 @@ fun RootNavigation() {
                             app.contactRepository,
                             app.noteRepository,
                             app.transactionRepository,
+                            app.preferenceRepository,
                             app.applicationContext
                         )
                     }
