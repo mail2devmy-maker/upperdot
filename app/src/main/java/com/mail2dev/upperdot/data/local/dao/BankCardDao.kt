@@ -12,8 +12,14 @@ interface BankCardDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCard(card: BankCardEntity)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCards(cards: List<BankCardEntity>)
+
     @Delete
     suspend fun deleteCard(card: BankCardEntity)
+
+    @Query("DELETE FROM bank_cards")
+    suspend fun deleteAll()
 
     @Query("SELECT COUNT(*) FROM bank_cards")
     fun getCardCount(): Flow<Int>

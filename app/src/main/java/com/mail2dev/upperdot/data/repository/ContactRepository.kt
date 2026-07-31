@@ -17,12 +17,20 @@ class ContactRepository(private val contactDao: ContactDao) {
         contactDao.insertContact(contact)
     }
 
+    suspend fun insertContacts(contacts: List<ContactEntity>) {
+        contactDao.insertContacts(contacts)
+    }
+
     suspend fun updateContact(contact: ContactEntity) {
         contactDao.updateContact(contact)
     }
 
     suspend fun deleteContact(contact: ContactEntity) {
         contactDao.deleteContact(contact)
+    }
+
+    suspend fun deleteAll() {
+        contactDao.deleteAll()
     }
 
     fun searchContacts(query: String): Flow<List<ContactEntity>> = contactDao.searchContacts(query)

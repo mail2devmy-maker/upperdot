@@ -4,7 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import java.util.UUID
+import kotlinx.serialization.Serializable
 
 @Entity(
     tableName = "notes",
@@ -18,6 +18,7 @@ import java.util.UUID
     ],
     indices = [Index(value = ["contactId"])]
 )
+@Serializable
 data class NoteEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val contactId: Long,

@@ -13,10 +13,14 @@ import com.mail2dev.upperdot.data.repository.TransactionRepository
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.*
 
+import com.mail2dev.upperdot.data.local.DatabaseBackup
 import com.mail2dev.upperdot.data.local.entity.ContactEntity
 import com.mail2dev.upperdot.util.ContactUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.io.InputStream
 
 data class DatabaseDiagnostics(
@@ -103,12 +107,45 @@ class AdvancedSettingsViewModel(
         _showClearCacheDialog.value = false
     }
 
-    fun exportDatabase() {
-        // TODO: Serialized JSON snapshot
+    fun exportDatabase(onSuccess: (String) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val backup = DatabaseBackup(
+                contacts = contactRepository.allContacts.first(),
+                notes = noteRepository.allNotes.first(),
+                transactions = transactionRepository.allTransactions.first(),
+                bankCards = bankCardRepository.allCards.first()
+            )
+            val json = Json.encodeToString(backup)
+            withContext(Dispatchers.Main) {
+                onSuccess(json)
+            }
+        }
     }
 
-    fun importDatabase() {
-        // TODO: Overwrite local data
+    fun importDatabase(json: String, onSuccess: () -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val backup = Json.decodeFromString<DatabaseBackup>(json)
+                
+                // Clear existing
+                contactRepository.deleteAll()
+                noteRepository.deleteAll()
+                transactionRepository.deleteAll()
+                bankCardRepository.deleteAll()
+
+                // Restore
+                contactRepository.insertContacts(backup.contacts)
+                noteRepository.insertNotes(backup.notes)
+                transactionRepository.insertTransactions(backup.transactions)
+                bankCardRepository.insertCards(backup.bankCards)
+
+                withContext(Dispatchers.Main) {
+                    onSuccess()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     fun importVcf() {

@@ -11,16 +11,22 @@ interface TransactionDao {
     fun getAllTransactions(): Flow<List<TransactionEntity>>
 
     @Query("SELECT * FROM transactions WHERE contactId = :contactId ORDER BY createdAt DESC")
-    fun getTransactionsForContact(contactId: String): Flow<List<TransactionEntity>>
+    fun getTransactionsForContact(contactId: Long): Flow<List<TransactionEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTransaction(transaction: TransactionEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTransactions(transactions: List<TransactionEntity>)
 
     @Update
     suspend fun updateTransaction(transaction: TransactionEntity)
 
     @Delete
     suspend fun deleteTransaction(transaction: TransactionEntity)
+
+    @Query("DELETE FROM transactions")
+    suspend fun deleteAll()
 
     @Query("SELECT COUNT(*) FROM transactions")
     fun getTransactionCount(): Flow<Int>

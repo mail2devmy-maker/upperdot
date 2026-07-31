@@ -165,6 +165,16 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   4. Fixed a type mismatch error: Updated `NoteEntity` and `TransactionEntity` to use `Long` for `contactId` to match the auto-generated `ContactEntity.id`, ensuring database integrity for the "Overwrite" strategy.
 - **Impact:** `AdvancedSettingsScreen.kt`, `AdvancedSettingsViewModel.kt`, `ContactUtils.kt`, and all historical entities.
 
+- **Feature:** Functional Database Backup & Restore.
+- **Context/Goal:** Allow users to export their entire database as a JSON snapshot and restore it later.
+- **Decision:**
+  1. Created `DatabaseBackup` data class to bundle Contacts, Notes, Transactions, and Bank Cards.
+  2. Added `@Serializable` to all Room entities to support JSON conversion via `kotlinx.serialization`.
+  3. Implemented `exportDatabase` and `importDatabase` in `AdvancedSettingsViewModel.kt`.
+  4. Wired the UI in `AdvancedSettingsScreen.kt` using `ActivityResultContracts.CreateDocument` and `OpenDocument`.
+  5. Implemented `deleteAll()` and bulk `insert()` methods in all DAOs and repositories to support clean database overwrites during restore.
+- **Impact:** `AdvancedSettingsScreen.kt`, `AdvancedSettingsViewModel.kt`, all Entity files, all Dao/Repository files.
+
 - **Error:** Incomplete functionality in `NewCashTransactionSheet` (missing Date Picker, Receipt Attachments, and Voice Recorder).
 - **Cause:** These features were not yet implemented in the cash transaction flow, leading to UX inconsistency with the relationship notes flow.
 - **Resolution:**
