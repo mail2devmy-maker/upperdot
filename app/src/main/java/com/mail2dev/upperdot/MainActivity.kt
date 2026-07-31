@@ -198,7 +198,19 @@ fun RootNavigation() {
         }
 
         composable("my_profile") {
-            val profileSettingsViewModel: ProfileSettingsViewModel = viewModel()
+            val profileSettingsViewModel: ProfileSettingsViewModel = viewModel(
+                factory = viewModelFactory {
+                    initializer {
+                        ProfileSettingsViewModel(
+                            app.googleAuthService,
+                            app.contactRepository,
+                            app.noteRepository,
+                            app.transactionRepository,
+                            app.applicationContext
+                        )
+                    }
+                }
+            )
             val walletViewModel: DigitalWalletViewModel = viewModel(
                 factory = viewModelFactory {
                     initializer {
