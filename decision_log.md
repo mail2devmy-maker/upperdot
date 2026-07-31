@@ -136,6 +136,16 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   4. Updated the state binding to ensure selecting a contact correctly links their `id` and `fullName` to the active note or transaction.
   5. Refactored the `save` logic to use the selected contact's ID for database persistence.
 
+- **Feature:** Long-press contact card for quick actions (Add Note/Transaction).
+- **Context/Goal:** Allow users to quickly add context to a connection without navigating to the profile detail.
+- **Decision:**
+  1. Updated `ConnectionsListScreen.kt` to handle `onLongPress` and toggle an expanded card state.
+  2. Implemented `QuickActionButton` row (Add Note, Add Trans) visible only when expanded.
+  3. Integrated `NewRelationshipNoteSheet` and `NewCashTransactionSheet` directly into `ConnectionsListScreen`.
+  4. Updated `ConnectionsListViewModel.kt` to manage sheet visibility and pre-selected contact state.
+  5. Unified `ContactSummary` and ID types (`Long`) across ViewModels and Screens to ensure consistent data binding.
+- **Impact:** `ConnectionsListScreen.kt`, `ConnectionsListViewModel.kt`, `MainActivity.kt`.
+
 - **Error:** Searching for contacts in `NewRelationshipNoteSheet` and `NewCashTransactionSheet` allowed submitting non-existent names, causing orphan data.
 - **Cause:** The contact search field was interactive and didn't strictly enforce selection from the database results.
 - **Resolution:**
