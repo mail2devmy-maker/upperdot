@@ -128,24 +128,56 @@ fun QuickCardDisplay(
         
         Spacer(modifier = Modifier.height(24.dp))
 
-        // White QR Card Template
-        Surface(
-            modifier = Modifier
-                .size(240.dp)
-                .clickable { showFullScreenQr = true },
-            shape = RoundedCornerShape(24.dp),
-            color = Color.White
+        // QR and Share Layout Block
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
         ) {
-            Box(contentAlignment = Alignment.Center) {
-                if (card.qrImagePath != null) {
-                    AsyncImage(
-                        model = File(card.qrImagePath),
-                        contentDescription = "QR Code",
-                        modifier = Modifier.fillMaxSize().padding(24.dp),
-                        contentScale = ContentScale.Fit
+            // White QR Card Template
+            Surface(
+                modifier = Modifier
+                    .size(240.dp)
+                    .clickable { showFullScreenQr = true },
+                shape = RoundedCornerShape(24.dp),
+                color = Color.White
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    if (card.qrImagePath != null) {
+                        AsyncImage(
+                            model = File(card.qrImagePath),
+                            contentDescription = "QR Code",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(24.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.QrCode2,
+                            contentDescription = null,
+                            tint = Color.Black,
+                            modifier = Modifier.size(160.dp)
+                        )
+                    }
+                }
+            }
+
+            // Relocated Share Action Button
+            Surface(
+                shape = CircleShape,
+                color = AccentCyan,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .size(48.dp)
+                    .clickable { /* TODO: Implement Share */ }
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = "Share",
+                        tint = Color.Black,
+                        modifier = Modifier.size(20.dp)
                     )
-                } else {
-                    Icon(Icons.Default.QrCode2, contentDescription = null, tint = Color.Black, modifier = Modifier.size(160.dp))
                 }
             }
         }
@@ -166,19 +198,6 @@ fun QuickCardDisplay(
                 Icon(Icons.Default.ContentCopy, contentDescription = null, tint = TextSecondary, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(text = card.accountNumber, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Relocated Share Button
-        Surface(
-            shape = CircleShape,
-            color = AccentCyan,
-            modifier = Modifier.size(48.dp).clickable { /* TODO: Implement Share */ }
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(Icons.Default.Share, contentDescription = "Share", tint = Color.Black, modifier = Modifier.size(20.dp))
             }
         }
     }
