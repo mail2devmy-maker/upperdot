@@ -2,11 +2,13 @@ package com.mail2dev.upperdot.data.repository
 
 import com.mail2dev.upperdot.data.local.dao.TransactionDao
 import com.mail2dev.upperdot.data.local.entity.TransactionEntity
+import com.mail2dev.upperdot.data.local.model.TransactionWithContact
 import kotlinx.coroutines.flow.Flow
 
 class TransactionRepository(private val transactionDao: TransactionDao) {
 
     val allTransactions: Flow<List<TransactionEntity>> = transactionDao.getAllTransactions()
+    val allTransactionsWithContact: Flow<List<TransactionWithContact>> = transactionDao.getAllTransactionsWithContact()
     val transactionCount: Flow<Int> = transactionDao.getTransactionCount()
 
     fun getTransactionsForContact(contactId: Long): Flow<List<TransactionEntity>> = 
@@ -37,4 +39,7 @@ class TransactionRepository(private val transactionDao: TransactionDao) {
 
     fun searchTransactions(query: String): Flow<List<TransactionEntity>> = 
         transactionDao.searchTransactions(query)
+
+    fun searchTransactionsWithContact(query: String): Flow<List<TransactionWithContact>> = 
+        transactionDao.searchTransactionsWithContact(query)
 }
