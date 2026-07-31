@@ -54,12 +54,13 @@ fun ConnectionsListScreen(
     val contactSearchQuery by viewModel.contactSearchQuery.collectAsState()
     val searchedContacts by viewModel.searchedContacts.collectAsState()
     val selectedAttachments by viewModel.selectedAttachments.collectAsState()
+    val currencySymbol by viewModel.currencySymbol.collectAsState()
 
     if (showAddNoteSheet) {
         NewRelationshipNoteSheet(
             onDismiss = viewModel::dismissAddNoteSheet,
-            onSave = { contactId, title, content, _, voice ->
-                viewModel.saveNote(contactId, title, content, voice)
+            onSave = { contactId, title, content, attachments, voice ->
+                viewModel.saveNote(contactId, title, content, attachments, voice)
             },
             contactSearchQuery = contactSearchQuery,
             onContactSearchQueryChange = viewModel::onContactSearchQueryChanged,
@@ -75,8 +76,8 @@ fun ConnectionsListScreen(
     if (showAddTransactionSheet) {
         NewCashTransactionSheet(
             onDismiss = viewModel::dismissAddTransactionSheet,
-            onSave = { contactId, isRevenue, title, amount, detail, _, voice ->
-                viewModel.saveTransaction(contactId, isRevenue, title, amount, detail, voice)
+            onSave = { contactId, isRevenue, title, amount, detail, attachments, voice ->
+                viewModel.saveTransaction(contactId, isRevenue, title, amount, detail, attachments, voice)
             },
             contactSearchQuery = contactSearchQuery,
             onContactSearchQueryChange = viewModel::onContactSearchQueryChanged,
@@ -84,6 +85,7 @@ fun ConnectionsListScreen(
             attachmentPaths = selectedAttachments,
             onAddAttachment = viewModel::addAttachmentPath,
             onRemoveAttachment = viewModel::removeAttachmentPath,
+            currencySymbol = currencySymbol,
             initialContact = preSelectedContact?.let { com.mail2dev.upperdot.ui.insights.ContactSummary(it.id, it.fullName) },
             isContactLocked = preSelectedContact != null
         )

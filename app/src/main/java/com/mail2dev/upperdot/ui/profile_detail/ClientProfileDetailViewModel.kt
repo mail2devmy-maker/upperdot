@@ -6,6 +6,7 @@ import com.mail2dev.upperdot.data.local.entity.NoteEntity
 import com.mail2dev.upperdot.data.local.entity.TransactionEntity
 import com.mail2dev.upperdot.data.repository.ContactRepository
 import com.mail2dev.upperdot.data.repository.NoteRepository
+import com.mail2dev.upperdot.data.repository.PreferenceRepository
 import com.mail2dev.upperdot.data.repository.TransactionRepository
 import com.mail2dev.upperdot.ui.add_contact.BankAccount
 import com.mail2dev.upperdot.ui.add_contact.SocialProfile
@@ -31,7 +32,8 @@ data class FullContactProfile(
 class ClientProfileDetailViewModel(
     private val contactRepository: ContactRepository,
     private val noteRepository: NoteRepository,
-    private val transactionRepository: TransactionRepository
+    private val transactionRepository: TransactionRepository,
+    private val preferenceRepository: PreferenceRepository
 ) : ViewModel() {
 
     private val _contactId = MutableStateFlow<Long?>(null)
@@ -75,6 +77,10 @@ class ClientProfileDetailViewModel(
         .filterNotNull()
         .flatMapLatest { id -> transactionRepository.getTransactionsForContact(id) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val currencySymbol: StateFlow<String> = preferenceRepository.preferences
+        .map { it.currencySymbol }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "$")
 
     private val _isNotesExpanded = MutableStateFlow(true)
     val isNotesExpanded: StateFlow<Boolean> = _isNotesExpanded.asStateFlow()

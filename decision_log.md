@@ -619,6 +619,14 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Final Decision:** Use Room for settings persistence and `ExistingPeriodicWorkPolicy.UPDATE` for live constraint adaptation.
 - **Impact:** `AdvancedSettingsViewModel.kt`, `PreferenceEntity.kt`, `PreferenceDao.kt`, `PreferenceRepository.kt`, `SyncManager.kt`, `AppDatabase.kt`, `UpperDotApp.kt`, `MainActivity.kt`.
 
+### 2024-05-20 - Dynamic Currency Symbol Localization
+- **Context/Goal:** Ensure the global currency setting (e.g., '$', 'RM', '€') is reflected in real-time across all UI elements, including metrics, ledger indicators, and form placeholders.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Shared Preference State:* Hardcoded '$' vs Live Repository Stream. *Decision:* Injected `PreferenceRepository` into `InsightsViewModel`, `ConnectionsListViewModel`, and `ClientProfileDetailViewModel`. Exposed a `currencySymbol` StateFlow that reactively updates the UI whenever the global setting is shifted.
+  - *Conflict 2: Formatting Consistency:* How to handle signed ledger indicators? *Decision:* Updated `TransactionCard` (Insights) and `TransactionRow` (Profile) to utilize the dynamic symbol (e.g., `+$RM100.00` instead of `+$100.00`). Refactored `NewCashTransactionSheet` to include the active symbol in its amount field placeholder.
+- **Final Decision:** Use repository-driven StateFlows to broadcast the active currency token to all financial display surfaces and input masks.
+- **Impact:** `InsightsViewModel.kt`, `InsightsScreen.kt`, `ConnectionsListViewModel.kt`, `ConnectionsListScreen.kt`, `ClientProfileDetailViewModel.kt`, `ClientProfileDetailScreen.kt`, `NewCashTransactionSheet.kt`, `DetailViewerSheets.kt`, `MainActivity.kt`.
+
 ### ⚠️ Build Errors & Resolutions
 - **Error:** `Unresolved reference: border` in `QuickWalletOverlaySheet.kt`.
 - **Cause:** Missing import for `androidx.compose.foundation.border` after adding glassmorphic border glows.

@@ -48,6 +48,7 @@ fun InsightsScreen(
     val selectedAttachments by viewModel.selectedAttachments.collectAsState()
     val contactSearchQuery by viewModel.contactSearchQuery.collectAsState()
     val searchedContacts by viewModel.searchedContacts.collectAsState()
+    val currencySymbol by viewModel.currencySymbol.collectAsState()
 
     val selectedNote by viewModel.selectedNote.collectAsState()
     val selectedTransaction by viewModel.selectedTransaction.collectAsState()
@@ -69,6 +70,7 @@ fun InsightsScreen(
             attachmentPaths = selectedAttachments,
             onAddAttachment = viewModel::addAttachmentPath,
             onRemoveAttachment = viewModel::removeAttachmentPath,
+            currencySymbol = currencySymbol,
             isContactLocked = false
         )
     }
@@ -85,6 +87,7 @@ fun InsightsScreen(
             attachmentPaths = selectedAttachments,
             onAddAttachment = viewModel::addAttachmentPath,
             onRemoveAttachment = viewModel::removeAttachmentPath,
+            currencySymbol = currencySymbol,
             isContactLocked = false
         )
     }
@@ -100,6 +103,7 @@ fun InsightsScreen(
     if (selectedTransaction != null) {
         TransactionViewerSheet(
             transaction = selectedTransaction!!,
+            currencySymbol = currencySymbol,
             sheetState = sheetState,
             onDismiss = viewModel::dismissTransactionViewer
         )
@@ -224,19 +228,19 @@ fun InsightsScreen(
                     ) {
                         MetricCard(
                             label = "Revenue",
-                            value = "$${String.format("%.2f", totalRevenue)}",
+                            value = "$currencySymbol${String.format("%.2f", totalRevenue)}",
                             valueColor = PositiveGreen,
                             modifier = Modifier.weight(1f)
                         )
                         MetricCard(
                             label = "Expenses",
-                            value = "$${String.format("%.2f", totalExpenses)}",
+                            value = "$currencySymbol${String.format("%.2f", totalExpenses)}",
                             valueColor = NegativeRed,
                             modifier = Modifier.weight(1f)
                         )
                         MetricCard(
                             label = "Net Profit",
-                            value = "$${String.format("%.2f", netProfit)}",
+                            value = "$currencySymbol${String.format("%.2f", netProfit)}",
                             valueColor = AccentCyan,
                             modifier = Modifier.weight(1f)
                         )
@@ -273,7 +277,12 @@ fun InsightsScreen(
             if (selectedTab == InsightTab.NOTES) {
                 NotesList(notes = notes, onContactClick = viewModel::onContactFilterSelected, onNoteClick = viewModel::selectNote)
             } else {
-                TransactionsList(transactions = transactions, onContactClick = viewModel::onContactFilterSelected, onTransactionClick = viewModel::selectTransaction)
+                TransactionsList(
+                    transactions = transactions,
+                    currencySymbol = currencySymbol,
+                    onContactClick = viewModel::onContactFilterSelected,
+                    onTransactionClick = viewModel::selectTransaction
+                )
             }
         }
     }
@@ -348,6 +357,7 @@ fun NotesList(
 @Composable
 fun TransactionsList(
     transactions: List<TransactionEntry>,
+    currencySymbol: String,
     onContactClick: (String) -> Unit,
     onTransactionClick: (Long) -> Unit
 ) {
@@ -355,7 +365,12 @@ fun TransactionsList(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(transactions, key = { it.id }) { transaction ->
-            TransactionCard(transaction = transaction, onContactClick = { onContactClick(transaction.contactName) }, onClick = { onTransactionClick(transaction.id) })
+            TransactionCard(
+                transaction = transaction,
+                currencySymbol = currencySymbol,
+                onContactClick = { onContactClick(transaction.contactName) },
+                onClick = { onTransactionClick(transaction.id) }
+            )
         }
     }
 }
@@ -363,6 +378,7 @@ fun TransactionsList(
 @Composable
 fun TransactionCard(
     transaction: TransactionEntry,
+    currencySymbol: String,
     onContactClick: () -> Unit,
     onClick: () -> Unit
 ) {
@@ -433,7 +449,7 @@ fun TransactionCard(
                 
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = if (transaction.isRevenue) "+$${transaction.amount}" else "-$${transaction.amount}",
+                        text = if (transaction.isRevenue) "+$currencySymbol${transaction.amount}" else "-$currencySymbol${transaction.amount}",
                         color = if (transaction.isRevenue) PositiveGreen else NegativeRed,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
