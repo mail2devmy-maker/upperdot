@@ -1,6 +1,8 @@
 package com.mail2dev.upperdot.ui.wallet_overlay
 
 import android.app.Activity
+import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -27,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
 import com.mail2dev.upperdot.ui.digital_wallet.BankCard
 import com.mail2dev.upperdot.ui.theme.*
@@ -44,6 +47,7 @@ fun QuickWalletOverlaySheet(
     val pagerState = rememberPagerState(pageCount = { 
         if (isPremium) bankCards.size else minOf(bankCards.size, 1) + 1 
     })
+    val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
 
     ModalBottomSheet(
@@ -96,6 +100,7 @@ fun QuickWalletOverlaySheet(
                             card = card,
                             onCopy = {
                                 clipboardManager.setText(AnnotatedString(card.accountNumber))
+                                Toast.makeText(context, "Account copied to clipboard", Toast.LENGTH_SHORT).show()
                             }
                         )
                     }
@@ -163,13 +168,40 @@ fun QuickCardDisplay(
             }
 
             // Relocated Share Action Button
+            val context = LocalContext.current
             Surface(
                 shape = CircleShape,
                 color = AccentCyan,
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
                     .size(48.dp)
-                    .clickable { /* TODO: Implement Share */ }
+                    .clickable { 
+                        if (card.qrImagePath != null) {
+                            val file = File(card.qrImagePath)
+                            if (file.exists()) {
+                                try {
+                                    val uri = FileProvider.getUriForFile(
+                                        context,
+                                        "${context.packageName}.fileprovider",
+                                        file
+                                    )
+                                    val intent = Intent(Intent.ACTION_SEND).apply {
+                                        type = "image/*"
+                                        putExtra(Intent.EXTRA_STREAM, uri)
+                                        putExtra(Intent.EXTRA_TEXT, "${card.bankName} - ${card.accountNumber}")
+                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    }
+                                    context.startActivity(Intent.createChooser(intent, "Share Payment QR"))
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "Failed to share QR code", Toast.LENGTH_SHORT).show()
+                                }
+                            } else {
+                                Toast.makeText(context, "QR image file not found", Toast.LENGTH_SHORT).show()
+                            }
+                        } else {
+                            Toast.makeText(context, "No QR code attached", Toast.LENGTH_SHORT).show()
+                        }
+                    }
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
