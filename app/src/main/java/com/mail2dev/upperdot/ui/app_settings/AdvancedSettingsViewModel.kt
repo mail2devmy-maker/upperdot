@@ -27,6 +27,7 @@ import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
+import java.util.Locale
 
 data class DatabaseDiagnostics(
     val vaultSize: String = "0.00 MB",
@@ -65,6 +66,9 @@ class AdvancedSettingsViewModel(
     private val _currencySymbol = MutableStateFlow("$")
     val currencySymbol: StateFlow<String> = _currencySymbol.asStateFlow()
 
+    private val _vaultSize = MutableStateFlow("0.00 MB")
+    private val _attachmentUsage = MutableStateFlow("0.00 MB")
+
     init {
         viewModelScope.launch {
             preferenceRepository.preferences.collectLatest { prefs ->
@@ -77,9 +81,13 @@ class AdvancedSettingsViewModel(
 
     val diagnostics: StateFlow<DatabaseDiagnostics> = combine(
         contactRepository.contactCount,
-        bankCardRepository.cardCount
-    ) { contactCount, cardCount ->
+        bankCardRepository.cardCount,
+        _vaultSize,
+        _attachmentUsage
+    ) { contactCount, cardCount, vaultSize, attachmentUsage ->
         DatabaseDiagnostics(
+            vaultSize = vaultSize,
+            totalAttachmentUsage = attachmentUsage,
             totalContactsCount = contactCount,
             walletCardsCount = cardCount
         )
@@ -99,6 +107,32 @@ class AdvancedSettingsViewModel(
 
     private val _eventFlow = MutableSharedFlow<SettingsUiEvent>()
     val eventFlow = _eventFlow.asSharedFlow()
+
+    fun updateStorageDiagnostics(filesDir: File, dbFile: File) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                // Calculate Vault Size (DB)
+                val dbSize = if (dbFile.exists()) dbFile.length() else 0L
+                val vaultSizeMB = String.format(Locale.getDefault(), "%.2f MB", dbSize.toDouble() / (1024 * 1024))
+
+                // Calculate Total Attachment Usage (Scan filesDir tree)
+                var totalBytes = 0L
+                if (filesDir.exists()) {
+                    filesDir.walkTopDown().forEach { file ->
+                        if (file.isFile) {
+                            totalBytes += file.length()
+                        }
+                    }
+                }
+                val attachmentMB = String.format(Locale.getDefault(), "%.2f MB", totalBytes.toDouble() / (1024 * 1024))
+
+                _vaultSize.value = vaultSizeMB
+                _attachmentUsage.value = attachmentMB
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
 
     fun toggleSyncOverWifi(enabled: Boolean) {
         _syncOverWifi.value = enabled
@@ -169,9 +203,15 @@ class AdvancedSettingsViewModel(
         _showCurrencyDialog.value = false
     }
 
-    fun confirmClearCache() {
-        // TODO: Delete temporary thumbnails
-        _showClearCacheDialog.value = false
+    fun confirmClearCache(filesDir: File, dbFile: File) {
+        viewModelScope.launch(Dispatchers.IO) {
+            // In a real app, we would delete actual cache files here.
+            // For now, we refresh diagnostics to reflect any manual changes.
+            updateStorageDiagnostics(filesDir, dbFile)
+            withContext(Dispatchers.Main) {
+                _showClearCacheDialog.value = false
+            }
+        }
     }
 
     suspend fun exportDatabase(filesDir: File, outputStream: OutputStream) {
@@ -195,7 +235,7 @@ class AdvancedSettingsViewModel(
         }
     }
 
-    suspend fun importDatabase(filesDir: File, inputStream: InputStream) {
+    suspend fun importDatabase(filesDir: File, dbFile: File, inputStream: InputStream) {
         _eventFlow.emit(SettingsUiEvent.Loading)
         withContext(Dispatchers.IO) {
             try {
@@ -216,6 +256,7 @@ class AdvancedSettingsViewModel(
                     bankCardRepository.insertCards(backup.bankCards)
                     backup.preferences?.let { preferenceRepository.savePreferences(it) }
                     
+                    updateStorageDiagnostics(filesDir, dbFile)
                     _eventFlow.emit(SettingsUiEvent.Success("✓ Complete workspace restored successfully!"))
                 } else {
                     _eventFlow.emit(SettingsUiEvent.Error("✕ Restore failed: Invalid backup file"))

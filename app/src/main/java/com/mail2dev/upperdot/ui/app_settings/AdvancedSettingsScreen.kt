@@ -45,6 +45,13 @@ fun AdvancedSettingsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
+        viewModel.updateStorageDiagnostics(
+            context.filesDir,
+            context.getDatabasePath("upperdot.db")
+        )
+    }
+
+    LaunchedEffect(Unit) {
         viewModel.eventFlow.collectLatest { event ->
             when (event) {
                 is SettingsUiEvent.Success -> {
@@ -138,7 +145,7 @@ fun AdvancedSettingsScreen(
         uri?.let {
             scope.launch {
                 context.contentResolver.openInputStream(it)?.use { stream ->
-                    viewModel.importDatabase(context.filesDir, stream)
+                    viewModel.importDatabase(context.filesDir, context.getDatabasePath("upperdot.db"), stream)
                 }
             }
         }
@@ -202,7 +209,7 @@ fun AdvancedSettingsScreen(
             title = { Text("Clear Local Cache") },
             text = { Text("This will only delete temporary image thumbnails. No primary data or offline attachments will be affected. Proceed?") },
             confirmButton = {
-                TextButton(onClick = { viewModel.confirmClearCache() }) {
+                TextButton(onClick = { viewModel.confirmClearCache(context.filesDir, context.getDatabasePath("upperdot.db")) }) {
                     Text("Clear", color = NegativeRed)
                 }
             },
