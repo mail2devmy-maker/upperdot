@@ -36,8 +36,8 @@ fun DigitalWalletScreen(
     if (showAddCardSheet) {
         NewBankCardSheet(
             onDismiss = viewModel::dismissAddCardSheet,
-            onSave = { bank, holder, number, color -> 
-                viewModel.saveCard(bank, holder, number, color) 
+            onSave = { bank, holder, number, color, swift, qr -> 
+                viewModel.saveCard(bank, holder, number, color, swift, qr)
             }
         )
     }

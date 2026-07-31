@@ -59,13 +59,15 @@ class DigitalWalletViewModel(private val repository: BankCardRepository) : ViewM
         _showQuickWalletSheet.value = false
     }
 
-    fun saveCard(bankName: String, holderName: String, accountNumber: String, color: Long) {
+    fun saveCard(bankName: String, holderName: String, accountNumber: String, color: Long, swiftBic: String?, qrPath: String?) {
         viewModelScope.launch(Dispatchers.IO) {
             val entity = BankCardEntity(
                 bankName = bankName,
                 accountNumber = accountNumber,
                 cardHolderName = holderName,
-                themeColor = color
+                themeColor = color,
+                swiftBic = swiftBic,
+                qrImagePath = qrPath
             )
             repository.insertCard(entity)
             _showAddCardSheet.value = false

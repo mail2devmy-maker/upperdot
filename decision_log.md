@@ -549,3 +549,12 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Error:** `rememberSwipeToDismissBoxState` and `confirmValueChange` deprecation warnings in `ConnectionsListScreen.kt`.
 - **Cause:** Using older SwipeToDismiss API patterns in Material 3.
 - **Resolution:** Retained the usage as it is the most straightforward way to implement the "reset to settled" requirement via the boolean return value.
+
+### 2024-05-20 - Digital Wallet QR Security & Persistence
+- **Context/Goal:** Activate the "Attach Payment QR" feature in `NewBankCardSheet.kt` using high-security local file persistence.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Storage Location:* External vs Internal storage. *Decision:* Internal private storage (`context.filesDir/qrcodes`) to ensure permanent access and bypass Android's scoped storage restrictions for external media.
+  - *Conflict 2: UX Feedback:* Simple text vs Thumbnail. *Decision:* Implemented a centered thumbnail preview using `AsyncImage` (Coil) once a QR code is selected, replacing the generic attachment button for immediate visual confirmation.
+  - *Conflict 3: Data Integrity:* Updating the schema/VM. *Decision:* Updated `BankCardEntity` to include `swiftBic` and `qrImagePath`, and refactored `saveCard` in `DigitalWalletViewModel` to persist these rich media paths.
+- **Final Decision:** Use `ActivityResultContracts.GetContent()` for picking and `StorageUtils` for local cloning.
+- **Impact:** `NewBankCardSheet.kt`, `DigitalWalletViewModel.kt`, `DigitalWalletScreen.kt`, `BankCardEntity.kt`.
