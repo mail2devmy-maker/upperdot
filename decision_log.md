@@ -575,3 +575,12 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   - *Conflict 3: UI Feedback:* Naming the sheet title. *Decision:* Dynamically toggle the header between "New Bank Card" and "Edit Bank Card" based on the nullability of the `editingCard` state.
 - **Final Decision:** Implement `updateCard` in DAO/Repository and wire the Cyan Pencil icon to a new `prepareEditCard` flow in the ViewModel.
 - **Impact:** `DigitalWalletViewModel.kt`, `DigitalWalletScreen.kt`, `NewBankCardSheet.kt`, `BankCardDao.kt`, `BankCardRepository.kt`.
+
+### 2024-05-20 - Native Sharing & Clipboard Integration
+- **Context/Goal:** Activate the "Share" and "Copy" actions in `QuickWalletOverlaySheet.kt` using native Android intents and system utilities.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Secure File Sharing:* How to share internal app files? *Decision:* Implemented `FileProvider` with a dedicated `file_paths.xml` configuration. This allows generating secure content URIs for files stored in `context.filesDir`, which can be safely shared with external apps without exposing private directories.
+  - *Conflict 2: Share Payload:* What info to include? *Decision:* The share intent now bundles the QR image as a stream and includes the Bank Name and Account Number as a text extra. This provides a complete payment package for the recipient.
+  - *Conflict 3: Copy Feedback:* How to confirm the clipboard action? *Decision:* Integrated `Toast` as a non-intrusive confirmation message that triggers immediately after `LocalClipboardManager` sets the text.
+- **Final Decision:** Use `Intent.ACTION_SEND` with `FileProvider` for sharing and `Toast` for clipboard confirmation.
+- **Impact:** `QuickWalletOverlaySheet.kt`, `AndroidManifest.xml`, `res/xml/file_paths.xml`.
