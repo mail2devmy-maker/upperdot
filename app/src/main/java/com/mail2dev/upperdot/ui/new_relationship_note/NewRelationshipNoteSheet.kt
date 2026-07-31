@@ -50,7 +50,8 @@ fun NewRelationshipNoteSheet(
     attachmentPaths: List<String>,
     onAddAttachment: (String) -> Unit,
     onRemoveAttachment: (Int) -> Unit,
-    initialContact: ContactSummary? = null
+    initialContact: ContactSummary? = null,
+    isContactLocked: Boolean = false
 ) {
     val context = LocalContext.current
     var selectedContact by remember { mutableStateOf(initialContact) }
@@ -166,7 +167,11 @@ fun NewRelationshipNoteSheet(
                         .fillMaxWidth()
                         .height(56.dp)
                         .background(Surface, RoundedCornerShape(16.dp))
-                        .clickable { showPickerOverlay = !showPickerOverlay }
+                        .then(
+                            if (!isContactLocked) {
+                                Modifier.clickable { showPickerOverlay = !showPickerOverlay }
+                            } else Modifier
+                        )
                         .padding(horizontal = 16.dp),
                     contentAlignment = Alignment.CenterStart
                 ) {
@@ -178,16 +183,18 @@ fun NewRelationshipNoteSheet(
                             color = if (selectedContact != null) Color.White else TextSecondary,
                             fontSize = 14.sp
                         )
-                        Spacer(modifier = Modifier.weight(1f))
-                        Icon(
-                            imageVector = if (showPickerOverlay) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
-                            contentDescription = null,
-                            tint = TextSecondary
-                        )
+                        if (!isContactLocked) {
+                            Spacer(modifier = Modifier.weight(1f))
+                            Icon(
+                                imageVector = if (showPickerOverlay) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                                contentDescription = null,
+                                tint = TextSecondary
+                            )
+                        }
                     }
                 }
 
-                if (showPickerOverlay) {
+                if (showPickerOverlay && !isContactLocked) {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
