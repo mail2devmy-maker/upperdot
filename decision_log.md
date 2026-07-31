@@ -689,6 +689,14 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Final Decision:** Use 0.6f positional threshold and `dismissState.progress` driven alpha for background rendering.
 - **Impact:** `ConnectionsListScreen.kt`.
 
+### 2024-05-20 - High-Friction Gesture Stabilization
+- **Context/Goal:** Completely eliminate accidental dialing caused by velocity-based auto-completion of swipe gestures.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Velocity vs Position:* The standard `SwipeToDismissBox` can trigger dismissal via high velocity even if the positional threshold isn't met. *Decision:* Implemented a strict "Velocity Gate" inside `confirmValueChange`. By checking `dismissState.progress >= 0.6f`, we explicitly veto any state transition triggered by velocity alone, requiring the card to be physically dragged past the 60% mark.
+  - *Conflict 2: Circular State Reference:* The `confirmValueChange` lambda needs to access the `dismissState.progress`, but the state is initialized *by* that lambda. *Decision:* Utilized a `MutableState` reference (`stateRef`) and `SideEffect` to capture the state post-initialization, allowing the lambda to safely query the progress during later interactions.
+- **Final Decision:** Apply `positionalThreshold = { totalDistance -> totalDistance * 0.60f }` and verify progress in `confirmValueChange`.
+- **Impact:** `ConnectionsListScreen.kt`.
+
 ### ⚠️ Build Errors & Resolutions
 - **Error:** Bracing mismatch in `DetailViewerSheets.kt` causing unresolved references.
 - **Cause:** Incorrect nested block closures in `NoteViewerSheet` after adding the `isEditingMode` conditional.
