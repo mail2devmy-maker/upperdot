@@ -66,6 +66,12 @@ class AdvancedSettingsViewModel(
     private val _showClearCacheDialog = MutableStateFlow(false)
     val showClearCacheDialog: StateFlow<Boolean> = _showClearCacheDialog.asStateFlow()
 
+    private val _showFrequencyDialog = MutableStateFlow(false)
+    val showFrequencyDialog: StateFlow<Boolean> = _showFrequencyDialog.asStateFlow()
+
+    private val _showCurrencyDialog = MutableStateFlow(false)
+    val showCurrencyDialog: StateFlow<Boolean> = _showCurrencyDialog.asStateFlow()
+
     private val _vcfImportState = MutableStateFlow<VcfImportState>(VcfImportState.Idle)
     val vcfImportState: StateFlow<VcfImportState> = _vcfImportState.asStateFlow()
 
@@ -76,10 +82,15 @@ class AdvancedSettingsViewModel(
 
     fun onSyncFrequencySelected(frequency: String) {
         _syncFrequency.value = frequency
+        _showFrequencyDialog.value = false
         updateSyncSchedule()
     }
 
     private fun updateSyncSchedule() {
+        if (_syncFrequency.value == "Manual") {
+            syncManager.cancelPeriodicSync()
+            return
+        }
         val interval = when (_syncFrequency.value) {
             "1h" -> 1L
             "6h" -> 6L
@@ -92,6 +103,7 @@ class AdvancedSettingsViewModel(
 
     fun onCurrencySelected(symbol: String) {
         _currencySymbol.value = symbol
+        _showCurrencyDialog.value = false
     }
 
     fun requestClearCache() {
@@ -100,6 +112,22 @@ class AdvancedSettingsViewModel(
 
     fun dismissClearCacheDialog() {
         _showClearCacheDialog.value = false
+    }
+
+    fun requestFrequencyChange() {
+        _showFrequencyDialog.value = true
+    }
+
+    fun dismissFrequencyDialog() {
+        _showFrequencyDialog.value = false
+    }
+
+    fun requestCurrencyChange() {
+        _showCurrencyDialog.value = true
+    }
+
+    fun dismissCurrencyDialog() {
+        _showCurrencyDialog.value = false
     }
 
     fun confirmClearCache() {

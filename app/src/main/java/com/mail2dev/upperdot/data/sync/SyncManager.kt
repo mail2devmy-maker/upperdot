@@ -39,4 +39,8 @@ class SyncManager(private val context: Context) {
             syncRequest
         )
     }
+
+    fun cancelPeriodicSync() {
+        WorkManager.getInstance(context).cancelUniqueWork("PeriodicDriveSync")
+    }
 }
