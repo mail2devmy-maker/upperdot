@@ -814,3 +814,11 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   - *Conflict 2: Predictive Back Overlay:* The Android system back gesture could reveal under-layers in the navigation stack before the pop animation completed. *Decision:* Integrated `BackHandler` at the root of `DataVaultManagementScreen.kt` to explicitly register the layout with the system's back dispatcher, ensuring a clean transition.
 - **Final Decision:** Use route-based conditional gating for bottom nav and `BackHandler` for predictive gesture stabilization.
 - **Impact:** `UpperDotBottomNavigation.kt`, `DataVaultManagementScreen.kt`.
+
+### 2024-05-20 - Profile Tab UI Optimization: Member ID Card Layout
+- **Context/Goal:** Reposition the "Premium" pill and "Sign Out" button on the My Profile screen to create a cleaner, more professional "Member ID Card" look.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Primary Action Visibility:* Having the "Sign Out" button prominently next to the identity fields created visual clutter and felt too high-priority for a low-frequency action. *Decision:* Moved "Sign Out" and "Premium" status to a stacked vertical pillar on the far right of the card.
+  - *Conflict 2: Visual Prestige:* The previous Premium pill looked like a standard tag. *Decision:* Added a subtle Cyan neon border and faint background tint, aligning it with high-end membership card aesthetics.
+- **Final Decision:** Use a horizontal `Arrangement.SpaceBetween` to separate Identity (left) from Status/Session (right). Redesigned "Sign Out" as a compact, red-bordered pill directly underneath the Premium status.
+- **Impact:** `MyProfileSettingsScreen.kt`.

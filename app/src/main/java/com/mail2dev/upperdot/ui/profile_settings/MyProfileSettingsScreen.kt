@@ -110,68 +110,79 @@ fun MyProfileSettingsScreen(
                     modifier = Modifier.padding(24.dp)
                 ) {
                     Row(
-                        verticalAlignment = Alignment.CenterVertically
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = Color.DarkGray.copy(alpha = 0.3f),
-                            modifier = Modifier.size(64.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.Person, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(32.dp))
-                            }
-                        }
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = userSummary.name,
-                                color = Color.White,
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = userSummary.email,
-                                color = TextSecondary,
-                                fontSize = 12.sp
-                            )
-                        }
-                        if (userSummary.isPremium) {
+                        // Left Side: Identity
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                             Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = AccentCyan.copy(alpha = 0.1f)
+                                shape = CircleShape,
+                                color = Color.Black.copy(alpha = 0.3f),
+                                modifier = Modifier.size(64.dp).border(1.dp, AccentCyan.copy(alpha = 0.5f), CircleShape)
                             ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Default.Person, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(32.dp))
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column {
                                 Text(
-                                    text = "Premium",
-                                    color = AccentCyan,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                    text = userSummary.name,
+                                    color = Color.White,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = userSummary.email,
+                                    color = TextSecondary,
+                                    fontSize = 12.sp
                                 )
                             }
                         }
-                    }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                        // Right Side: Status & Session Stack
+                        Column(horizontalAlignment = Alignment.End) {
+                            if (userSummary.isPremium) {
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = AccentCyan.copy(alpha = 0.1f),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, AccentCyan.copy(alpha = 0.3f))
+                                ) {
+                                    Text(
+                                        text = "PREMIUM",
+                                        color = AccentCyan,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                        letterSpacing = 1.sp
+                                    )
+                                }
+                            }
+                            
+                            Spacer(modifier = Modifier.height(12.dp))
 
-                    // Sign Out compact button
-                    Surface(
-                        onClick = { viewModel.onSignOut(onSignOut) },
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color.Transparent,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, NegativeRed.copy(alpha = 0.5f))
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Default.Logout, contentDescription = null, tint = NegativeRed, modifier = Modifier.size(14.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Sign Out",
-                                color = NegativeRed,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                            // Sign Out compact button
+                            Surface(
+                                onClick = { viewModel.onSignOut(onSignOut) },
+                                shape = RoundedCornerShape(12.dp),
+                                color = Color.Transparent,
+                                border = androidx.compose.foundation.BorderStroke(1.dp, NegativeRed.copy(alpha = 0.5f))
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(Icons.Default.Logout, contentDescription = null, tint = NegativeRed, modifier = Modifier.size(12.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "Sign Out",
+                                        color = NegativeRed,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
                         }
                     }
 
