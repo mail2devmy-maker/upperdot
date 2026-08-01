@@ -44,6 +44,8 @@ import com.mail2dev.upperdot.ui.auth_launchpad.AuthViewModel
 import com.mail2dev.upperdot.ui.call_history.CallHistoryScreen
 import com.mail2dev.upperdot.ui.connections_list.ConnectionsListScreen
 import com.mail2dev.upperdot.ui.connections_list.ConnectionsListViewModel
+import com.mail2dev.upperdot.ui.data_vault.DataVaultManagementScreen
+import com.mail2dev.upperdot.ui.data_vault.DataVaultViewModel
 import com.mail2dev.upperdot.ui.digital_wallet.DigitalWalletScreen
 import com.mail2dev.upperdot.ui.digital_wallet.DigitalWalletViewModel
 import com.mail2dev.upperdot.ui.insights.InsightTab
@@ -356,8 +358,6 @@ fun RootNavigation() {
                     initializer {
                         AdvancedSettingsViewModel(
                             app.contactRepository,
-                            app.noteRepository,
-                            app.transactionRepository,
                             app.bankCardRepository,
                             app.syncManager,
                             app.preferenceRepository
@@ -368,6 +368,28 @@ fun RootNavigation() {
             AdvancedSettingsScreen(
                 onNavigateBack = { navController.popBackStack() },
                 viewModel = settingsViewModel
+            )
+        }
+
+        composable("data_vault_hub") {
+            val dataVaultViewModel: DataVaultViewModel = viewModel(
+                factory = viewModelFactory {
+                    initializer {
+                        DataVaultViewModel(
+                            app.contactRepository,
+                            app.noteRepository,
+                            app.transactionRepository,
+                            app.bankCardRepository,
+                            app.preferenceRepository,
+                            app.googleDriveService,
+                            app.applicationContext
+                        )
+                    }
+                }
+            )
+            DataVaultManagementScreen(
+                onNavigateBack = { navController.popBackStack() },
+                viewModel = dataVaultViewModel
             )
         }
     }

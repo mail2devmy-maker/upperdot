@@ -40,8 +40,6 @@ fun AdvancedSettingsScreen(
     val showClearCacheDialog by viewModel.showClearCacheDialog.collectAsState()
     val showFrequencyDialog by viewModel.showFrequencyDialog.collectAsState()
     val showCurrencyDialog by viewModel.showCurrencyDialog.collectAsState()
-    val vcfImportState by viewModel.vcfImportState.collectAsState()
-    val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
@@ -127,82 +125,6 @@ fun AdvancedSettingsScreen(
         )
     }
 
-    val exportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/zip")
-    ) { uri ->
-        uri?.let {
-            scope.launch {
-                context.contentResolver.openOutputStream(it)?.use { stream ->
-                    viewModel.exportDatabase(context.filesDir, stream)
-                }
-            }
-        }
-    }
-
-    val importLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        uri?.let {
-            scope.launch {
-                context.contentResolver.openInputStream(it)?.use { stream ->
-                    viewModel.importDatabase(context.filesDir, context.getDatabasePath("upperdot.db"), stream)
-                }
-            }
-        }
-    }
-
-    val vcfPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        uri?.let {
-            context.contentResolver.openInputStream(it)?.let { stream ->
-                viewModel.onVcfSelected(stream)
-            }
-        }
-    }
-
-    if (vcfImportState is VcfImportState.Conflict) {
-        val conflict = vcfImportState as VcfImportState.Conflict
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissVcfDialog() },
-            title = { Text("Import Conflicts Found", color = Color.White) },
-            text = { 
-                Text(
-                    "We found ${conflict.conflicts.size} contacts that already exist in your directory. How would you like to resolve these?",
-                    color = Color.White
-                )
-            },
-            confirmButton = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(
-                        onClick = { viewModel.resolveVcfConflicts("OVERWRITE") },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = AccentCyan, contentColor = Color.Black)
-                    ) { Text("Overwrite Existing") }
-                    
-                    Button(
-                        onClick = { viewModel.resolveVcfConflicts("DUPLICATE") },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = Surface, contentColor = Color.White)
-                    ) { Text("Keep Both (Duplicate)") }
-                    
-                    TextButton(
-                        onClick = { viewModel.resolveVcfConflicts("SKIP") },
-                        modifier = Modifier.fillMaxWidth()
-                    ) { Text("Skip Conflicts", color = AccentCyan) }
-                }
-            },
-            containerColor = Surface
-        )
-    }
-
-    if (vcfImportState == VcfImportState.Success) {
-        LaunchedEffect(Unit) {
-            // Show toast or something
-            viewModel.dismissVcfDialog()
-        }
-    }
-
     if (showClearCacheDialog) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissClearCacheDialog() },
@@ -285,27 +207,6 @@ fun AdvancedSettingsScreen(
                             title = "Clear Local Cache",
                             subtitle = "Currently using 0.0 MB",
                             onClick = { viewModel.requestClearCache() }
-                        )
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.DarkGray.copy(alpha = 0.3f))
-                        SettingsListItem(
-                            icon = Icons.Default.CloudUpload,
-                            title = "Export Database Backup",
-                            subtitle = "Save a secure ZIP snapshot",
-                            onClick = { exportLauncher.launch("upperdot_backup_${System.currentTimeMillis()}.zip") }
-                        )
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.DarkGray.copy(alpha = 0.3f))
-                        SettingsListItem(
-                            icon = Icons.Default.CloudDownload,
-                            title = "Import Database Restore",
-                            subtitle = "Overwrite local data with backup",
-                            onClick = { importLauncher.launch(arrayOf("application/zip")) }
-                        )
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.DarkGray.copy(alpha = 0.3f))
-                        SettingsListItem(
-                            icon = Icons.Default.FileUpload,
-                            title = "Import VCF Contacts",
-                            subtitle = "Load external .vcf contact files",
-                            onClick = { vcfPickerLauncher.launch(arrayOf("text/vcard", "text/x-vcard")) }
                         )
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.DarkGray.copy(alpha = 0.3f))
                         SettingsListItem(
