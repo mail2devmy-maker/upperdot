@@ -798,3 +798,7 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Error:** `Unresolved reference 'items'` and Composable invocation errors in `DetailViewerSheets.kt`.
 - **Cause:** Missing `LazyRow` imports and incorrect syntax for `items` extension when migrating from `Row` to `LazyRow`.
 - **Resolution:** Added `androidx.compose.foundation.lazy.LazyRow` and `androidx.compose.foundation.lazy.items` imports, and correctly wrapped the `AsyncImage` within the `items` lambda.
+
+- **Error:** `Type mismatch: inferred type is X but Y was expected` in `MainActivity.kt`.
+- **Cause:** `ProfileSettingsViewModel` instantiation was using an out-of-order sequence of dependencies and included an accidental `GoogleDriveService` parameter not present in the class constructor.
+- **Resolution:** Re-aligned the constructor arguments in `MainActivity.kt` to match the target class definition exactly: `authService`, `contactRepository`, `noteRepository`, `transactionRepository`, `preferenceRepository`, and `context`. Removed the redundant `GoogleDriveService` reference.
