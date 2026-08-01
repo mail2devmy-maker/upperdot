@@ -806,3 +806,11 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Error:** Navigation crash when tapping 'Data & Cloud Vault Management'.
 - **Cause:** Missing or incorrectly registered route for `data_vault_hub` in `MainActivity.kt` and signature mismatch in `DataVaultManagementScreen`.
 - **Resolution:** Explicitly declared the `composable("data_vault_hub")` block in `RootNavigation`. Refactored `DataVaultManagementScreen` to accept `navController: NavController` for standardized back-navigation handling.
+
+### 2024-05-20 - Navigation Lifecycle & Gesture Optimization
+- **Context/Goal:** Optimize core navigation lifecycles to eliminate visual artifacts like white flashes during tab reselection and reveal transparent layers during system back gestures.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Tab Reselection Flash:* Clicking the currently active tab in the bottom navigation bar caused a redundant navigation event, leading to a screen rebuild and a visible "white flash". *Decision:* Implemented a reselection gate in `UpperDotBottomNavigation.kt` that discards clicks if the target route matches the current active destination.
+  - *Conflict 2: Predictive Back Overlay:* The Android system back gesture could reveal under-layers in the navigation stack before the pop animation completed. *Decision:* Integrated `BackHandler` at the root of `DataVaultManagementScreen.kt` to explicitly register the layout with the system's back dispatcher, ensuring a clean transition.
+- **Final Decision:** Use route-based conditional gating for bottom nav and `BackHandler` for predictive gesture stabilization.
+- **Impact:** `UpperDotBottomNavigation.kt`, `DataVaultManagementScreen.kt`.

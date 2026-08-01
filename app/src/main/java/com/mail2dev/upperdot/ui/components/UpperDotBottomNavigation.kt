@@ -44,7 +44,11 @@ fun UpperDotBottomNavigation(
             val isSelected = currentRoute == item.route
             NavigationBarItem(
                 selected = isSelected,
-                onClick = { onNavigate(item.route) },
+                onClick = { 
+                    if (currentRoute != item.route) {
+                        onNavigate(item.route)
+                    }
+                },
                 icon = {
                     Icon(
                         imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
