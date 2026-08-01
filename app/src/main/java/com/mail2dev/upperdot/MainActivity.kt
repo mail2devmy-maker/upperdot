@@ -287,6 +287,7 @@ fun RootNavigation() {
                     initializer {
                         ProfileSettingsViewModel(
                             app.googleAuthService,
+                            app.googleDriveService,
                             app.contactRepository,
                             app.noteRepository,
                             app.transactionRepository,

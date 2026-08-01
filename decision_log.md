@@ -758,6 +758,16 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Final Decision:** Use "Download-if-Local-Empty" heuristic and trigger immediate sync on login completion.
 - **Impact:** `DriveSyncWorker.kt`, `GoogleDriveService.kt`, `AuthViewModel.kt`, `MainActivity.kt`, `UpperDotApp.kt`.
 
+### 2024-05-20 - Two-Way Sync Dashboard & Metadata Inspection
+- **Context/Goal:** Overhaul the Profile Sync dashboard to provide explicit control over cloud backups and prevent accidental data overwrites on fresh installations.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Automated Overwrite:* The previous "refresh" icon blindly triggered an upload, risking cloud data loss if local state was empty. *Decision:* Introduced explicit "Restore Data" and "Backup Now" buttons. The "Restore" button is only enabled if a remote backup is detected, while "Backup" remains available for manual saves.
+  - *Conflict 2: Transparency:* Users were blind to cloud status. *Decision:* Implemented metadata inspection on startup. The ViewModel now queries Google Drive for the last modified timestamp and file size, displaying it as a clear "☁️ Cloud Backup" indicator.
+  - *Conflict 3: Worker Granularity:* `DriveSyncWorker` needed to perform specific tasks based on user choice. *Decision:* Updated the worker to accept a `sync_action` parameter (`RESTORE`, `BACKUP`, `AUTO`), allowing the UI to trigger targeted routines.
+  - *Conflict 4: Progress Feedback:* Standard WorkManager status is binary (Running/Success). *Decision:* Leveraged `setProgress` within the worker to push descriptive strings (e.g., "⏳ Downloading...", "🗜️ Extracting...") back to the UI. These are mapped to a Material 3 snackbar host for progressive user feedback.
+- **Final Decision:** Use dual-action buttons and reactive cloud metadata polling.
+- **Impact:** `ProfileSettingsViewModel.kt`, `MyProfileSettingsScreen.kt`, `DriveSyncWorker.kt`, `MainActivity.kt`.
+
 ### ⚠️ Build Errors & Resolutions
 ### 2024-05-20 - Multi-Column Wildcard Search Optimization
 - **Context/Goal:** Update the dashboard search logic to include nicknames in the discovery process, ensuring that alternate names match connection cards.
