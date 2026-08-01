@@ -1,8 +1,7 @@
 package com.mail2dev.upperdot.data.worker
 
 import android.content.Context
-import androidx.work.CoroutineWorker
-import androidx.work.WorkerParameters
+import androidx.work.*
 import com.mail2dev.upperdot.UpperDotApp
 import com.mail2dev.upperdot.data.local.DatabaseBackup
 import com.mail2dev.upperdot.utils.BackupUtils
@@ -11,15 +10,24 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import java.io.File
+import java.util.*
 
 class DriveSyncWorker(
     context: Context,
     params: WorkerParameters
 ) : CoroutineWorker(context, params) {
 
+    companion object {
+        const val EXTRA_SYNC_ACTION = "sync_action"
+        const val ACTION_RESTORE = "RESTORE"
+        const val ACTION_BACKUP = "BACKUP"
+        const val ACTION_AUTO = "AUTO"
+    }
+
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val app = applicationContext as UpperDotApp
         val driveService = app.googleDriveService
+        val action = inputData.getString(EXTRA_SYNC_ACTION) ?: ACTION_AUTO
         
         try {
             val cloudFile = driveService.getBackupFile()
@@ -29,19 +37,25 @@ class DriveSyncWorker(
             val localTransactionsCount = app.transactionRepository.transactionCount.first()
             val totalLocalRecords = localContactsCount + localNotesCount + localTransactionsCount
 
-            // 1. Download Logic: If cloud exists and local is empty
-            if (cloudFile != null && totalLocalRecords == 0) {
-                downloadAndRestore(app, cloudFile.id)
-                return@withContext Result.success()
-            }
-            
-            // 2. Two-Way Sync Heuristic
-            if (cloudFile == null || totalLocalRecords > 0) {
-                // Upload local state if it's populated or if cloud doesn't exist
-                uploadLocalState(app)
-            } else {
-                // Cloud exists, local is empty (already covered but for exhaustive branching)
-                downloadAndRestore(app, cloudFile.id)
+            when (action) {
+                ACTION_RESTORE -> {
+                    if (cloudFile != null) {
+                        downloadAndRestore(app, cloudFile.id)
+                    } else {
+                        return@withContext Result.failure()
+                    }
+                }
+                ACTION_BACKUP -> {
+                    uploadLocalState(app)
+                }
+                else -> {
+                    // AUTO Logic (Existing Two-Way heuristic)
+                    if (cloudFile != null && totalLocalRecords == 0) {
+                        downloadAndRestore(app, cloudFile.id)
+                    } else if (cloudFile == null || totalLocalRecords > 0) {
+                        uploadLocalState(app)
+                    }
+                }
             }
 
             Result.success()
@@ -58,10 +72,10 @@ class DriveSyncWorker(
     private suspend fun downloadAndRestore(app: UpperDotApp, fileId: String) {
         val tempFile = File(app.cacheDir, "temp_backup.zip")
         try {
-            tempFile.outputStream().use { 
-                app.googleDriveService.downloadFile(fileId, it)
-            }
+            setProgress(workDataOf("progress_msg" to "⏳ Downloading cloud vault..."))
+            app.googleDriveService.downloadFile(fileId, tempFile.outputStream())
             
+            setProgress(workDataOf("progress_msg" to "🗜️ Extracting media files..."))
             tempFile.inputStream().use { input ->
                 val json = BackupUtils.restoreZipBackup(app.filesDir, input)
                 if (json != null) {
@@ -89,6 +103,7 @@ class DriveSyncWorker(
     }
 
     private suspend fun uploadLocalState(app: UpperDotApp) {
+        setProgress(workDataOf("progress_msg" to "📦 Packaging local workspace..."))
         val backup = DatabaseBackup(
             contacts = app.contactRepository.allContacts.first(),
             notes = app.noteRepository.allNotes.first(),
@@ -103,6 +118,7 @@ class DriveSyncWorker(
                 BackupUtils.createZipBackup(app.filesDir, json, it)
             }
             
+            setProgress(workDataOf("progress_msg" to "⬆️ Uploading to Google Drive..."))
             val cloudFile = app.googleDriveService.getBackupFile()
             app.googleDriveService.uploadFile(tempFile, cloudFile?.id)
             

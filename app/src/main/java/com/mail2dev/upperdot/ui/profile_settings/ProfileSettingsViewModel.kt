@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import android.content.Context
 
+import com.mail2dev.upperdot.data.network.GoogleDriveService
 import com.mail2dev.upperdot.data.repository.PreferenceRepository
 import com.mail2dev.upperdot.data.worker.DriveSyncWorker
 import androidx.work.*
@@ -26,8 +27,15 @@ data class UserSummary(
     val transactionCount: Int = 0
 )
 
+data class CloudBackupMetadata(
+    val lastModified: String = "No Backup Found",
+    val size: String = "0 KB",
+    val exists: Boolean = false
+)
+
 class ProfileSettingsViewModel(
     private val authService: GoogleAuthService,
+    private val driveService: GoogleDriveService,
     private val contactRepository: ContactRepository,
     private val noteRepository: NoteRepository,
     private val transactionRepository: TransactionRepository,
@@ -37,6 +45,9 @@ class ProfileSettingsViewModel(
 
     private val _userSummary = MutableStateFlow(UserSummary())
     val userSummary: StateFlow<UserSummary> = _userSummary.asStateFlow()
+
+    private val _cloudMetadata = MutableStateFlow(CloudBackupMetadata())
+    val cloudMetadata: StateFlow<CloudBackupMetadata> = _cloudMetadata.asStateFlow()
 
     private val _isSyncing = MutableStateFlow(false)
     val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
@@ -49,6 +60,7 @@ class ProfileSettingsViewModel(
 
     init {
         loadUserData(context)
+        fetchCloudMetadata(context)
     }
 
     private fun loadUserData(context: Context) {
@@ -77,11 +89,38 @@ class ProfileSettingsViewModel(
         }
     }
 
-    fun onRefreshSync() {
+    fun fetchCloudMetadata(context: Context) {
+        viewModelScope.launch {
+            try {
+                val file = driveService.getBackupFile()
+                if (file != null) {
+                    val date = SimpleDateFormat("MMM dd, yyyy, hh:mm a", Locale.getDefault())
+                        .format(Date(file.modifiedTime.value))
+                    val sizeKB = "${file.size / 1024} KB"
+                    _cloudMetadata.value = CloudBackupMetadata(date, sizeKB, true)
+                } else {
+                    _cloudMetadata.value = CloudBackupMetadata(exists = false)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun onRestoreClicked() {
+        triggerSyncAction(DriveSyncWorker.ACTION_RESTORE)
+    }
+
+    fun onBackupClicked() {
+        triggerSyncAction(DriveSyncWorker.ACTION_BACKUP)
+    }
+
+    private fun triggerSyncAction(action: String) {
         if (_isSyncing.value) return
 
         val syncRequest = OneTimeWorkRequestBuilder<DriveSyncWorker>()
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+            .setInputData(workDataOf(DriveSyncWorker.EXTRA_SYNC_ACTION to action))
             .build()
         
         syncWorkId = syncRequest.id
@@ -90,6 +129,11 @@ class ProfileSettingsViewModel(
         viewModelScope.launch {
             workManager.getWorkInfoByIdFlow(syncRequest.id).collect { workInfo ->
                 if (workInfo != null) {
+                    val progressMsg = workInfo.progress.getString("progress_msg")
+                    if (progressMsg != null) {
+                        _syncEvent.emit(progressMsg)
+                    }
+
                     when (workInfo.state) {
                         WorkInfo.State.RUNNING -> _isSyncing.value = true
                         WorkInfo.State.SUCCEEDED -> {
@@ -107,6 +151,10 @@ class ProfileSettingsViewModel(
                 }
             }
         }
+    }
+
+    fun onRefreshSync() {
+        triggerSyncAction(DriveSyncWorker.ACTION_AUTO)
     }
 
     private fun updateLastSyncTime(timestamp: Long) {
