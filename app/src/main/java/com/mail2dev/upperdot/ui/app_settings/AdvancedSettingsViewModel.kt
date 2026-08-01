@@ -1,46 +1,24 @@
 package com.mail2dev.upperdot.ui.app_settings
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-
-import com.mail2dev.upperdot.data.sync.SyncManager
-import com.mail2dev.upperdot.data.repository.BankCardRepository
-import com.mail2dev.upperdot.data.repository.ContactRepository
-import com.mail2dev.upperdot.data.repository.NoteRepository
-import com.mail2dev.upperdot.data.repository.TransactionRepository
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.*
-
-import com.mail2dev.upperdot.data.local.DatabaseBackup
-import com.mail2dev.upperdot.data.local.entity.ContactEntity
 import com.mail2dev.upperdot.data.local.entity.PreferenceEntity
-import com.mail2dev.upperdot.data.repository.PreferenceRepository
-import com.mail2dev.upperdot.util.ContactUtils
-import com.mail2dev.upperdot.utils.BackupUtils
+import com.mail2dev.upperdot.data.repository.*
+import com.mail2dev.upperdot.data.sync.SyncManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import java.io.File
-import java.io.InputStream
-import java.io.OutputStream
-import java.util.Locale
+import java.util.*
 
 data class DatabaseDiagnostics(
     val vaultSize: String = "0.00 MB",
-    val totalAttachmentUsage: String = "0.0 MB",
+    val totalAttachmentUsage: String = "0.00 MB",
     val totalContactsCount: Int = 0,
     val walletCardsCount: Int = 0
 )
-
-sealed class VcfImportState {
-    object Idle : VcfImportState()
-    data class Conflict(val conflicts: List<Pair<ContactEntity, ContactEntity>>, val nonConflicts: List<ContactEntity>) : VcfImportState()
-    object Success : VcfImportState()
-}
 
 sealed class SettingsUiEvent {
     object Loading : SettingsUiEvent()
@@ -50,8 +28,6 @@ sealed class SettingsUiEvent {
 
 class AdvancedSettingsViewModel(
     private val contactRepository: ContactRepository,
-    private val noteRepository: NoteRepository,
-    private val transactionRepository: TransactionRepository,
     private val bankCardRepository: BankCardRepository,
     private val syncManager: SyncManager,
     private val preferenceRepository: PreferenceRepository
@@ -86,10 +62,10 @@ class AdvancedSettingsViewModel(
         _attachmentUsage
     ) { contactCount, cardCount, vaultSize, attachmentUsage ->
         DatabaseDiagnostics(
-            vaultSize = vaultSize,
-            totalAttachmentUsage = attachmentUsage,
             totalContactsCount = contactCount,
-            walletCardsCount = cardCount
+            walletCardsCount = cardCount,
+            vaultSize = vaultSize,
+            totalAttachmentUsage = attachmentUsage
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DatabaseDiagnostics())
 
@@ -101,9 +77,6 @@ class AdvancedSettingsViewModel(
 
     private val _showCurrencyDialog = MutableStateFlow(false)
     val showCurrencyDialog: StateFlow<Boolean> = _showCurrencyDialog.asStateFlow()
-
-    private val _vcfImportState = MutableStateFlow<VcfImportState>(VcfImportState.Idle)
-    val vcfImportState: StateFlow<VcfImportState> = _vcfImportState.asStateFlow()
 
     private val _eventFlow = MutableSharedFlow<SettingsUiEvent>()
     val eventFlow = _eventFlow.asSharedFlow()
@@ -205,197 +178,10 @@ class AdvancedSettingsViewModel(
 
     fun confirmClearCache(filesDir: File, dbFile: File) {
         viewModelScope.launch(Dispatchers.IO) {
-            // In a real app, we would delete actual cache files here.
-            // For now, we refresh diagnostics to reflect any manual changes.
             updateStorageDiagnostics(filesDir, dbFile)
             withContext(Dispatchers.Main) {
                 _showClearCacheDialog.value = false
             }
         }
-    }
-
-    suspend fun exportDatabase(filesDir: File, outputStream: OutputStream) {
-        _eventFlow.emit(SettingsUiEvent.Loading)
-        withContext(Dispatchers.IO) {
-            try {
-                val backup = DatabaseBackup(
-                    contacts = contactRepository.allContacts.first(),
-                    notes = noteRepository.allNotes.first(),
-                    transactions = transactionRepository.allTransactions.first(),
-                    bankCards = bankCardRepository.allCards.first(),
-                    preferences = preferenceRepository.preferences.first()
-                )
-                val json = Json.encodeToString(backup)
-                BackupUtils.createZipBackup(filesDir, json, outputStream)
-                _eventFlow.emit(SettingsUiEvent.Success("✓ Database backup zip generated!"))
-            } catch (e: Exception) {
-                e.printStackTrace()
-                _eventFlow.emit(SettingsUiEvent.Error("✕ Database backup failed"))
-            }
-        }
-    }
-
-    suspend fun importDatabase(filesDir: File, dbFile: File, inputStream: InputStream) {
-        _eventFlow.emit(SettingsUiEvent.Loading)
-        withContext(Dispatchers.IO) {
-            try {
-                val json = BackupUtils.restoreZipBackup(filesDir, inputStream)
-                if (json != null) {
-                    val backup = Json.decodeFromString<DatabaseBackup>(json)
-                    
-                    // Clear existing
-                    contactRepository.deleteAll()
-                    noteRepository.deleteAll()
-                    transactionRepository.deleteAll()
-                    bankCardRepository.deleteAll()
-
-                    // Restore
-                    contactRepository.insertContacts(backup.contacts)
-                    noteRepository.insertNotes(backup.notes)
-                    transactionRepository.insertTransactions(backup.transactions)
-                    bankCardRepository.insertCards(backup.bankCards)
-                    backup.preferences?.let { preferenceRepository.savePreferences(it) }
-                    
-                    updateStorageDiagnostics(filesDir, dbFile)
-                    _eventFlow.emit(SettingsUiEvent.Success("✓ Complete workspace restored successfully!"))
-                } else {
-                    _eventFlow.emit(SettingsUiEvent.Error("✕ Restore failed: Invalid backup file"))
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                _eventFlow.emit(SettingsUiEvent.Error("✕ Restore failed"))
-            }
-        }
-    }
-
-    fun importVcf() {
-        // Triggered from UI via picker
-    }
-
-    fun onVcfSelected(inputStream: InputStream) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val text = inputStream.bufferedReader().use { it.readText() }
-                val incomingContacts = parseVcf(text)
-
-                if (incomingContacts.isEmpty()) {
-                    _eventFlow.emit(SettingsUiEvent.Error("✕ No valid contacts found in VCF"))
-                    return@launch
-                }
-
-                val allExisting = contactRepository.allContacts.first()
-                val conflicts = mutableListOf<Pair<ContactEntity, ContactEntity>>()
-                val nonConflicts = mutableListOf<ContactEntity>()
-
-                for (incoming in incomingContacts) {
-                    val existing = allExisting.find { ex ->
-                        incoming.phoneNumbers.any { inPh ->
-                            ex.phoneNumbers.any { exPh ->
-                                ContactUtils.isSamePhoneNumber(inPh, exPh)
-                            }
-                        }
-                    }
-                    if (existing != null) {
-                        conflicts.add(existing to incoming)
-                    } else {
-                        nonConflicts.add(incoming)
-                    }
-                }
-
-                if (conflicts.isNotEmpty()) {
-                    _vcfImportState.value = VcfImportState.Conflict(conflicts, nonConflicts)
-                } else {
-                    for (contact in nonConflicts) {
-                        contactRepository.insertContact(contact)
-                    }
-                    _vcfImportState.value = VcfImportState.Success
-                    _eventFlow.emit(SettingsUiEvent.Success("✓ VCF Contacts imported successfully!"))
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                _eventFlow.emit(SettingsUiEvent.Error("✕ VCF Import failed"))
-            }
-        }
-    }
-
-    fun resolveVcfConflicts(strategy: String) {
-        val currentState = _vcfImportState.value
-        if (currentState !is VcfImportState.Conflict) return
-
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                // Always insert non-conflicts
-                for (contact in currentState.nonConflicts) {
-                    contactRepository.insertContact(contact)
-                }
-
-                when (strategy) {
-                    "OVERWRITE" -> {
-                        for ((existing, incoming) in currentState.conflicts) {
-                            val updated = incoming.copy(id = existing.id) // Preserve ID to keep linked records
-                            contactRepository.updateContact(updated)
-                        }
-                    }
-                    "DUPLICATE" -> {
-                        for ((_, incoming) in currentState.conflicts) {
-                            contactRepository.insertContact(incoming)
-                        }
-                    }
-                    "SKIP" -> {
-                        // Do nothing for conflicts
-                    }
-                }
-                _vcfImportState.value = VcfImportState.Success
-                _eventFlow.emit(SettingsUiEvent.Success("✓ VCF Contacts imported successfully!"))
-            } catch (e: Exception) {
-                e.printStackTrace()
-                _eventFlow.emit(SettingsUiEvent.Error("✕ VCF Import resolution failed"))
-            }
-        }
-    }
-
-    fun dismissVcfDialog() {
-        _vcfImportState.value = VcfImportState.Idle
-    }
-
-    private fun parseVcf(text: String): List<ContactEntity> {
-        val contacts = mutableListOf<ContactEntity>()
-        val vcards = text.split("BEGIN:VCARD")
-        for (vcard in vcards) {
-            if (vcard.isBlank() || !vcard.contains("END:VCARD")) continue
-            var name = ""
-            val phones = mutableListOf<String>()
-            val emails = mutableListOf<String>()
-
-            vcard.lines().forEach { line ->
-                when {
-                    line.startsWith("FN:") || line.startsWith("FN;") -> {
-                        name = line.substringAfter(":").trim()
-                    }
-                    line.startsWith("TEL") -> {
-                        phones.add(line.substringAfter(":").trim())
-                    }
-                    line.startsWith("EMAIL") -> {
-                        emails.add(line.substringAfter(":").trim())
-                    }
-                }
-            }
-
-            if (name.isNotEmpty()) {
-                contacts.add(
-                    ContactEntity(
-                        id = 0L,
-                        fullName = name,
-                        nicknames = emptyList(),
-                        phoneNumbers = phones,
-                        sanitizedPrimaryPhone = phones.firstOrNull()?.let { ContactUtils.smartSanitize(it) } ?: "",
-                        emails = emails,
-                        socialProfiles = emptyList(),
-                        bankAccounts = emptyList()
-                    )
-                )
-            }
-        }
-        return contacts
     }
 }

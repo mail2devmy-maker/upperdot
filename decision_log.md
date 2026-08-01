@@ -662,7 +662,16 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Final Decision:** Use `SharedFlow` for one-time UI events and a themed `SnackbarHost` in the screen's `Scaffold`.
 - **Impact:** `AdvancedSettingsViewModel.kt`, `AdvancedSettingsScreen.kt`.
 
-### 2024-05-20 - Multi-Receipt Data Layer Refactor & Carousel UI
+### 2024-05-20 - Master UX Restructuring: Dedicated Data Vault Hub
+- **Context/Goal:** Streamline the user interface by moving all low-frequency data management actions (cloud sync, import/export) from the main profile and advanced settings screens into a dedicated "Data & Cloud Vault" management hub.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Navigation Depth:* Adding a sub-screen increases clicks. *Decision:* Acceptable trade-off for a cleaner main dashboard. The "Data & Cloud Vault" item is placed prominently in the "Workspace Controls Deck" for easy discoverability.
+  - *Conflict 2: Logic Fragmentation:* Data logic was split across multiple ViewModels. *Decision:* Created a unified `DataVaultViewModel` that consolidates cloud sync (from Profile) and ZIP/VCF portability (from Advanced Settings). This ensures a single point of truth for data lifecycle events and progress tracking.
+  - *Conflict 3: Visual Consistency:* The new screen must match the Stitch design system. *Decision:* Used a dual-card layout on a pure black canvas. Card A focuses on Cloud Sync with explicit Restore/Backup buttons, while Card B groups local file operations under a purple sub-header, maintaining the high-contrast aesthetic.
+- **Final Decision:** Implement `DataVaultManagementScreen` and register the `data_vault_hub` route. Refactor `MyProfileSettingsScreen` to use a single entry point for data management.
+- **Impact:** `DataVaultManagementScreen.kt`, `DataVaultViewModel.kt`, `MyProfileSettingsScreen.kt`, `ProfileSettingsViewModel.kt`, `AdvancedSettingsScreen.kt`, `AdvancedSettingsViewModel.kt`, `MainActivity.kt`.
+
+### ⚠️ Build Errors & Resolutions
 - **Context/Goal:** Fix a data persistence bug where transactions only saved/rendered a single receipt, despite notes supporting multiple attachments.
 - **Conflicts & Alternatives Considered:**
   - *Conflict 1: Column Naming:* `attachmentPaths` vs `receiptPaths`. *Decision:* Renamed the `TransactionEntity` column to `receiptPaths` as per specific SRS polish requirements, while maintaining `attachmentPaths` for Notes to preserve logical separation between general notes and financial receipts.

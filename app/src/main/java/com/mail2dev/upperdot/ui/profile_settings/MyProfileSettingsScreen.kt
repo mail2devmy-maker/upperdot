@@ -38,28 +38,8 @@ fun MyProfileSettingsScreen(
     walletViewModel: DigitalWalletViewModel
 ) {
     val userSummary by viewModel.userSummary.collectAsState()
-    val cloudMetadata by viewModel.cloudMetadata.collectAsState()
     val bankCards by walletViewModel.bankCards.collectAsState()
     val showQuickWallet by walletViewModel.showQuickWalletSheet.collectAsState()
-    val isSyncing by viewModel.isSyncing.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    val rotation = rememberInfiniteTransition(label = "sync_rotation")
-    val angle by rotation.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "angle"
-    )
-
-    LaunchedEffect(Unit) {
-        viewModel.syncEvent.collectLatest { message ->
-            snackbarHostState.showSnackbar(message)
-        }
-    }
 
     if (showQuickWallet) {
         QuickWalletOverlaySheet(
@@ -72,7 +52,6 @@ fun MyProfileSettingsScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             UpperDotBottomNavigation(
                 currentRoute = "my_profile",
@@ -174,81 +153,6 @@ fun MyProfileSettingsScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Cloud Status Section
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = Color.Black.copy(alpha = 0.2f),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = if (isSyncing) Icons.Default.Sync else Icons.Default.CloudQueue,
-                                    contentDescription = null,
-                                    tint = AccentCyan,
-                                    modifier = Modifier
-                                        .size(18.dp)
-                                        .then(if (isSyncing) Modifier.rotate(angle) else Modifier)
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(
-                                        text = "Last Sync: ${userSummary.lastSync}",
-                                        color = Color.White,
-                                        fontSize = 11.sp
-                                    )
-                                    if (cloudMetadata.exists) {
-                                        Text(
-                                            text = "☁️ Cloud Backup: ${cloudMetadata.lastModified} (${cloudMetadata.size})",
-                                            color = TextSecondary,
-                                            fontSize = 10.sp,
-                                            modifier = Modifier.padding(top = 2.dp)
-                                        )
-                                    }
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                // Button 1: Restore
-                                Button(
-                                    onClick = viewModel::onRestoreClicked,
-                                    enabled = cloudMetadata.exists && !isSyncing,
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = AccentCyan,
-                                        contentColor = Color.Black
-                                    ),
-                                    contentPadding = PaddingValues(0.dp)
-                                ) {
-                                    Text("⬇️ Restore Data", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                }
-
-                                // Button 2: Backup
-                                Button(
-                                    onClick = viewModel::onBackupClicked,
-                                    enabled = !isSyncing,
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color.DarkGray.copy(alpha = 0.5f),
-                                        contentColor = Color.White
-                                    ),
-                                    contentPadding = PaddingValues(0.dp)
-                                ) {
-                                    Text("⬆️ Backup Now", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                }
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
                     // Sign Out compact button
                     Surface(
                         onClick = { viewModel.onSignOut(onSignOut) },
@@ -304,6 +208,13 @@ fun MyProfileSettingsScreen(
                 colors = CardDefaults.cardColors(containerColor = Surface)
             ) {
                 Column {
+                    MenuListItem(
+                        icon = Icons.Default.Dns,
+                        title = "Data & Cloud Vault Management",
+                        subtitle = "Cloud sync, backups and import/export",
+                        onClick = { onNavigate("data_vault_hub") }
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.DarkGray.copy(alpha = 0.3f))
                     MenuListItem(
                         icon = Icons.Default.CreditCard,
                         title = "My Digital Business Wallet",
