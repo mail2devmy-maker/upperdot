@@ -387,7 +387,7 @@ fun RootNavigation() {
                 }
             )
             DataVaultManagementScreen(
-                onNavigateBack = { navController.popBackStack() },
+                navController = navController,
                 viewModel = dataVaultViewModel
             )
         }
