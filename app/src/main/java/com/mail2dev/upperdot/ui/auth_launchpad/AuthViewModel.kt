@@ -4,12 +4,16 @@ import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mail2dev.upperdot.data.network.GoogleAuthService
+import com.mail2dev.upperdot.data.sync.SyncManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class AuthViewModel(private val authService: GoogleAuthService) : ViewModel() {
+class AuthViewModel(
+    private val authService: GoogleAuthService,
+    private val syncManager: SyncManager
+) : ViewModel() {
 
     private val _showGuestWarning = MutableStateFlow(false)
     val showGuestWarning: StateFlow<Boolean> = _showGuestWarning.asStateFlow()
@@ -27,6 +31,8 @@ class AuthViewModel(private val authService: GoogleAuthService) : ViewModel() {
 
     fun handleSignInResult(onSuccess: () -> Unit) {
         // Validation logic for DriveScopes.DRIVE_APPDATA scope
+        // Enqueue automated OneTimeWorkRequest to run sync download/upload pass
+        syncManager.startImmediateSync()
         onSuccess()
     }
 

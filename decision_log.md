@@ -749,6 +749,15 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Final Decision:** Use WorkManager `getWorkInfoByIdFlow` for state observation and `InfiniteTransition` for rotation animation.
 - **Impact:** `ProfileSettingsViewModel.kt`, `MyProfileSettingsScreen.kt`, `MainActivity.kt`, `PreferenceEntity.kt`.
 
+### 2024-05-20 - Two-Way Cloud Recovery Engine Refactor
+- **Context/Goal:** Transform the background sync worker into a true two-way synchronization engine to prevent overwriting cloud data on fresh installs and automate data hydration.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Data Loss Risk:* Tapping sync on an empty database was overwriting cloud backups. *Decision:* Implemented a "Download First" priority. If a cloud backup exists and the local database is empty (0 records), the worker strictly downloads and restores the cloud archive before any upload attempts.
+  - *Conflict 2: Auth-Sync Coupling:* How to ensure immediate data availability? *Decision:* Wired `SyncManager.startImmediateSync()` directly into the `handleSignInResult` callback in `AuthViewModel`. This ensures that historical profiles and assets are pulled from the cloud immediately after a user signs in, before they reach the main dashboard.
+  - *Conflict 3: Asset Reconstruction:* Binary files (attachments/voice) need to be extracted back to the sandbox. *Decision:* Utilized `BackupUtils.restoreZipBackup` to recursively extract subdirectories (`attachments/`, `qrcodes/`) from the downloaded archive into `context.filesDir`, maintaining absolute path consistency for Room.
+- **Final Decision:** Use "Download-if-Local-Empty" heuristic and trigger immediate sync on login completion.
+- **Impact:** `DriveSyncWorker.kt`, `GoogleDriveService.kt`, `AuthViewModel.kt`, `MainActivity.kt`, `UpperDotApp.kt`.
+
 ### ⚠️ Build Errors & Resolutions
 ### 2024-05-20 - Multi-Column Wildcard Search Optimization
 - **Context/Goal:** Update the dashboard search logic to include nicknames in the discovery process, ensuring that alternate names match connection cards.

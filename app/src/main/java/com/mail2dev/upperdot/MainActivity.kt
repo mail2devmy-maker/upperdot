@@ -134,7 +134,7 @@ fun RootNavigation() {
             val authViewModel: AuthViewModel = viewModel(
                 factory = viewModelFactory {
                     initializer {
-                        AuthViewModel(app.googleAuthService)
+                        AuthViewModel(app.googleAuthService, app.syncManager)
                     }
                 }
             )
