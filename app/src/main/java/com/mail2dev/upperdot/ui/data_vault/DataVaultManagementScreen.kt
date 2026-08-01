@@ -1,5 +1,6 @@
 package com.mail2dev.upperdot.ui.data_vault
 
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -36,6 +37,10 @@ fun DataVaultManagementScreen(
     val vcfImportState by viewModel.vcfImportState.collectAsState()
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+
+    BackHandler(enabled = true) {
+        navController.popBackStack()
+    }
 
     LaunchedEffect(Unit) {
         viewModel.eventFlow.collectLatest { message ->
