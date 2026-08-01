@@ -802,3 +802,7 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Error:** `Type mismatch: inferred type is X but Y was expected` in `MainActivity.kt`.
 - **Cause:** `ProfileSettingsViewModel` instantiation was using an out-of-order sequence of dependencies and included an accidental `GoogleDriveService` parameter not present in the class constructor.
 - **Resolution:** Re-aligned the constructor arguments in `MainActivity.kt` to match the target class definition exactly: `authService`, `contactRepository`, `noteRepository`, `transactionRepository`, `preferenceRepository`, and `context`. Removed the redundant `GoogleDriveService` reference.
+
+- **Error:** Navigation crash when tapping 'Data & Cloud Vault Management'.
+- **Cause:** Missing or incorrectly registered route for `data_vault_hub` in `MainActivity.kt` and signature mismatch in `DataVaultManagementScreen`.
+- **Resolution:** Explicitly declared the `composable("data_vault_hub")` block in `RootNavigation`. Refactored `DataVaultManagementScreen` to accept `navController: NavController` for standardized back-navigation handling.

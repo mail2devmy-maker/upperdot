@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.mail2dev.upperdot.ui.app_settings.SettingsListItem
 import com.mail2dev.upperdot.ui.theme.*
 import kotlinx.coroutines.flow.collectLatest
@@ -26,7 +27,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DataVaultManagementScreen(
-    onNavigateBack: () -> Unit,
+    navController: NavController,
     viewModel: DataVaultViewModel
 ) {
     val context = LocalContext.current
@@ -116,7 +117,7 @@ fun DataVaultManagementScreen(
             TopAppBar(
                 title = { Text("Data & Cloud Vault", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
