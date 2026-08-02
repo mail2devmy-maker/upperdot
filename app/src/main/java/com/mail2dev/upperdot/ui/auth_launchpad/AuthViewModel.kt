@@ -3,6 +3,8 @@ package com.mail2dev.upperdot.ui.auth_launchpad
 import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.common.api.ApiException
 import com.mail2dev.upperdot.data.network.GoogleAuthService
 import com.mail2dev.upperdot.data.sync.SyncManager
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +23,9 @@ class AuthViewModel(
     private val _signInIntent = MutableStateFlow<Intent?>(null)
     val signInIntent: StateFlow<Intent?> = _signInIntent.asStateFlow()
 
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+
     fun onSignInWithGoogleClicked() {
         _signInIntent.value = authService.getSignInIntent()
     }
@@ -29,11 +34,29 @@ class AuthViewModel(
         _signInIntent.value = null
     }
 
-    fun handleSignInResult(onSuccess: () -> Unit) {
-        // Validation logic for DriveScopes.DRIVE_APPDATA scope
-        // Enqueue automated OneTimeWorkRequest to run sync download/upload pass
-        syncManager.startImmediateSync()
-        onSuccess()
+    fun handleSignInResult(data: Intent?, onSuccess: () -> Unit) {
+        try {
+            val task = GoogleSignIn.getSignedInAccountFromIntent(data)
+            val account = task.getResult(ApiException::class.java)
+            
+            if (account != null) {
+                // Success: Trigger sync and navigate
+                syncManager.startImmediateSync()
+                onSuccess()
+            } else {
+                _errorMessage.value = "Sign in failed: Account is null"
+            }
+        } catch (e: ApiException) {
+            e.printStackTrace()
+            _errorMessage.value = "Google Sign-In Error: ${e.statusCode}"
+        } catch (e: Exception) {
+            e.printStackTrace()
+            _errorMessage.value = "Unexpected Error: ${e.message}"
+        }
+    }
+
+    fun clearError() {
+        _errorMessage.value = null
     }
 
     fun onTryAsGuestClicked() {

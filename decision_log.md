@@ -815,6 +815,14 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Final Decision:** Use route-based conditional gating for bottom nav and `BackHandler` for predictive gesture stabilization.
 - **Impact:** `UpperDotBottomNavigation.kt`, `DataVaultManagementScreen.kt`.
 
+### 2024-05-20 - Google Sign-In Error Handling & Release Build Stabilization
+- **Context/Goal:** Resolve an issue where Release APKs were allowing users to enter the app as "Guest" despite attempting Google Sign-In, due to silent authentication failures.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Silent Failure:* The initial `handleSignInResult` implementation didn't validate the intent result, leading to navigation even if the Google account wasn't actually acquired. *Decision:* Refactored `AuthViewModel.kt` to explicitly parse the `GoogleSignInAccount` using `GoogleSignIn.getSignedInAccountFromIntent`.
+  - *Conflict 2: User Feedback:* Users were blind to why their profile showed "Guest User". *Decision:* Integrated an `errorMessage` state in `AuthViewModel` and an `AlertDialog` in `AuthLaunchpadScreen` to display the specific `statusCode` (e.g., 10 or 12500) from the Google API.
+- **Final Decision:** Implement strict validation of sign-in intent and expose descriptive error dialogs to help diagnose Release fingerprint (SHA-1) mismatches.
+- **Impact:** `AuthViewModel.kt`, `AuthLaunchpadScreen.kt`.
+
 ### 2024-05-20 - Profile Tab UI Optimization: Member ID Card Layout
 - **Context/Goal:** Reposition the "Premium" pill and "Sign Out" button on the My Profile screen to create a cleaner, more professional "Member ID Card" look.
 - **Conflicts & Alternatives Considered:**
