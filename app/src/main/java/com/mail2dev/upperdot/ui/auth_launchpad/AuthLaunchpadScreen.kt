@@ -24,11 +24,12 @@ fun AuthLaunchpadScreen(
 ) {
     val showGuestWarning by viewModel.showGuestWarning.collectAsState()
     val signInIntent by viewModel.signInIntent.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
-    ) { _ ->
-        viewModel.handleSignInResult(onNavigateToDashboard)
+    ) { result ->
+        viewModel.handleSignInResult(result.data, onNavigateToDashboard)
     }
 
     LaunchedEffect(signInIntent) {
@@ -36,6 +37,22 @@ fun AuthLaunchpadScreen(
             launcher.launch(it)
             viewModel.consumeSignInIntent()
         }
+    }
+
+    if (errorMessage != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.clearError() },
+            title = { Text("Sign In Error") },
+            text = { Text(errorMessage!!) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearError() }) {
+                    Text("OK", color = PrimaryYellow)
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = Color.White,
+            textContentColor = Color.White
+        )
     }
 
     if (showGuestWarning) {
