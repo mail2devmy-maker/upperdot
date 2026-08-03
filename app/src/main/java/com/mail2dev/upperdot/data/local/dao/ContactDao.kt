@@ -13,7 +13,7 @@ interface ContactDao {
     @Query("SELECT * FROM contacts WHERE id = :id")
     suspend fun getContactById(id: Long): ContactEntity?
 
-    @Query("SELECT * FROM contacts WHERE sanitizedPrimaryPhone = :sanitizedPhone")
+    @Query("SELECT * FROM contacts WHERE sanitizedPrimaryPhone = :sanitizedPhone OR phoneNumbers LIKE '%' || :sanitizedPhone || '%'")
     suspend fun getContactByPhone(sanitizedPhone: String): ContactEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

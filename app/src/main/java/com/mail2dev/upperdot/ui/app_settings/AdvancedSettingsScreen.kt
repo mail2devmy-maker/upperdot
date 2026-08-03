@@ -1,5 +1,7 @@
 package com.mail2dev.upperdot.ui.app_settings
 
+import android.app.role.RoleManager
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -182,6 +184,58 @@ fun AdvancedSettingsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item { Spacer(modifier = Modifier.height(16.dp)) }
+
+            // System Permissions & Roles
+            item {
+                Text(
+                    text = "SYSTEM PERMISSIONS & ROLES",
+                    color = Color(0xFF9575CD),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+            }
+
+            item {
+                val roleLauncher = rememberLauncherForActivityResult(
+                    ActivityResultContracts.StartActivityForResult()
+                ) { _ -> }
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = Surface)
+                ) {
+                    SettingsListItem(
+                        icon = Icons.Default.PhoneAndroid,
+                        title = "Default Phone App",
+                        subtitle = "Set UpperDot as your primary dialer",
+                        onClick = {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                val roleManager = context.getSystemService(RoleManager::class.java)
+                                if (roleManager != null && roleManager.isRoleAvailable(RoleManager.ROLE_DIALER)) {
+                                    if (!roleManager.isRoleHeld(RoleManager.ROLE_DIALER)) {
+                                        val intent = roleManager.createRequestRoleIntent(RoleManager.ROLE_DIALER)
+                                        roleLauncher.launch(intent)
+                                    } else {
+                                        android.widget.Toast.makeText(context, "UpperDot is already your default dialer", android.widget.Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            } else {
+                                val telecomManager = context.getSystemService(android.content.Context.TELECOM_SERVICE) as android.telecom.TelecomManager
+                                if (telecomManager.defaultDialerPackage != context.packageName) {
+                                    val intent = android.content.Intent(android.telecom.TelecomManager.ACTION_CHANGE_DEFAULT_DIALER).apply {
+                                        putExtra(android.telecom.TelecomManager.EXTRA_CHANGE_DEFAULT_DIALER_PACKAGE_NAME, context.packageName)
+                                    }
+                                    context.startActivity(intent)
+                                } else {
+                                    android.widget.Toast.makeText(context, "UpperDot is already your default dialer", android.widget.Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+                    )
+                }
+            }
 
             // Storage & Data Management
             item {

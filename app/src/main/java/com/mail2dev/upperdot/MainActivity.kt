@@ -9,6 +9,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
@@ -32,6 +34,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navDeepLink
 import com.mail2dev.upperdot.ui.add_contact.AddContactCoreInfoScreen
 import com.mail2dev.upperdot.ui.add_contact.AddContactCorporateScreen
 import com.mail2dev.upperdot.ui.add_contact.AddContactFinancialScreen
@@ -44,6 +47,8 @@ import com.mail2dev.upperdot.ui.auth_launchpad.AuthViewModel
 import com.mail2dev.upperdot.ui.call_history.CallHistoryScreen
 import com.mail2dev.upperdot.ui.connections_list.ConnectionsListScreen
 import com.mail2dev.upperdot.ui.connections_list.ConnectionsListViewModel
+import com.mail2dev.upperdot.ui.dialer.DialerScreen
+import com.mail2dev.upperdot.ui.onboarding.OnboardingScreen
 import com.mail2dev.upperdot.ui.data_vault.DataVaultManagementScreen
 import com.mail2dev.upperdot.ui.data_vault.DataVaultViewModel
 import com.mail2dev.upperdot.ui.digital_wallet.DigitalWalletScreen
@@ -126,12 +131,32 @@ fun RootNavigation() {
     val navController = rememberNavController()
     val context = LocalContext.current
     val app = context.applicationContext as UpperDotApp
+
+    val startRoute = remember {
+        val prefs = context.getSharedPreferences("upperdot_prefs", Context.MODE_PRIVATE)
+        if (prefs.getBoolean("isSetupComplete", false)) "auth_launchpad" else "onboarding"
+    }
     
     NavHost(
         navController = navController,
-        startDestination = "auth_launchpad",
-        modifier = Modifier.fillMaxSize()
+        startDestination = startRoute,
+        modifier = Modifier.fillMaxSize(),
+        enterTransition = { EnterTransition.None },
+        exitTransition = { ExitTransition.None },
+        popEnterTransition = { EnterTransition.None },
+        popExitTransition = { ExitTransition.None }
     ) {
+        composable("onboarding") {
+            OnboardingScreen(
+                onComplete = {
+                    val prefs = context.getSharedPreferences("upperdot_prefs", Context.MODE_PRIVATE)
+                    prefs.edit().putBoolean("isSetupComplete", true).apply()
+                    navController.navigate("auth_launchpad") {
+                        popUpTo("onboarding") { inclusive = true }
+                    }
+                }
+            )
+        }
         composable("auth_launchpad") {
             val authViewModel: AuthViewModel = viewModel(
                 factory = viewModelFactory {
@@ -149,7 +174,11 @@ fun RootNavigation() {
                 viewModel = authViewModel
             )
         }
-        composable("connections_list") {
+        composable(
+            "connections_list?phone={phone}",
+            deepLinks = listOf(navDeepLink { uriPattern = "upperdot://create_note?phone={phone}" })
+        ) { backStackEntry ->
+            val phone = backStackEntry.arguments?.getString("phone")
             val connectionsViewModel: ConnectionsListViewModel = viewModel(
                 factory = viewModelFactory {
                     initializer {
@@ -162,6 +191,7 @@ fun RootNavigation() {
                     }
                 }
             )
+            
             ConnectionsListScreen(
                 onNavigate = { route ->
                     navController.navigate(route) {
@@ -173,14 +203,16 @@ fun RootNavigation() {
                     navController.navigate("client_profile/$contactId")
                 },
                 onNavigateToAddContact = {
-                    navController.navigate("add_contact?contactId=")
+                    navController.navigate("add_contact?contactId=&phone=")
                 },
-                viewModel = connectionsViewModel
+                viewModel = connectionsViewModel,
+                initialPhone = phone
             )
         }
 
-        composable("add_contact?contactId={contactId}") { backStackEntry ->
+        composable("add_contact?contactId={contactId}&phone={phone}") { backStackEntry ->
             val contactId = backStackEntry.arguments?.getString("contactId")?.toLongOrNull()
+            val phone = backStackEntry.arguments?.getString("phone")
             val addContactViewModel: AddContactViewModel = viewModel(
                 viewModelStoreOwner = backStackEntry,
                 factory = viewModelFactory {
@@ -190,8 +222,12 @@ fun RootNavigation() {
                 }
             )
 
-            LaunchedEffect(contactId) {
-                contactId?.let { addContactViewModel.loadContact(it) }
+            LaunchedEffect(contactId, phone) {
+                if (contactId != null) {
+                    addContactViewModel.loadContact(contactId)
+                } else if (!phone.isNullOrEmpty()) {
+                    addContactViewModel.prefillPhoneNumber(phone)
+                }
             }
 
             val currentStep by addContactViewModel.currentStep.collectAsState()
@@ -226,12 +262,32 @@ fun RootNavigation() {
         }
         
         composable("call_history") {
+            val callHistoryViewModel: com.mail2dev.upperdot.ui.call_history.CallHistoryViewModel = viewModel(
+                factory = viewModelFactory {
+                    initializer {
+                        com.mail2dev.upperdot.ui.call_history.CallHistoryViewModel(app.callLogRepository)
+                    }
+                }
+            )
             CallHistoryScreen(
                 onNavigate = { route ->
                     navController.navigate(route) {
                         launchSingleTop = true
                     }
-                }
+                },
+                onNavigateToDialer = {
+                    navController.navigate("dialer")
+                },
+                onNavigateToAddContact = { phone ->
+                    navController.navigate("add_contact?contactId=&phone=$phone")
+                },
+                viewModel = callHistoryViewModel
+            )
+        }
+
+        composable("dialer") {
+            DialerScreen(
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 

@@ -52,7 +52,8 @@ fun ConnectionsListScreen(
     onNavigate: (String) -> Unit,
     onNavigateToContact: (Long) -> Unit,
     onNavigateToAddContact: () -> Unit,
-    viewModel: ConnectionsListViewModel = viewModel()
+    viewModel: ConnectionsListViewModel = viewModel(),
+    initialPhone: String? = null
 ) {
     val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedFilter by viewModel.selectedFilter.collectAsState()
@@ -65,6 +66,12 @@ fun ConnectionsListScreen(
     val searchedContacts by viewModel.searchedContacts.collectAsState()
     val selectedAttachments by viewModel.selectedAttachments.collectAsState()
     val currencySymbol by viewModel.currencySymbol.collectAsState()
+
+    LaunchedEffect(initialPhone) {
+        if (!initialPhone.isNullOrEmpty()) {
+            viewModel.onAddNoteByPhone(initialPhone)
+        }
+    }
 
     if (showAddNoteSheet) {
         NewRelationshipNoteSheet(
@@ -102,109 +109,114 @@ fun ConnectionsListScreen(
         )
     }
 
-    Scaffold(
-        bottomBar = {
-            UpperDotBottomNavigation(
-                currentRoute = "connections_list",
-                onNavigate = onNavigate
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onNavigateToAddContact,
-                containerColor = AccentCyan,
-                contentColor = Color.Black,
-                shape = CircleShape,
-                modifier = Modifier.padding(bottom = 16.dp, end = 8.dp)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Contact")
-            }
-        },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 24.dp)
-        ) {
-            // Header
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(top = 24.dp, bottom = 24.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Groups,
-                    contentDescription = null,
-                    tint = AccentCyan,
-                    modifier = Modifier.size(32.dp)
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+    ) {
+        Scaffold(
+            bottomBar = {
+                UpperDotBottomNavigation(
+                    currentRoute = "connections_list",
+                    onNavigate = onNavigate
                 )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = "Connections",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-            }
-
-            // Search Bar
-            TextField(
-                value = searchQuery,
-                onValueChange = viewModel::onSearchQueryChanged,
+            },
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = onNavigateToAddContact,
+                    containerColor = AccentCyan,
+                    contentColor = Color.Black,
+                    shape = CircleShape,
+                    modifier = Modifier.padding(bottom = 16.dp, end = 8.dp)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Add Contact")
+                }
+            },
+            containerColor = Color.Transparent
+        ) { innerPadding ->
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                placeholder = { Text("Search by name or number...", color = TextSecondary) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = AccentCyan) },
-                shape = RoundedCornerShape(16.dp),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Surface,
-                    unfocusedContainerColor = Surface,
-                    disabledContainerColor = Surface,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    cursorColor = AccentCyan,
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White
-                )
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Filters
-            val filters = listOf("All", "Favorites", "Work", "Family", "Vendor", "Unassigned")
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(horizontal = 24.dp)
             ) {
-                items(filters) { filter ->
-                    FilterCapsule(
-                        text = filter,
-                        isSelected = filter == selectedFilter,
-                        onClick = { viewModel.onFilterSelected(filter) }
+                // Header
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 24.dp, bottom = 24.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Groups,
+                        contentDescription = null,
+                        tint = AccentCyan,
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Connections",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
                     )
                 }
-            }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Content
-            when (val state = uiState) {
-                is ConnectionsUIState.Empty -> {
-                    EmptyConnectionsView()
-                }
-                is ConnectionsUIState.Success -> {
-                    ConnectionsList(
-                        contacts = state.contacts,
-                        onContactClick = onNavigateToContact,
-                        onAddNote = viewModel::onAddNote,
-                        onAddTransaction = viewModel::onAddTransaction
+                // Search Bar
+                TextField(
+                    value = searchQuery,
+                    onValueChange = viewModel::onSearchQueryChanged,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    placeholder = { Text("Search by name or number...", color = TextSecondary) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = AccentCyan) },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Surface,
+                        unfocusedContainerColor = Surface,
+                        disabledContainerColor = Surface,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        cursorColor = AccentCyan,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White
                     )
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Filters
+                val filters = listOf("All", "Favorites", "Work", "Family", "Vendor", "Unassigned")
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(filters) { filter ->
+                        FilterCapsule(
+                            text = filter,
+                            isSelected = filter == selectedFilter,
+                            onClick = { viewModel.onFilterSelected(filter) }
+                        )
+                    }
                 }
-                is ConnectionsUIState.Loading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = AccentCyan)
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Content
+                when (val state = uiState) {
+                    is ConnectionsUIState.Empty -> {
+                        EmptyConnectionsView()
+                    }
+                    is ConnectionsUIState.Success -> {
+                        ConnectionsList(
+                            contacts = state.contacts,
+                            onContactClick = onNavigateToContact,
+                            onAddNote = viewModel::onAddNote,
+                            onAddTransaction = viewModel::onAddTransaction
+                        )
+                    }
+                    is ConnectionsUIState.Loading -> {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = AccentCyan)
+                        }
                     }
                 }
             }
@@ -337,20 +349,24 @@ fun ContactCard(
             .clip(RoundedCornerShape(24.dp))
     ) {
         val widthPx = with(density) { maxWidth.toPx() }
+        val hasPhoneNumber = contact.primaryPhone.isNotEmpty()
         
-        // Render Background Controls (Green background + Icon)
+        // Render Background Controls
         val progress = (offsetX.value / widthPx).coerceIn(0f, 1f)
         val alpha = progress.coerceIn(0f, 1f)
         
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .background(Color(0xFF4CAF50).copy(alpha = alpha))
+                .background(
+                    if (hasPhoneNumber) Color(0xFF4CAF50).copy(alpha = alpha) 
+                    else Color.DarkGray.copy(alpha = alpha * 0.5f)
+                )
                 .padding(horizontal = 24.dp),
             contentAlignment = Alignment.CenterStart
         ) {
             Icon(
-                imageVector = Icons.Default.Call,
+                imageVector = if (hasPhoneNumber) Icons.Default.Call else Icons.Default.PhoneDisabled,
                 contentDescription = "Call",
                 tint = Color.White.copy(alpha = alpha)
             )
@@ -377,18 +393,14 @@ fun ContactCard(
                                     // STRICT VALIDATION: Paste 65% triggers off-screen animate + execution
                                     offsetX.animateTo(widthPx)
                                     
-                                    if (contact.primaryPhone.isNotEmpty()) {
-                                        val intent = Intent(Intent.ACTION_CALL).apply {
-                                            data = Uri.parse("tel:${contact.primaryPhone}")
-                                        }
-                                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
-                                            context.startActivity(intent)
-                                        } else {
-                                            val dialIntent = Intent(Intent.ACTION_DIAL).apply {
-                                                data = Uri.parse("tel:${contact.primaryPhone}")
-                                            }
-                                            context.startActivity(dialIntent)
-                                        }
+                                    if (hasPhoneNumber) {
+                                        com.mail2dev.upperdot.util.TelephonyUtils.placeOutgoingCall(context, contact.primaryPhone)
+                                    } else {
+                                        android.widget.Toast.makeText(
+                                            context,
+                                            "No number to call for this contact",
+                                            android.widget.Toast.LENGTH_SHORT
+                                        ).show()
                                     }
                                     
                                     // Reset back to closed position smoothly

@@ -12,7 +12,7 @@ class GoogleAuthService(context: Context) {
 
     private val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
         .requestEmail()
-        // .requestIdToken("YOUR_WEB_CLIENT_ID.apps.googleusercontent.com") // Optional: Uncomment and add your Web Client ID if needed for backend validation
+        .requestIdToken("374825894777-rbllofvvrs8uiee8s0vhaqgge0lrfis6.apps.googleusercontent.com") // Optional: Uncomment and add your Web Client ID if needed for backend validation
         .requestScopes(Scope(DriveScopes.DRIVE_APPDATA))
         .build()
 

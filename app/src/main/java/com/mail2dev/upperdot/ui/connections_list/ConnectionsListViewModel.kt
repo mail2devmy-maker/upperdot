@@ -144,6 +144,14 @@ class ConnectionsListViewModel(
         }
     }
 
+    fun onAddNoteByPhone(phone: String) {
+        viewModelScope.launch {
+            val contact = repository.findContactByPhone(phone)?.toSummary()
+            _preSelectedContact.value = contact
+            _showAddNoteSheet.value = true
+        }
+    }
+
     fun onAddTransaction(contactId: Long) {
         viewModelScope.launch {
             val contact = repository.getContactById(contactId)?.toSummary()

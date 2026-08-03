@@ -51,212 +51,217 @@ fun MyProfileSettingsScreen(
         )
     }
 
-    Scaffold(
-        bottomBar = {
-            UpperDotBottomNavigation(
-                currentRoute = "my_profile",
-                onNavigate = onNavigate
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { walletViewModel.onQuickWalletRequested() },
-                containerColor = Color.Black,
-                contentColor = AccentCyan,
-                shape = CircleShape,
-                modifier = Modifier
-                    .padding(bottom = 16.dp, end = 8.dp)
-                    .border(1.dp, AccentCyan, CircleShape)
-            ) {
-                Icon(Icons.Default.AccountBalanceWallet, contentDescription = "Quick Wallet")
-            }
-        },
-        containerColor = Color.Black
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp)
-        ) {
-            // Header
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(top = 24.dp, bottom = 24.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.AccountCircle,
-                    contentDescription = null,
-                    tint = AccentCyan,
-                    modifier = Modifier.size(32.dp)
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = Color.Black
+    ) {
+        Scaffold(
+            bottomBar = {
+                UpperDotBottomNavigation(
+                    currentRoute = "my_profile",
+                    onNavigate = onNavigate
                 )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = "My Profile",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-            }
-
-            // User Account Summary Card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Surface)
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp)
+            },
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = { walletViewModel.onQuickWalletRequested() },
+                    containerColor = Color.Black,
+                    contentColor = AccentCyan,
+                    shape = CircleShape,
+                    modifier = Modifier
+                        .padding(bottom = 16.dp, end = 8.dp)
+                        .border(1.dp, AccentCyan, CircleShape)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.Top,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                    Icon(Icons.Default.AccountBalanceWallet, contentDescription = "Quick Wallet")
+                }
+            },
+            containerColor = Color.Transparent
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp)
+            ) {
+                // Header
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 24.dp, bottom = 24.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AccountCircle,
+                        contentDescription = null,
+                        tint = AccentCyan,
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "My Profile",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+
+                // User Account Summary Card
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = Surface)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp)
                     ) {
-                        // Left Side: Identity
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                            Surface(
-                                shape = CircleShape,
-                                color = Color.Black.copy(alpha = 0.3f),
-                                modifier = Modifier.size(64.dp).border(1.dp, AccentCyan.copy(alpha = 0.5f), CircleShape)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.Person, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(32.dp))
-                                }
-                            }
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column {
-                                Text(
-                                    text = userSummary.name,
-                                    color = Color.White,
-                                    fontSize = 20.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = userSummary.email,
-                                    color = TextSecondary,
-                                    fontSize = 12.sp
-                                )
-                            }
-                        }
-
-                        // Right Side: Status & Session Stack
-                        Column(horizontalAlignment = Alignment.End) {
-                            if (userSummary.isPremium) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.Top,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            // Left Side: Identity
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                                 Surface(
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = AccentCyan.copy(alpha = 0.1f),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, AccentCyan.copy(alpha = 0.3f))
+                                    shape = CircleShape,
+                                    color = Color.Black.copy(alpha = 0.3f),
+                                    modifier = Modifier.size(64.dp).border(1.dp, AccentCyan.copy(alpha = 0.5f), CircleShape)
                                 ) {
-                                    Text(
-                                        text = "PREMIUM",
-                                        color = AccentCyan,
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                        letterSpacing = 1.sp
-                                    )
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Default.Person, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(32.dp))
+                                    }
                                 }
-                            }
-                            
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            // Sign Out compact button
-                            Surface(
-                                onClick = { viewModel.onSignOut(onSignOut) },
-                                shape = RoundedCornerShape(12.dp),
-                                color = Color.Transparent,
-                                border = androidx.compose.foundation.BorderStroke(1.dp, NegativeRed.copy(alpha = 0.5f))
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(Icons.Default.Logout, contentDescription = null, tint = NegativeRed, modifier = Modifier.size(12.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Column {
                                     Text(
-                                        text = "Sign Out",
-                                        color = NegativeRed,
-                                        fontSize = 10.sp,
+                                        text = userSummary.name,
+                                        color = Color.White,
+                                        fontSize = 20.sp,
                                         fontWeight = FontWeight.Bold
                                     )
+                                    Text(
+                                        text = userSummary.email,
+                                        color = TextSecondary,
+                                        fontSize = 12.sp
+                                    )
+                                }
+                            }
+
+                            // Right Side: Status & Session Stack
+                            Column(horizontalAlignment = Alignment.End) {
+                                if (userSummary.isPremium) {
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = AccentCyan.copy(alpha = 0.1f),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, AccentCyan.copy(alpha = 0.3f))
+                                    ) {
+                                        Text(
+                                            text = "PREMIUM",
+                                            color = AccentCyan,
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                            letterSpacing = 1.sp
+                                        )
+                                    }
+                                }
+                                
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                // Sign Out compact button
+                                Surface(
+                                    onClick = { viewModel.onSignOut(onSignOut) },
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = Color.Transparent,
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, NegativeRed.copy(alpha = 0.5f))
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(Icons.Default.Logout, contentDescription = null, tint = NegativeRed, modifier = Modifier.size(12.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = "Sign Out",
+                                            color = NegativeRed,
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(24.dp))
 
-                    // Metrics Bar
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        MetricItem(icon = Icons.Default.Groups, count = userSummary.contactCount, label = "Contacts")
-                        MetricItem(icon = Icons.Default.Description, count = userSummary.noteCount, label = "Notes")
-                        MetricItem(icon = Icons.Default.CreditCard, count = userSummary.transactionCount, label = "Trans")
+                        // Metrics Bar
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            MetricItem(icon = Icons.Default.Groups, count = userSummary.contactCount, label = "Contacts")
+                            MetricItem(icon = Icons.Default.Description, count = userSummary.noteCount, label = "Notes")
+                            MetricItem(icon = Icons.Default.CreditCard, count = userSummary.transactionCount, label = "Trans")
+                        }
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
-            Text(
-                text = "WORKSPACE CONTROLS DECK",
-                color = TextSecondary,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp
-            )
+                Text(
+                    text = "WORKSPACE CONTROLS DECK",
+                    color = TextSecondary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
 
-            Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-            // Navigation Menu Deck
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Surface)
-            ) {
-                Column {
-                    MenuListItem(
-                        icon = Icons.Default.Dns,
-                        title = "Data & Cloud Vault Management",
-                        subtitle = "Cloud sync, backups and import/export",
-                        onClick = { onNavigate("data_vault_hub") }
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.DarkGray.copy(alpha = 0.3f))
-                    MenuListItem(
-                        icon = Icons.Default.CreditCard,
-                        title = "My Digital Business Wallet",
-                        subtitle = "Secure card storage and dynamic keys",
-                        onClick = { onNavigate("digital_wallet_management") }
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.DarkGray.copy(alpha = 0.3f))
-                    MenuListItem(
-                        icon = Icons.Default.AccountTree,
-                        title = "Manage Custom Groups",
-                        subtitle = "Configure custom relational categories",
-                        onClick = { onNavigate("manage_custom_groups") }
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.DarkGray.copy(alpha = 0.3f))
-                    MenuListItem(
-                        icon = Icons.Default.Settings,
-                        title = "Advanced App Settings",
-                        subtitle = "Storage configuration, local exports & backups",
-                        onClick = { onNavigate("advanced_app_settings") }
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.DarkGray.copy(alpha = 0.3f))
-                    MenuListItem(
-                        icon = Icons.Default.Stars,
-                        title = "Free vs Premium Plan",
-                        subtitle = "Check tiers limits and security controls",
-                        onClick = { onNavigate("plans") }
-                    )
+                // Navigation Menu Deck
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = Surface)
+                ) {
+                    Column {
+                        MenuListItem(
+                            icon = Icons.Default.Dns,
+                            title = "Data & Cloud Vault Management",
+                            subtitle = "Cloud sync, backups and import/export",
+                            onClick = { onNavigate("data_vault_hub") }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.DarkGray.copy(alpha = 0.3f))
+                        MenuListItem(
+                            icon = Icons.Default.CreditCard,
+                            title = "My Digital Business Wallet",
+                            subtitle = "Secure card storage and dynamic keys",
+                            onClick = { onNavigate("digital_wallet_management") }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.DarkGray.copy(alpha = 0.3f))
+                        MenuListItem(
+                            icon = Icons.Default.AccountTree,
+                            title = "Manage Custom Groups",
+                            subtitle = "Configure custom relational categories",
+                            onClick = { onNavigate("manage_custom_groups") }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.DarkGray.copy(alpha = 0.3f))
+                        MenuListItem(
+                            icon = Icons.Default.Settings,
+                            title = "Advanced App Settings",
+                            subtitle = "Storage configuration, local exports & backups",
+                            onClick = { onNavigate("advanced_app_settings") }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.DarkGray.copy(alpha = 0.3f))
+                        MenuListItem(
+                            icon = Icons.Default.Stars,
+                            title = "Free vs Premium Plan",
+                            subtitle = "Check tiers limits and security controls",
+                            onClick = { onNavigate("plans") }
+                        )
+                    }
                 }
+                
+                Spacer(modifier = Modifier.height(32.dp))
             }
-            
-            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
