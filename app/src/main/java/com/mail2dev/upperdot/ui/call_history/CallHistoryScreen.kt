@@ -7,12 +7,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Dialpad
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.automirrored.filled.*
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -22,62 +24,90 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mail2dev.upperdot.ui.components.UpperDotBottomNavigation
-import com.mail2dev.upperdot.ui.theme.AccentCyan
-import com.mail2dev.upperdot.ui.theme.Surface
+import com.mail2dev.upperdot.ui.theme.*
+import com.mail2dev.upperdot.utils.toFormattedDate
+import android.provider.CallLog
 
 @Composable
 fun CallHistoryScreen(
     onNavigate: (String) -> Unit,
-    viewModel: CallHistoryViewModel = viewModel()
+    onNavigateToDialer: () -> Unit,
+    onNavigateToAddContact: (String) -> Unit,
+    viewModel: com.mail2dev.upperdot.ui.call_history.CallHistoryViewModel
 ) {
     val hasPermission by viewModel.hasPermission.collectAsState()
     val callLogs by viewModel.callLogs.collectAsState()
+    val context = androidx.compose.ui.platform.LocalContext.current
 
-    Scaffold(
-        bottomBar = {
-            UpperDotBottomNavigation(
-                currentRoute = "call_history",
-                onNavigate = onNavigate
-            )
-        },
-        containerColor = Color.Black
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(24.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 32.dp)
+    LaunchedEffect(Unit) {
+        val granted = androidx.core.content.ContextCompat.checkSelfPermission(
+            context,
+            android.Manifest.permission.READ_CALL_LOG
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        viewModel.updatePermissionState(granted)
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = Color.Black
+    ) {
+        Scaffold(
+            bottomBar = {
+                UpperDotBottomNavigation(
+                    currentRoute = "call_history",
+                    onNavigate = onNavigate
+                )
+            },
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = onNavigateToDialer,
+                    containerColor = AccentCyan,
+                    contentColor = Color.Black,
+                    shape = CircleShape,
+                    modifier = Modifier.padding(bottom = 16.dp, end = 8.dp)
+                ) {
+                    Icon(Icons.Default.Dialpad, contentDescription = "Open Dialpad")
+                }
+            },
+            containerColor = Color.Transparent
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(24.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.History,
-                    contentDescription = null,
-                    tint = AccentCyan,
-                    modifier = Modifier.size(32.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = "Call History",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-            }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.History,
+                        contentDescription = null,
+                        tint = AccentCyan,
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Call History",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
 
-            if (!hasPermission) {
-                EmptyCallHistoryCard()
-            } else if (callLogs.isEmpty()) {
-                // Technically same as empty state for now
-                EmptyCallHistoryCard()
-            } else {
-                CallLogList(
-                    logs = callLogs,
-                    onContactClick = viewModel::onContactClicked,
-                    onAddContactClick = viewModel::onAddContactClicked
-                )
+                if (!hasPermission) {
+                    EmptyCallHistoryCard()
+                } else if (callLogs.isEmpty()) {
+                    // Technically same as empty state for now
+                    EmptyCallHistoryCard()
+                } else {
+                    CallLogList(
+                        logs = callLogs,
+                        onContactClick = viewModel::onContactClicked,
+                        onAddContactClick = onNavigateToAddContact
+                    )
+                }
             }
         }
     }
@@ -143,10 +173,78 @@ fun CallLogList(
     onAddContactClick: (String) -> Unit
 ) {
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxSize()
     ) {
         items(logs) { log ->
-            // Placeholder for call log row
+            CallLogItem(
+                log = log,
+                onClick = { onContactClick(log.id) },
+                onAddClick = { onAddContactClick(log.number) }
+            )
+        }
+    }
+}
+
+@Composable
+fun CallLogItem(
+    log: CallLogEntry,
+    onClick: () -> Unit,
+    onAddClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Surface)
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            val icon = when (log.type) {
+                CallLog.Calls.INCOMING_TYPE -> Icons.AutoMirrored.Filled.CallReceived
+                CallLog.Calls.OUTGOING_TYPE -> Icons.AutoMirrored.Filled.CallMade
+                CallLog.Calls.MISSED_TYPE -> Icons.AutoMirrored.Filled.CallMissed
+                else -> Icons.Default.Call
+            }
+            val iconTint = if (log.type == CallLog.Calls.MISSED_TYPE) NegativeRed else AccentCyan
+
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = iconTint,
+                modifier = Modifier.size(24.dp)
+            )
+            
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = log.name ?: log.number,
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = log.timestamp.toFormattedDate(),
+                    color = Color.Gray,
+                    fontSize = 12.sp
+                )
+            }
+
+            if (log.name == null) {
+                IconButton(onClick = onAddClick) {
+                    Icon(
+                        imageVector = Icons.Default.PersonAdd,
+                        contentDescription = "Add Contact",
+                        tint = AccentCyan
+                    )
+                }
+            }
         }
     }
 }

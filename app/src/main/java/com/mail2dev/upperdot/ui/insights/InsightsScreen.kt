@@ -122,181 +122,186 @@ fun InsightsScreen(
         )
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        bottomBar = {
-            UpperDotBottomNavigation(
-                currentRoute = "insights",
-                onNavigate = onNavigate
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    if (selectedTab == InsightTab.NOTES) viewModel.onAddNoteClicked()
-                    else viewModel.onAddTransactionClicked()
-                },
-                containerColor = Color.Black,
-                contentColor = AccentCyan,
-                shape = CircleShape,
-                modifier = Modifier
-                    .padding(bottom = 16.dp, end = 8.dp)
-                    .border(1.dp, AccentCyan, CircleShape)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add")
-            }
-        },
-        containerColor = Color.Black
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 24.dp)
-        ) {
-            // Header
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(top = 24.dp, bottom = 24.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.BarChart,
-                    contentDescription = null,
-                    tint = AccentCyan,
-                    modifier = Modifier.size(32.dp)
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = Color.Black
+    ) {
+        Scaffold(
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            bottomBar = {
+                UpperDotBottomNavigation(
+                    currentRoute = "insights",
+                    onNavigate = onNavigate
                 )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = "Insights",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-            }
-
-            // Search Bar
-            TextField(
-                value = searchQuery,
-                onValueChange = viewModel::onSearchQueryChanged,
+            },
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = {
+                        if (selectedTab == InsightTab.NOTES) viewModel.onAddNoteClicked()
+                        else viewModel.onAddTransactionClicked()
+                    },
+                    containerColor = Color.Black,
+                    contentColor = AccentCyan,
+                    shape = CircleShape,
+                    modifier = Modifier
+                        .padding(bottom = 16.dp, end = 8.dp)
+                        .border(1.dp, AccentCyan, CircleShape)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Add")
+                }
+            },
+            containerColor = Color.Transparent
+        ) { innerPadding ->
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                placeholder = {
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(horizontal = 24.dp)
+            ) {
+                // Header
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 24.dp, bottom = 24.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.BarChart,
+                        contentDescription = null,
+                        tint = AccentCyan,
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        if (selectedTab == InsightTab.NOTES) "Search notes..." else "Search transactions...",
-                        color = TextSecondary
-                    )
-                },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = AccentCyan) },
-                shape = RoundedCornerShape(16.dp),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Surface,
-                    unfocusedContainerColor = Surface,
-                    disabledContainerColor = Surface,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    cursorColor = AccentCyan,
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White
-                )
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Filters Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (selectedContactFilter == null) {
-                    FilterCapsule(
-                        text = "All Contacts",
-                        isSelected = false,
-                        onClick = { /* Select Contact Dialog */ }
-                    )
-                } else {
-                    FilterCapsule(
-                        text = "Clear Filters X",
-                        isSelected = false,
-                        backgroundColor = Color(0xFF3B1F1F), // Dark red background
-                        contentColor = NegativeRed,
-                        onClick = { viewModel.clearFilters() }
-                    )
-                    FilterCapsule(
-                        text = selectedContactFilter!!,
-                        isSelected = true,
-                        onClick = {}
+                        text = "Insights",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
                     )
                 }
-            }
 
-            Spacer(modifier = Modifier.height(24.dp))
+                // Search Bar
+                TextField(
+                    value = searchQuery,
+                    onValueChange = viewModel::onSearchQueryChanged,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    placeholder = {
+                        Text(
+                            if (selectedTab == InsightTab.NOTES) "Search notes..." else "Search transactions...",
+                            color = TextSecondary
+                        )
+                    },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = AccentCyan) },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Surface,
+                        unfocusedContainerColor = Surface,
+                        disabledContainerColor = Surface,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        cursorColor = AccentCyan,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White
+                    )
+                )
 
-            // Metrics Grid (Visible only on Transactions Tab)
-            AnimatedVisibility(visible = selectedTab == InsightTab.TRANSACTIONS) {
-                Column {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        MetricCard(
-                            label = "Revenue",
-                            value = "$currencySymbol${String.format(Locale.getDefault(), "%.2f", totalRevenue)}",
-                            valueColor = PositiveGreen,
-                            modifier = Modifier.weight(1f)
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Filters Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (selectedContactFilter == null) {
+                        FilterCapsule(
+                            text = "All Contacts",
+                            isSelected = false,
+                            onClick = { /* Select Contact Dialog */ }
                         )
-                        MetricCard(
-                            label = "Expenses",
-                            value = "$currencySymbol${String.format(Locale.getDefault(), "%.2f", totalExpenses)}",
-                            valueColor = NegativeRed,
-                            modifier = Modifier.weight(1f)
+                    } else {
+                        FilterCapsule(
+                            text = "Clear Filters X",
+                            isSelected = false,
+                            backgroundColor = Color(0xFF3B1F1F), // Dark red background
+                            contentColor = NegativeRed,
+                            onClick = { viewModel.clearFilters() }
                         )
-                        MetricCard(
-                            label = "Net Profit",
-                            value = "$currencySymbol${String.format(Locale.getDefault(), "%.2f", netProfit)}",
-                            valueColor = AccentCyan,
-                            modifier = Modifier.weight(1f)
+                        FilterCapsule(
+                            text = selectedContactFilter!!,
+                            isSelected = true,
+                            onClick = {}
                         )
                     }
-                    Spacer(modifier = Modifier.height(24.dp))
                 }
-            }
 
-            // Tab Switcher
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .background(Surface, RoundedCornerShape(24.dp))
-                    .padding(4.dp)
-            ) {
-                TabItem(
-                    title = "NOTES",
-                    isSelected = selectedTab == InsightTab.NOTES,
-                    modifier = Modifier.weight(1f),
-                    onClick = { viewModel.onTabSelected(InsightTab.NOTES) }
-                )
-                TabItem(
-                    title = "TRANSACTIONS",
-                    isSelected = selectedTab == InsightTab.TRANSACTIONS,
-                    modifier = Modifier.weight(1f),
-                    onClick = { viewModel.onTabSelected(InsightTab.TRANSACTIONS) }
-                )
-            }
+                Spacer(modifier = Modifier.height(24.dp))
 
-            Spacer(modifier = Modifier.height(24.dp))
+                // Metrics Grid (Visible only on Transactions Tab)
+                AnimatedVisibility(visible = selectedTab == InsightTab.TRANSACTIONS) {
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            MetricCard(
+                                label = "Revenue",
+                                value = "$currencySymbol${String.format(Locale.getDefault(), "%.2f", totalRevenue)}",
+                                valueColor = PositiveGreen,
+                                modifier = Modifier.weight(1f)
+                            )
+                            MetricCard(
+                                label = "Expenses",
+                                value = "$currencySymbol${String.format(Locale.getDefault(), "%.2f", totalExpenses)}",
+                                valueColor = NegativeRed,
+                                modifier = Modifier.weight(1f)
+                            )
+                            MetricCard(
+                                label = "Net Profit",
+                                value = "$currencySymbol${String.format(Locale.getDefault(), "%.2f", netProfit)}",
+                                valueColor = AccentCyan,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(24.dp))
+                    }
+                }
 
-            // Content
-            if (selectedTab == InsightTab.NOTES) {
-                NotesList(notes = notes, onContactClick = viewModel::onContactFilterSelected, onNoteClick = viewModel::selectNote)
-            } else {
-                TransactionsList(
-                    transactions = transactions,
-                    currencySymbol = currencySymbol,
-                    onContactClick = viewModel::onContactFilterSelected,
-                    onTransactionClick = viewModel::selectTransaction
-                )
+                // Tab Switcher
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .background(Surface, RoundedCornerShape(24.dp))
+                        .padding(4.dp)
+                ) {
+                    TabItem(
+                        title = "NOTES",
+                        isSelected = selectedTab == InsightTab.NOTES,
+                        modifier = Modifier.weight(1f),
+                        onClick = { viewModel.onTabSelected(InsightTab.NOTES) }
+                    )
+                    TabItem(
+                        title = "TRANSACTIONS",
+                        isSelected = selectedTab == InsightTab.TRANSACTIONS,
+                        modifier = Modifier.weight(1f),
+                        onClick = { viewModel.onTabSelected(InsightTab.TRANSACTIONS) }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Content
+                if (selectedTab == InsightTab.NOTES) {
+                    NotesList(notes = notes, onContactClick = viewModel::onContactFilterSelected, onNoteClick = viewModel::selectNote)
+                } else {
+                    TransactionsList(
+                        transactions = transactions,
+                        currencySymbol = currencySymbol,
+                        onContactClick = viewModel::onContactFilterSelected,
+                        onTransactionClick = viewModel::selectTransaction
+                    )
+                }
             }
         }
     }

@@ -830,3 +830,44 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   - *Conflict 2: Visual Prestige:* The previous Premium pill looked like a standard tag. *Decision:* Added a subtle Cyan neon border and faint background tint, aligning it with high-end membership card aesthetics.
 - **Final Decision:** Use a horizontal `Arrangement.SpaceBetween` to separate Identity (left) from Status/Session (right). Redesigned "Sign Out" as a compact, red-bordered pill directly underneath the Premium status.
 - **Impact:** `MyProfileSettingsScreen.kt`.
+
+### 2024-05-20 - Phase 1: Full Telephony Integration (Dialer Role & In-Call UI)
+- **Context/Goal:** Transition UpperDot from a CRM with "Dialer Shortcuts" to a standalone "Phone by Google" replacement capable of managing active calls and appearing as the system default.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Interaction Model for Active Calls:* Should we use a System Notification or a full-screen Activity? *Decision:* Full-screen Activity (`InCallActivity`) is required to provide the standard "Answer/End/Mute" controls and to ensure the UI is accessible even when the device is locked.
+  - *Conflict 2: Permission Acquisition:* When to ask for Mic/Speaker? *Decision:* Integrated a "Telephony Readiness" check in the `DialerScreen`. If `RECORD_AUDIO` or `MODIFY_AUDIO_SETTINGS` are missing, the "Call" button triggers a high-priority permission request rather than initiating the dial.
+  - *Conflict 3: In-Call Navigation:* How to handle CRM notes while talking? *Decision:* Implemented a "Floating CRM Bubble" (Icon-based shortcut) on the In-Call screen that allows users to minimize the call UI to a small overlay and open the standard "New Note" sheet without hanging up.
+- **Final Decision:** Implement `UpperDotInCallService` to bridge the app to the Android Telecom framework. Use a dedicated `InCallActivity` for the active call UI to manage system window flags (show on lock screen).
+- **Impact:** `UpperDotInCallService.kt`, `AndroidManifest.xml` (InCallService & Activity registration), `InCallScreen.kt` created.
+
+### 2024-05-20 - Phase 2: Incoming Call Management & CRM Quick-Note
+- **Context/Goal:** Enable UpperDot to handle incoming calls with native "Answer/Decline" controls and integrate CRM functionality directly into the active call experience.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Incoming UI Logic:* Should we have a separate Activity for incoming calls? *Decision:* Re-used `InCallActivity`. The UI dynamically swaps the "Call Controls" row for a "Response Row" (Green Answer / Red Decline) when the call state is `STATE_RINGING`.
+  - *Conflict 2: CRM Note Context:* How to open a note for the specific caller? *Decision:* Injected the `contactId` (resolved via phone number lookup) into the `InCallActivity`. The "Add Note" button launches `MainActivity` with a deep-link route that triggers the `NewRelationshipNoteSheet` with the caller pre-selected.
+- **Final Decision:** Implement `answer()` and `disconnect()` logic in `InCallActivity`. Add a "Quick Note" icon to the `InCallScreen` header that uses a `PendingIntent` to return the user to the main app dashboard.
+- **Impact:** `InCallScreen.kt`, `InCallActivity.kt`, `MainActivity.kt` (Deep link handling).
+
+### 2024-05-20 - Phase 3: System Call Log Integration & Audio Focus
+- **Context/Goal:** Complete the "Phone" replacement by activating the Call History tab with real system data and ensuring professional audio management.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Call Log Source:* Local App DB vs System Content Provider. *Decision:* System Content Provider (`CallLog.Calls`). This ensures that calls made via UpperDot are synchronized with the device's global history and vice-versa, fulfilling the "All-in-One" app goal.
+  - *Conflict 2: Audio Focus Interaction:* Should the app handle focus or let the system decide? *Decision:* Manual `AudioManager` focus request. This ensures that media playback (e.g., Spotify) is correctly paused/ducked when a call starts in UpperDot, preventing audio overlap.
+- **Final Decision:** Implement `CallLogRepository` to query the system provider. Update `CallHistoryViewModel` to observe the `READ_CALL_LOG` permission and trigger the scan. Refactor `InCallActivity` to handle `AUDIO_FOCUS` during lifecycle events.
+- **Impact:** `CallLogRepository.kt`, `CallHistoryViewModel.kt`, `CallHistoryScreen.kt`, `InCallActivity.kt`.
+
+### 2024-05-20 - Phase 4: High-Stability Onboarding Flow (Oppo/Realme Fix)
+- **Context/Goal:** Address the "3-second drop" and "Oplus Block" issues on specialized hardware (Oppo/Realme) by ensuring critical system roles and background permissions are granted before the app enters a functional state.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Permission Timing:* Standard runtime request vs Dedicated Setup screen. *Decision:* Dedicated Setup screen is mandatory for telephony apps. It allows for "Pre-flight" verification of the Dialer Role and Overlay permission, which cannot be requested via standard prompts.
+  - *Conflict 2: Battery Optimization:* Should we force the user to disable it? *Decision:* Yes. To ensure the `InCallService` is responsive, the app must be exempt from aggressive OEM background killing.
+- **Final Decision:** Implement `OnboardingScreen` as the new `startDestination`. Use a checklist-style UI that tracks: Dialer Role, Overlay, Battery, and standard Permissions. MainActivity will gate functional usage behind this flow to ensure stability.
+- **Impact:** `OnboardingScreen.kt`, `MainActivity.kt` nav graph update, `AndroidManifest.xml` (added Overlay & Battery permissions).
+
+### 2024-05-20 - Global Telephony Formatting & E.164 Compliance
+- **Context/Goal:** Ensure outgoing calls are formatted correctly for all countries, moving away from hardcoded Malaysian-only logic.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Manual vs. Automatic Formatting:* Should we keep manual Malaysian logic for reliability or use system utilities? *Decision:* Use `PhoneNumberUtils.formatNumberToE164`. It is more robust for global usage as it leverages system-level telephony data.
+  - *Conflict 2: Country Detection:* How to know the user's location? *Decision:* Priority check: 1. `simCountryIso` (Active SIM network) -> 2. `Locale.getDefault().country` (System setting). This provides the most accurate local context.
+- **Final Decision:** Implement a centralized `TelephonyUtils.placeOutgoingCall` using `TelephonyManager` for country detection and `PhoneNumberUtils` for E.164 standard compliance.
+- **Impact:** `TelephonyUtils.kt`, `DialerScreen.kt`, `ConnectionsListScreen.kt`.

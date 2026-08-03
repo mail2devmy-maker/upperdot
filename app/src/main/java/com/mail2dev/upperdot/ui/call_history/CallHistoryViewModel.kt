@@ -1,9 +1,12 @@
 package com.mail2dev.upperdot.ui.call_history
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.mail2dev.upperdot.data.repository.telephony.CallLogRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 data class CallLogEntry(
     val id: String,
@@ -13,7 +16,9 @@ data class CallLogEntry(
     val type: Int // Incoming, Outgoing, Missed
 )
 
-class CallHistoryViewModel : ViewModel() {
+class CallHistoryViewModel(
+    private val repository: CallLogRepository
+) : ViewModel() {
 
     private val _hasPermission = MutableStateFlow(false)
     val hasPermission: StateFlow<Boolean> = _hasPermission.asStateFlow()
@@ -29,7 +34,9 @@ class CallHistoryViewModel : ViewModel() {
     }
 
     private fun loadCallLogs() {
-        // TODO: Load from Room DB
+        viewModelScope.launch {
+            _callLogs.value = repository.getCallLogs()
+        }
     }
 
     fun onAddContactClicked(number: String) {

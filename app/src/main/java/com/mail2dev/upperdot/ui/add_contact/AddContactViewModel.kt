@@ -97,6 +97,10 @@ class AddContactViewModel(
         }
     }
 
+    fun prefillPhoneNumber(phone: String) {
+        _phoneNumbers.value = listOf(phone)
+    }
+
     // Update methods
     fun onFullNameChange(value: String) { _fullName.value = value }
     fun onNicknamesChange(value: String) { _nicknames.value = value }

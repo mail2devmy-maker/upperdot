@@ -50,4 +50,8 @@ class UpperDotApp : Application() {
     val syncManager: com.mail2dev.upperdot.data.sync.SyncManager by lazy {
         com.mail2dev.upperdot.data.sync.SyncManager(this)
     }
+
+    val callLogRepository: com.mail2dev.upperdot.data.repository.telephony.CallLogRepository by lazy {
+        com.mail2dev.upperdot.data.repository.telephony.CallLogRepository(this)
+    }
 }

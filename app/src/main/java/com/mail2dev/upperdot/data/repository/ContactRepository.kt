@@ -13,6 +13,11 @@ class ContactRepository(private val contactDao: ContactDao) {
     
     suspend fun getContactByPhone(sanitizedPhone: String): ContactEntity? = contactDao.getContactByPhone(sanitizedPhone)
 
+    suspend fun findContactByPhone(rawPhone: String): ContactEntity? {
+        val sanitized = com.mail2dev.upperdot.util.ContactUtils.smartSanitize(rawPhone)
+        return contactDao.getContactByPhone(sanitized)
+    }
+
     suspend fun insertContact(contact: ContactEntity) {
         contactDao.insertContact(contact)
     }
