@@ -53,6 +53,7 @@ fun InsightsScreen(
     val contactSearchQuery by viewModel.contactSearchQuery.collectAsState()
     val searchedContacts by viewModel.searchedContacts.collectAsState()
     val currencySymbol by viewModel.currencySymbol.collectAsState()
+    val isMediaCompressionEnabled by viewModel.isMediaCompressionEnabled.collectAsState()
 
     val selectedNote by viewModel.selectedNote.collectAsState()
     val selectedTransaction by viewModel.selectedTransaction.collectAsState()
@@ -82,6 +83,7 @@ fun InsightsScreen(
             onAddAttachment = viewModel::addAttachmentPath,
             onRemoveAttachment = viewModel::removeAttachmentPath,
             currencySymbol = currencySymbol,
+            isMediaCompressionEnabled = isMediaCompressionEnabled,
             isContactLocked = false
         )
     }
@@ -102,6 +104,7 @@ fun InsightsScreen(
             onAddAttachment = viewModel::addAttachmentPath,
             onRemoveAttachment = viewModel::removeAttachmentPath,
             currencySymbol = currencySymbol,
+            isMediaCompressionEnabled = isMediaCompressionEnabled,
             initialContact = searchedContacts.find { it.id == editingNote!!.contactId },
             isContactLocked = true
         )
@@ -124,6 +127,7 @@ fun InsightsScreen(
             onAddAttachment = viewModel::addAttachmentPath,
             onRemoveAttachment = viewModel::removeAttachmentPath,
             currencySymbol = currencySymbol,
+            isMediaCompressionEnabled = isMediaCompressionEnabled,
             isContactLocked = false
         )
     }
@@ -145,6 +149,7 @@ fun InsightsScreen(
             onAddAttachment = viewModel::addAttachmentPath,
             onRemoveAttachment = viewModel::removeAttachmentPath,
             currencySymbol = currencySymbol,
+            isMediaCompressionEnabled = isMediaCompressionEnabled,
             initialContact = searchedContacts.find { it.id == editingTransaction!!.contactId },
             isContactLocked = true
         )

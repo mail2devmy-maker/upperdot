@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 
 import com.mail2dev.upperdot.data.local.entity.BankCardEntity
 import com.mail2dev.upperdot.data.repository.BankCardRepository
+import com.mail2dev.upperdot.data.repository.PreferenceRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -22,10 +23,17 @@ data class BankCard(
     val qrImagePath: String? = null
 )
 
-class DigitalWalletViewModel(private val repository: BankCardRepository) : ViewModel() {
+class DigitalWalletViewModel(
+    private val repository: BankCardRepository,
+    private val preferenceRepository: PreferenceRepository
+) : ViewModel() {
 
     private val _isPremium = MutableStateFlow(true) // Placeholder
     val isPremium: StateFlow<Boolean> = _isPremium.asStateFlow()
+
+    val isMediaCompressionEnabled: StateFlow<Boolean> = preferenceRepository.preferences
+        .map { it.isMediaCompressionEnabled }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
     val bankCards: StateFlow<List<BankCard>> = repository.allCards
         .map { entities -> entities.map { it.toModel() } }

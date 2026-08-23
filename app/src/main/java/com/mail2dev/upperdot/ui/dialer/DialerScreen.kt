@@ -1,14 +1,12 @@
 package com.mail2dev.upperdot.ui.dialer
 
 import android.Manifest
-import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -17,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -35,6 +34,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import com.mail2dev.upperdot.ui.call_history.CallHistoryViewModel
 import com.mail2dev.upperdot.ui.theme.AccentCyan
 import com.mail2dev.upperdot.ui.theme.Surface
 import com.mail2dev.upperdot.util.TelephonyUtils
@@ -42,9 +42,12 @@ import com.mail2dev.upperdot.util.TelephonyUtils
 @Composable
 fun DialerScreen(
     onNavigateBack: () -> Unit,
-    onNavigateToAddContact: (String) -> Unit
+    onNavigateToAddContact: (String) -> Unit,
+    onNavigateToContact: (Long) -> Unit,
+    viewModel: CallHistoryViewModel
 ) {
     var dialValue by remember { mutableStateOf(TextFieldValue("")) }
+    val searchResults by viewModel.searchResults.collectAsState()
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
     
@@ -76,19 +79,25 @@ fun DialerScreen(
         val newText = StringBuilder(dialValue.text).replace(start, end, digit).toString()
         val newSelection = TextRange(start + 1)
         dialValue = TextFieldValue(newText, newSelection)
+        viewModel.onSearchQueryChanged(newText)
     }
 
     fun handleBackspace() {
+        var newText = dialValue.text
+        var newSelection = dialValue.selection
+        
         if (dialValue.selection.length > 0) {
             val start = dialValue.selection.start
             val end = dialValue.selection.end
-            val newText = StringBuilder(dialValue.text).delete(start, end).toString()
-            dialValue = TextFieldValue(newText, TextRange(start))
+            newText = StringBuilder(dialValue.text).delete(start, end).toString()
+            newSelection = TextRange(start)
         } else if (dialValue.selection.start > 0) {
             val index = dialValue.selection.start
-            val newText = StringBuilder(dialValue.text).deleteCharAt(index - 1).toString()
-            dialValue = TextFieldValue(newText, TextRange(index - 1))
+            newText = StringBuilder(dialValue.text).deleteCharAt(index - 1).toString()
+            newSelection = TextRange(index - 1)
         }
+        dialValue = TextFieldValue(newText, newSelection)
+        viewModel.onSearchQueryChanged(newText)
     }
 
     Surface(
@@ -130,7 +139,10 @@ fun DialerScreen(
             // Interactive Number Display
             BasicTextField(
                 value = dialValue,
-                onValueChange = { dialValue = it },
+                onValueChange = { 
+                    dialValue = it
+                    viewModel.onSearchQueryChanged(it.text)
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 16.dp),
@@ -144,6 +156,64 @@ fun DialerScreen(
                 readOnly = false,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
             )
+
+            // Search Results Chips
+            if (searchResults.isNotEmpty()) {
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    contentPadding = PaddingValues(horizontal = 16.dp)
+                ) {
+                    items(searchResults) { contact ->
+                        SuggestionChip(
+                            onClick = {
+                                contact.phoneNumbers.firstOrNull()?.let { num ->
+                                    val requiredPermissions = arrayOf(
+                                        Manifest.permission.CALL_PHONE,
+                                        Manifest.permission.RECORD_AUDIO,
+                                        Manifest.permission.READ_PHONE_STATE
+                                    )
+                                    val missingPermissions = requiredPermissions.filter {
+                                        ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
+                                    }
+                                    if (missingPermissions.isEmpty()) {
+                                        viewModel.makeCall(num)
+                                    } else {
+                                        dialValue = TextFieldValue(num, TextRange(num.length))
+                                        permissionLauncher.launch(requiredPermissions)
+                                    }
+                                }
+                            },
+                            label = { 
+                                Text(
+                                    text = contact.fullName,
+                                    color = AccentCyan,
+                                    fontSize = 12.sp
+                                ) 
+                            },
+                            icon = {
+                                Icon(
+                                    imageVector = Icons.Default.Phone,
+                                    contentDescription = null,
+                                    tint = AccentCyan,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            },
+                            colors = SuggestionChipDefaults.suggestionChipColors(
+                                containerColor = Surface
+                            ),
+                            border = SuggestionChipDefaults.suggestionChipBorder(
+                                enabled = true,
+                                borderColor = AccentCyan.copy(alpha = 0.3f)
+                            ),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.padding(horizontal = 4.dp)
+                        )
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 

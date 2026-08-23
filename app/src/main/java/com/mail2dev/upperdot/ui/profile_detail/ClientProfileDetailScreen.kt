@@ -53,6 +53,7 @@ fun ClientProfileDetailScreen(
     val selectedAttachments by viewModel.selectedAttachments.collectAsState()
     val contactSearchQuery by viewModel.contactSearchQuery.collectAsState()
     val searchedContacts by viewModel.searchedContacts.collectAsState()
+    val isMediaCompressionEnabled by viewModel.isMediaCompressionEnabled.collectAsState()
 
     var showDeleteDialog by remember { mutableStateOf(false) }
     var selectedNote by remember { mutableStateOf<NoteEntity?>(null) }
@@ -119,6 +120,7 @@ fun ClientProfileDetailScreen(
             onAddAttachment = viewModel::addAttachmentPath,
             onRemoveAttachment = viewModel::removeAttachmentPath,
             currencySymbol = currencySymbol,
+            isMediaCompressionEnabled = isMediaCompressionEnabled,
             initialContact = searchedContacts.find { it.id == editingNote!!.contactId },
             isContactLocked = true
         )
@@ -154,6 +156,7 @@ fun ClientProfileDetailScreen(
             onAddAttachment = viewModel::addAttachmentPath,
             onRemoveAttachment = viewModel::removeAttachmentPath,
             currencySymbol = currencySymbol,
+            isMediaCompressionEnabled = isMediaCompressionEnabled,
             initialContact = searchedContacts.find { it.id == editingTransaction!!.contactId },
             isContactLocked = true
         )

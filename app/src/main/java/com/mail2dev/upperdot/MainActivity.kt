@@ -315,7 +315,11 @@ fun RootNavigation() {
             val callHistoryViewModel: com.mail2dev.upperdot.ui.call_history.CallHistoryViewModel = viewModel(
                 factory = viewModelFactory {
                     initializer {
-                        com.mail2dev.upperdot.ui.call_history.CallHistoryViewModel(app.callLogRepository, app.applicationContext)
+                        com.mail2dev.upperdot.ui.call_history.CallHistoryViewModel(
+                            app.callLogRepository,
+                            app.contactRepository,
+                            app.applicationContext
+                        )
                     }
                 }
             )
@@ -340,11 +344,26 @@ fun RootNavigation() {
         }
 
         composable("dialer") {
+            val callHistoryViewModel: com.mail2dev.upperdot.ui.call_history.CallHistoryViewModel = viewModel(
+                factory = viewModelFactory {
+                    initializer {
+                        com.mail2dev.upperdot.ui.call_history.CallHistoryViewModel(
+                            app.callLogRepository,
+                            app.contactRepository,
+                            app.applicationContext
+                        )
+                    }
+                }
+            )
             DialerScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToAddContact = { phone: String ->
                     navController.navigate("add_contact?contactId=&phone=$phone")
-                }
+                },
+                onNavigateToContact = { contactId ->
+                    navController.navigate("client_profile/$contactId")
+                },
+                viewModel = callHistoryViewModel
             )
         }
 
@@ -415,7 +434,7 @@ fun RootNavigation() {
             val walletViewModel: DigitalWalletViewModel = viewModel(
                 factory = viewModelFactory {
                     initializer {
-                        DigitalWalletViewModel(app.bankCardRepository)
+                        DigitalWalletViewModel(app.bankCardRepository, app.preferenceRepository)
                     }
                 }
             )
@@ -440,7 +459,7 @@ fun RootNavigation() {
             val walletViewModel: DigitalWalletViewModel = viewModel(
                 factory = viewModelFactory {
                     initializer {
-                        DigitalWalletViewModel(app.bankCardRepository)
+                        DigitalWalletViewModel(app.bankCardRepository, app.preferenceRepository)
                     }
                 }
             )

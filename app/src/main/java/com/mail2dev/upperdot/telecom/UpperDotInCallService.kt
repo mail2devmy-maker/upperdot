@@ -15,7 +15,7 @@ import com.mail2dev.upperdot.UpperDotApp
 import kotlinx.coroutines.*
 
 class UpperDotInCallService : InCallService() {
-    
+
     companion object {
         var instance: UpperDotInCallService? = null
         var activeCall: Call? = null
@@ -27,7 +27,7 @@ class UpperDotInCallService : InCallService() {
         const val ACTION_DECLINE = "com.mail2dev.upperdot.ACTION_DECLINE"
         const val ACTION_HANGUP = "com.mail2dev.upperdot.ACTION_HANGUP"
         const val ACTION_TOGGLE_MUTE = "com.mail2dev.upperdot.ACTION_TOGGLE_MUTE"
-        
+
         const val MISSED_CALL_CHANNEL_ID = "missed_calls"
         const val MISSED_CALL_NOTIFICATION_ID = 102
     }
@@ -82,11 +82,15 @@ class UpperDotInCallService : InCallService() {
         super.onCallAdded(call)
         val handle = call.details.handle?.schemeSpecificPart ?: "Unknown"
         Log.d("UpperDotInCallService", "Call added: $handle")
+        instance = this
         activeCall = call
         wasCallAnswered = false
         resolvedCallerName = null
         call.registerCallback(callCallback)
-        
+
+        // Trigger notification
+        updateNotification(call)
+
         // Asynchronous Name Resolution
         if (!com.mail2dev.upperdot.util.ContactUtils.isUssdCode(handle)) {
             serviceScope.launch {
@@ -99,33 +103,33 @@ class UpperDotInCallService : InCallService() {
             }
         }
 
-        updateNotification(call)
-
-        // For outgoing calls, show UI immediately.
-        // For incoming calls, rely on full-screen intent in notification (which only triggers full screen if locked).
-        @Suppress("DEPRECATION")
-        if (call.state != Call.STATE_RINGING) {
-            showInCallActivity()
-        }
+        // Force activity launch directly for all calls
+        showInCallActivity()
     }
 
     private fun showInCallActivity() {
         val intent = Intent(this, InCallActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or 
-                    Intent.FLAG_ACTIVITY_SINGLE_TOP or 
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
                     Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
         }
-        startActivity(intent)
+
+        try {
+            startActivity(intent)
+        } catch (e: Exception) {
+            Log.e("UpperDotInCallService", "Failed to launch InCallActivity directly from service", e)
+        }
     }
 
     override fun onCallRemoved(call: Call) {
         super.onCallRemoved(call)
         Log.d("UpperDotInCallService", "Call removed")
-        
+
         // Handle missed call notification
         if (!wasCallAnswered && call.state == Call.STATE_DISCONNECTED) {
             val cause = call.details.disconnectCause
-            if (cause.code == android.telecom.DisconnectCause.MISSED || 
+            if (cause.code == android.telecom.DisconnectCause.MISSED ||
                 cause.code == android.telecom.DisconnectCause.CANCELED) {
                 showMissedCallNotification(call)
             }
@@ -137,6 +141,50 @@ class UpperDotInCallService : InCallService() {
         }
         stopForeground(STOP_FOREGROUND_REMOVE)
         (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).cancel(NOTIFICATION_ID)
+    }
+    private fun showCallNotification(call: Call) {
+        val CHANNEL_ID = "upperdot_incall_channel"
+        val NOTIFICATION_ID = 1001
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                "In-Call Screen",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Active incoming and outgoing call overlay"
+                lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
+            }
+            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            manager.createNotificationChannel(channel)
+        }
+
+        val intent = Intent(this, InCallActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle("Incoming Call")
+            .setContentText("Tap to open call controls")
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_CALL)
+            .setOngoing(true)
+            .setFullScreenIntent(pendingIntent, true) // Launches screen when locked or app closed
+            .setContentIntent(pendingIntent)
+
+        try {
+            startForeground(NOTIFICATION_ID, builder.build())
+        } catch (e: Exception) {
+            Log.e("InCallService", "Error starting foreground service", e)
+        }
     }
 
     private fun createMissedCallChannel() {
@@ -156,7 +204,7 @@ class UpperDotInCallService : InCallService() {
     private fun showMissedCallNotification(call: Call) {
         val handle = call.details.handle?.schemeSpecificPart ?: "Unknown"
         val displayName = resolvedCallerName ?: handle
-        
+
         val contentIntent = PendingIntent.getActivity(
             this, 0,
             Intent(this, com.mail2dev.upperdot.MainActivity::class.java).apply {
@@ -182,16 +230,17 @@ class UpperDotInCallService : InCallService() {
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                "Ongoing Calls",
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
+            val name = "In-Call Screen"
+            val descriptionText = "Active incoming and outgoing call notification"
+            val importance = NotificationManager.IMPORTANCE_HIGH
+            val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
+                description = descriptionText
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-                setSound(null, null) // In-Call UI handles its own audio
+                enableVibration(true)
+                setBypassDnd(true)
             }
-            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            manager.createNotificationChannel(channel)
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
         }
     }
 
@@ -206,7 +255,7 @@ class UpperDotInCallService : InCallService() {
         val displayName = resolvedCallerName ?: handle
         val state = call.state
         val isMuted = callAudioState?.isMuted ?: false
-        
+
         val contentIntent = PendingIntent.getActivity(
             this, 0,
             Intent(this, InCallActivity::class.java).apply {
@@ -239,7 +288,7 @@ class UpperDotInCallService : InCallService() {
             )
 
             builder.setFullScreenIntent(contentIntent, true)
-            
+
             val style = NotificationCompat.CallStyle.forIncomingCall(
                 Person.Builder().setName(displayName).build(),
                 declineIntent,
@@ -258,7 +307,7 @@ class UpperDotInCallService : InCallService() {
                 Intent(this, UpperDotInCallService::class.java).apply { action = ACTION_TOGGLE_MUTE },
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
-            
+
             val style = NotificationCompat.CallStyle.forOngoingCall(
                 Person.Builder().setName(displayName).build(),
                 hangupIntent

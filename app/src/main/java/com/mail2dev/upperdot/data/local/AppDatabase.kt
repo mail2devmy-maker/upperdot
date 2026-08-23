@@ -3,6 +3,8 @@ package com.mail2dev.upperdot.data.local
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.mail2dev.upperdot.data.local.converter.ComplexTypeConverters
 import com.mail2dev.upperdot.data.local.converter.ListConverter
 import com.mail2dev.upperdot.data.local.dao.BankCardDao
@@ -38,4 +40,12 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun bankCardDao(): BankCardDao
     abstract fun preferenceDao(): PreferenceDao
     abstract fun savedBankDao(): SavedBankDao
+
+    companion object {
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE app_preferences ADD COLUMN isMediaCompressionEnabled INTEGER NOT NULL DEFAULT 1")
+            }
+        }
+    }
 }

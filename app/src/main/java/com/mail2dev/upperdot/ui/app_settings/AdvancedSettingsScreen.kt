@@ -40,6 +40,7 @@ fun AdvancedSettingsScreen(
 ) {
     val context = LocalContext.current
     val syncOverWifi by viewModel.syncOverWifi.collectAsState()
+    val isMediaCompressionEnabled by viewModel.isMediaCompressionEnabled.collectAsState()
     val syncFrequency by viewModel.syncFrequency.collectAsState()
     val currencySymbol by viewModel.currencySymbol.collectAsState()
     val diagnostics by viewModel.diagnostics.collectAsState()
@@ -288,11 +289,12 @@ fun AdvancedSettingsScreen(
                             onClick = { viewModel.requestClearCache() }
                         )
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.DarkGray.copy(alpha = 0.3f))
-                        SettingsListItem(
+                        SettingsToggleItem(
                             icon = Icons.Default.HighQuality,
                             title = "Media Compression",
-                            subtitle = "Medium",
-                            onClick = {} // Locked to Medium
+                            subtitle = "Medium (Downscale & JPEG 80%)",
+                            checked = isMediaCompressionEnabled,
+                            onCheckedChange = { viewModel.toggleMediaCompression(it) }
                         )
                     }
                 }

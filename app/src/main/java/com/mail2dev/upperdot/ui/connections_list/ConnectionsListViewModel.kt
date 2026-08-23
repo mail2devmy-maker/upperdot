@@ -66,6 +66,10 @@ class ConnectionsListViewModel(
         .map { it.currencySymbol }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "$")
 
+    val isMediaCompressionEnabled: StateFlow<Boolean> = preferenceRepository.preferences
+        .map { it.isMediaCompressionEnabled }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
     val searchedContacts: StateFlow<List<ContactSummary>> = _contactSearchQuery
         .debounce(300)
         .flatMapLatest { query ->

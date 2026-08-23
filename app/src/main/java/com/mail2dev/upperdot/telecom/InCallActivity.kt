@@ -6,21 +6,21 @@ import android.content.Intent
 import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
 import android.telecom.Call
 import android.telecom.CallAudioState
+import android.util.Log
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import com.mail2dev.upperdot.ui.theme.UpperDotTheme
 import androidx.lifecycle.lifecycleScope
+import com.mail2dev.upperdot.ui.theme.UpperDotTheme
 import kotlinx.coroutines.launch
-
-import android.util.Log
 
 class InCallActivity : ComponentActivity() {
 
@@ -28,7 +28,7 @@ class InCallActivity : ComponentActivity() {
     private var isMuted by mutableStateOf(false)
     private var isSpeakerOn by mutableStateOf(false)
     private var callerName by mutableStateOf<String?>(null)
-    
+
     private lateinit var audioManager: AudioManager
 
     private val callback = object : Call.Callback() {
@@ -37,9 +37,9 @@ class InCallActivity : ComponentActivity() {
             if (state == Call.STATE_DISCONNECTED) {
                 val cause = call.details?.disconnectCause
                 val extras = call.details?.extras
-                
+
                 Log.d("CallDebug", "Reason: ${cause?.reason}, Code: ${cause?.code}")
-                
+
                 // Log extra telecom state details if available
                 extras?.keySet()?.forEach { key ->
                     Log.d("CallDebug", "Extra -> $key : ${extras.get(key)}")
@@ -50,7 +50,7 @@ class InCallActivity : ComponentActivity() {
                 oemExtras?.keySet()?.forEach { key ->
                     Log.d("CallDebug", "OEM Extra -> $key : ${oemExtras.get(key)}")
                 }
-                
+
                 cleanupAndFinish()
             }
         }
@@ -59,16 +59,13 @@ class InCallActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        
-        audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        
-        // Initial state from service
-        UpperDotInCallService.instance?.callAudioState?.let {
-            isMuted = it.isMuted
-            isSpeakerOn = it.route == CallAudioState.ROUTE_SPEAKER
-        }
 
-        // Show over lock screen
+        // 1. Force Screen Wakeup via Hardware PowerManager
+        wakeUpDisplay()
+
+        // 2. Window Flags for Keyguard Bypass & Screen Retention
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)
             setTurnScreenOn(true)
@@ -78,10 +75,17 @@ class InCallActivity : ComponentActivity() {
             @Suppress("DEPRECATION")
             window.addFlags(
                 WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
-                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
-                WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
+                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
+                        WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
             )
+        }
+
+        audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+
+        // Initial state from service
+        UpperDotInCallService.instance?.callAudioState?.let {
+            isMuted = it.isMuted
+            isSpeakerOn = it.route == CallAudioState.ROUTE_SPEAKER
         }
 
         val call = UpperDotInCallService.activeCall
@@ -138,6 +142,22 @@ class InCallActivity : ComponentActivity() {
                     }
                 )
             }
+        }
+    }
+
+    private fun wakeUpDisplay() {
+        try {
+            val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+            @Suppress("DEPRECATION")
+            val wakeLock = powerManager.newWakeLock(
+                PowerManager.FULL_WAKE_LOCK or
+                        PowerManager.ACQUIRE_CAUSES_WAKEUP or
+                        PowerManager.ON_AFTER_RELEASE,
+                "UpperDot:InCallWakeLock"
+            )
+            wakeLock.acquire(3000) // Hold backlight awake for 3 seconds during launch
+        } catch (e: Exception) {
+            Log.e("CallDebug", "Failed to acquire WakeLock", e)
         }
     }
 

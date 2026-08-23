@@ -30,6 +30,7 @@ import com.mail2dev.upperdot.data.local.entity.BankCardEntity
 import com.mail2dev.upperdot.ui.components.StitchTextField
 import com.mail2dev.upperdot.ui.theme.*
 import com.mail2dev.upperdot.utils.StorageUtils
+import kotlinx.coroutines.launch
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -37,6 +38,7 @@ import java.io.File
 fun NewBankCardSheet(
     onDismiss: () -> Unit,
     onSave: (String, String, String, Long, String?, String?) -> Unit,
+    isMediaCompressionEnabled: Boolean = true,
     editingCard: BankCardEntity? = null
 ) {
     var bankName by remember { mutableStateOf(editingCard?.bankName ?: "") }
@@ -46,12 +48,20 @@ fun NewBankCardSheet(
     var qrPath by remember { mutableStateOf<String?>(editingCard?.qrImagePath) }
     
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     val qrLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         uri?.let {
-            val path = StorageUtils.copyUriToInternalStorage(context, it, "qrcodes")
-            qrPath = path
+            coroutineScope.launch {
+                val path = StorageUtils.saveUriWithOptionalCompression(
+                    context, 
+                    it, 
+                    isMediaCompressionEnabled,
+                    "qrcodes"
+                )
+                qrPath = path
+            }
         }
     }
     

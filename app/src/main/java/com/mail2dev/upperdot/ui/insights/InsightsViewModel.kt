@@ -125,6 +125,10 @@ class InsightsViewModel(
         .map { it.currencySymbol }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "$")
 
+    val isMediaCompressionEnabled: StateFlow<Boolean> = preferenceRepository.preferences
+        .map { it.isMediaCompressionEnabled }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
     val notes: StateFlow<List<NoteEntry>> = combine(_searchQuery, _selectedContactFilter) { query, filter ->
         query to filter
     }.flatMapLatest { (query, filter) ->

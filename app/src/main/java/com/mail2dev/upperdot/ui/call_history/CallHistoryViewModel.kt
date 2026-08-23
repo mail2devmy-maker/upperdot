@@ -6,8 +6,11 @@ import android.content.Context
 import android.telecom.TelecomManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mail2dev.upperdot.data.local.entity.ContactEntity
+import com.mail2dev.upperdot.data.repository.ContactRepository
 import com.mail2dev.upperdot.data.repository.telephony.CallLogRepository
 import com.mail2dev.upperdot.telecom.UpperDotInCallService
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,6 +37,7 @@ data class GroupedCallLog(
 
 class CallHistoryViewModel(
     private val repository: CallLogRepository,
+    private val contactRepository: ContactRepository,
     private val context: Context
 ) : ViewModel() {
 
@@ -50,12 +54,51 @@ class CallHistoryViewModel(
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
+    private val _searchResults = MutableStateFlow<List<ContactEntity>>(emptyList())
+    val searchResults: StateFlow<List<ContactEntity>> = _searchResults.asStateFlow()
+
+    private var searchJob: Job? = null
+
     fun updatePermissionState(granted: Boolean) {
         _hasPermission.value = granted
         if (granted) {
             refreshCallLogs()
             clearMissedCallNotifications()
         }
+    }
+
+    fun onSearchQueryChanged(query: String) {
+        searchJob?.cancel()
+        if (query.length >= 4) {
+            searchJob = viewModelScope.launch {
+                val contacts = contactRepository.getAllContactsList()
+                val filtered = contacts.filter { contact ->
+                    val t9Name = nameToT9(contact.fullName)
+                    val phoneMatches = contact.phoneNumbers.any { it.contains(query) }
+                    val nameMatches = t9Name.contains(query)
+                    phoneMatches || nameMatches
+                }
+                _searchResults.value = filtered
+            }
+        } else {
+            _searchResults.value = emptyList()
+        }
+    }
+
+    private fun nameToT9(name: String): String {
+        return name.uppercase().map { char ->
+            when (char) {
+                'A', 'B', 'C' -> '2'
+                'D', 'E', 'F' -> '3'
+                'G', 'H', 'I' -> '4'
+                'J', 'K', 'L' -> '5'
+                'M', 'N', 'O' -> '6'
+                'P', 'Q', 'R', 'S' -> '7'
+                'T', 'U', 'V' -> '8'
+                'W', 'X', 'Y', 'Z' -> '9'
+                else -> null
+            }
+        }.filterNotNull().joinToString("")
     }
 
     @SuppressLint("MissingPermission")
@@ -145,6 +188,10 @@ class CallHistoryViewModel(
                 it.copy(isExpanded = !it.isExpanded)
             } else it
         }
+    }
+
+    fun makeCall(phoneNumber: String) {
+        com.mail2dev.upperdot.util.TelephonyUtils.placeOutgoingCall(context, phoneNumber)
     }
 
     fun onAddContactClicked(number: String) {

@@ -36,6 +36,9 @@ class AdvancedSettingsViewModel(
     private val _syncOverWifi = MutableStateFlow(false)
     val syncOverWifi: StateFlow<Boolean> = _syncOverWifi.asStateFlow()
 
+    private val _isMediaCompressionEnabled = MutableStateFlow(true)
+    val isMediaCompressionEnabled: StateFlow<Boolean> = _isMediaCompressionEnabled.asStateFlow()
+
     private val _syncFrequency = MutableStateFlow("1h")
     val syncFrequency: StateFlow<String> = _syncFrequency.asStateFlow()
 
@@ -51,6 +54,7 @@ class AdvancedSettingsViewModel(
                 _syncOverWifi.value = prefs.syncOverWifi
                 _syncFrequency.value = prefs.syncFrequency
                 _currencySymbol.value = prefs.currencySymbol
+                _isMediaCompressionEnabled.value = prefs.isMediaCompressionEnabled
             }
         }
         // Force set to false for first launch if preference has not been updated
@@ -120,6 +124,11 @@ class AdvancedSettingsViewModel(
         updateSyncSchedule()
     }
 
+    fun toggleMediaCompression(enabled: Boolean) {
+        _isMediaCompressionEnabled.value = enabled
+        savePreferences()
+    }
+
     fun onSyncFrequencySelected(frequency: String) {
         _syncFrequency.value = frequency
         _showFrequencyDialog.value = false
@@ -132,7 +141,8 @@ class AdvancedSettingsViewModel(
             val prefs = PreferenceEntity(
                 syncOverWifi = _syncOverWifi.value,
                 syncFrequency = _syncFrequency.value,
-                currencySymbol = _currencySymbol.value
+                currencySymbol = _currencySymbol.value,
+                isMediaCompressionEnabled = _isMediaCompressionEnabled.value
             )
             preferenceRepository.savePreferences(prefs)
         }

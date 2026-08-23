@@ -36,6 +36,7 @@ fun DigitalWalletScreen(
 ) {
     val bankCards by viewModel.bankCards.collectAsState()
     val isPremium by viewModel.isPremium.collectAsState()
+    val isMediaCompressionEnabled by viewModel.isMediaCompressionEnabled.collectAsState()
     val showAddCardSheet by viewModel.showAddCardSheet.collectAsState()
     val editingCard by viewModel.editingCard.collectAsState()
 
@@ -45,6 +46,7 @@ fun DigitalWalletScreen(
             onSave = { bank, holder, number, color, swift, qr -> 
                 viewModel.saveCard(bank, holder, number, color, swift, qr)
             },
+            isMediaCompressionEnabled = isMediaCompressionEnabled,
             editingCard = editingCard
         )
     }

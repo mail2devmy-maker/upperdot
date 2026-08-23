@@ -871,3 +871,11 @@ This file tracks all technical conflicts, layout choices, and architectural deci
   - *Conflict 2: Country Detection:* How to know the user's location? *Decision:* Priority check: 1. `simCountryIso` (Active SIM network) -> 2. `Locale.getDefault().country` (System setting). This provides the most accurate local context.
 - **Final Decision:** Implement a centralized `TelephonyUtils.placeOutgoingCall` using `TelephonyManager` for country detection and `PhoneNumberUtils` for E.164 standard compliance.
 - **Impact:** `TelephonyUtils.kt`, `DialerScreen.kt`, `ConnectionsListScreen.kt`.
+
+### 2024-05-20 - Non-Destructive Room Migration (Version 1 -> 2)
+- **Context/Goal:** Implement a production-safe migration to add `isMediaCompressionEnabled` to the `app_preferences` table without data loss.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Column Default Value:* `0` (False) vs `1` (True). *Decision:* Set default to `1` (True) to match the `PreferenceEntity` declaration where compression is enabled by default.
+  - *Conflict 2: Migration Strategy:* Destructive vs Non-destructive. *Decision:* Non-destructive was mandatory. Removed `.fallbackToDestructiveMigration()` from the Room builder and added an explicit `Migration(1, 2)` object using `ALTER TABLE` SQL.
+- **Final Decision:** Implement `MIGRATION_1_2` in `AppDatabase.kt` and wire it in `UpperDotApp.kt`. Verified the table name as `app_preferences` from the Entity definition.
+- **Impact:** `AppDatabase.kt`, `UpperDotApp.kt`, `PreferenceEntity.kt`.

@@ -71,6 +71,7 @@ fun ConnectionsListScreen(
     val searchedContacts by viewModel.searchedContacts.collectAsState()
     val selectedAttachments by viewModel.selectedAttachments.collectAsState()
     val currencySymbol by viewModel.currencySymbol.collectAsState()
+    val isMediaCompressionEnabled by viewModel.isMediaCompressionEnabled.collectAsState()
 
     var whatsappTargetContact by remember { mutableStateOf<ContactSummary?>(null) }
     val context = LocalContext.current
@@ -157,6 +158,7 @@ fun ConnectionsListScreen(
             onAddAttachment = viewModel::addAttachmentPath,
             onRemoveAttachment = viewModel::removeAttachmentPath,
             currencySymbol = currencySymbol,
+            isMediaCompressionEnabled = isMediaCompressionEnabled,
             initialContact = preSelectedContact?.let { com.mail2dev.upperdot.ui.insights.ContactSummary(it.id, it.fullName) },
             isContactLocked = preSelectedContact != null
         )
@@ -175,6 +177,7 @@ fun ConnectionsListScreen(
             onAddAttachment = viewModel::addAttachmentPath,
             onRemoveAttachment = viewModel::removeAttachmentPath,
             currencySymbol = currencySymbol,
+            isMediaCompressionEnabled = isMediaCompressionEnabled,
             initialContact = preSelectedContact?.let { com.mail2dev.upperdot.ui.insights.ContactSummary(it.id, it.fullName) },
             isContactLocked = preSelectedContact != null
         )

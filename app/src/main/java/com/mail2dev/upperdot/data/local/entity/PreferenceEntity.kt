@@ -11,5 +11,6 @@ data class PreferenceEntity(
     val syncOverWifi: Boolean = false,
     val syncFrequency: String = "1h",
     val currencySymbol: String = "$",
-    val lastSyncTime: Long = 0L
+    val lastSyncTime: Long = 0L,
+    val isMediaCompressionEnabled: Boolean = true
 )

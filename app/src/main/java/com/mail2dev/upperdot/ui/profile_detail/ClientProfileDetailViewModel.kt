@@ -82,6 +82,10 @@ class ClientProfileDetailViewModel(
         .map { it.currencySymbol }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "$")
 
+    val isMediaCompressionEnabled: StateFlow<Boolean> = preferenceRepository.preferences
+        .map { it.isMediaCompressionEnabled }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
     private val _isNotesExpanded = MutableStateFlow(true)
     val isNotesExpanded: StateFlow<Boolean> = _isNotesExpanded.asStateFlow()
 

@@ -2,6 +2,7 @@ package com.mail2dev.upperdot.utils
 
 import android.content.Context
 import android.net.Uri
+import com.mail2dev.upperdot.util.ImageCompressor
 import java.io.File
 import java.io.FileOutputStream
 import java.util.UUID
@@ -27,6 +28,40 @@ object StorageUtils {
         } catch (e: Exception) {
             e.printStackTrace()
             null
+        }
+    }
+
+    suspend fun saveUriWithOptionalCompression(
+        context: Context,
+        uri: Uri,
+        shouldCompress: Boolean,
+        folderName: String = "attachments"
+    ): String? {
+        return if (shouldCompress && context.contentResolver.getType(uri)?.startsWith("image") == true) {
+            try {
+                val compressedFile = ImageCompressor.compressImage(context, uri)
+                if (compressedFile != null) {
+                    val fileName = "${UUID.randomUUID()}.jpg"
+                    val folder = File(context.filesDir, folderName)
+                    if (!folder.exists()) folder.mkdirs()
+                    val destinationFile = File(folder, fileName)
+                    
+                    compressedFile.inputStream().use { input ->
+                        FileOutputStream(destinationFile).use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                    compressedFile.delete()
+                    destinationFile.absolutePath
+                } else {
+                    copyUriToInternalStorage(context, uri, folderName)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                copyUriToInternalStorage(context, uri, folderName)
+            }
+        } else {
+            copyUriToInternalStorage(context, uri, folderName)
         }
     }
 }
