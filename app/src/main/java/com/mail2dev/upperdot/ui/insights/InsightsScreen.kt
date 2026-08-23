@@ -24,8 +24,8 @@ import com.mail2dev.upperdot.ui.components.FilterCapsule
 import com.mail2dev.upperdot.ui.components.NoteViewerSheet
 import com.mail2dev.upperdot.ui.components.TransactionViewerSheet
 import com.mail2dev.upperdot.ui.components.UpperDotBottomNavigation
-import com.mail2dev.upperdot.ui.new_cash_transaction.NewCashTransactionSheet
-import com.mail2dev.upperdot.ui.new_relationship_note.NewRelationshipNoteSheet
+import com.mail2dev.upperdot.ui.new_cash_transaction.TransactionSheet
+import com.mail2dev.upperdot.ui.new_relationship_note.RelationshipNoteSheet
 import com.mail2dev.upperdot.ui.theme.*
 import kotlinx.coroutines.flow.collectLatest
 import java.util.Locale
@@ -45,7 +45,9 @@ fun InsightsScreen(
     val totalExpenses by viewModel.totalExpenses.collectAsState()
     val netProfit by viewModel.netProfit.collectAsState()
     val showAddNoteSheet by viewModel.showAddNoteSheet.collectAsState()
+    val editingNote by viewModel.editingNote.collectAsState()
     val showAddTransactionSheet by viewModel.showAddTransactionSheet.collectAsState()
+    val editingTransaction by viewModel.editingTransaction.collectAsState()
     val contactNames by viewModel.contactNames.collectAsState()
     val selectedAttachments by viewModel.selectedAttachments.collectAsState()
     val contactSearchQuery by viewModel.contactSearchQuery.collectAsState()
@@ -64,13 +66,13 @@ fun InsightsScreen(
     }
 
     if (showAddNoteSheet) {
-        NewRelationshipNoteSheet(
+        RelationshipNoteSheet(
             onDismiss = {
                 viewModel.dismissAddNoteSheet()
                 viewModel.clearTemporaryNoteState()
             },
-            onSave = { contactId, title, content, attachments, voice -> 
-                viewModel.saveNote(contactId, title, content, attachments, voice) 
+            onSave = { contactId, title, content, attachments, voice, noteId, createdAt -> 
+                viewModel.saveNote(contactId, title, content, attachments, voice, noteId, createdAt)
                 viewModel.clearTemporaryNoteState()
             },
             contactSearchQuery = contactSearchQuery,
@@ -84,11 +86,36 @@ fun InsightsScreen(
         )
     }
 
+    if (editingNote != null) {
+        RelationshipNoteSheet(
+            existingNote = editingNote,
+            onDismiss = {
+                viewModel.dismissEditNote()
+            },
+            onSave = { contactId, title, content, attachments, voice, noteId, createdAt -> 
+                viewModel.saveNote(contactId, title, content, attachments, voice, noteId, createdAt)
+            },
+            contactSearchQuery = contactSearchQuery,
+            onContactSearchQueryChange = viewModel::onContactSearchQueryChanged,
+            searchedContacts = searchedContacts,
+            attachmentPaths = selectedAttachments,
+            onAddAttachment = viewModel::addAttachmentPath,
+            onRemoveAttachment = viewModel::removeAttachmentPath,
+            currencySymbol = currencySymbol,
+            initialContact = searchedContacts.find { it.id == editingNote!!.contactId },
+            isContactLocked = true
+        )
+    }
+
     if (showAddTransactionSheet) {
-        NewCashTransactionSheet(
-            onDismiss = viewModel::dismissAddTransactionSheet,
-            onSave = { contactId, isRevenue, title, amount, detail, attachments, voice -> 
-                viewModel.saveTransaction(contactId, isRevenue, title, amount, detail, attachments, voice) 
+        TransactionSheet(
+            onDismiss = {
+                viewModel.dismissAddTransactionSheet()
+                viewModel.clearTemporaryNoteState()
+            },
+            onSave = { contactId, isRevenue, title, amount, detail, attachments, voice, transactionId, createdAt -> 
+                viewModel.saveTransaction(contactId, isRevenue, title, amount, detail, attachments, voice, transactionId, createdAt) 
+                viewModel.clearTemporaryNoteState()
             },
             contactSearchQuery = contactSearchQuery,
             onContactSearchQueryChange = viewModel::onContactSearchQueryChanged,
@@ -101,12 +128,34 @@ fun InsightsScreen(
         )
     }
 
+    if (editingTransaction != null) {
+        TransactionSheet(
+            existingTransaction = editingTransaction,
+            onDismiss = {
+                viewModel.dismissEditTransaction()
+            },
+            onSave = { contactId, isRevenue, title, amount, detail, attachments, voice, transactionId, createdAt -> 
+                viewModel.saveTransaction(contactId, isRevenue, title, amount, detail, attachments, voice, transactionId, createdAt) 
+            },
+            onDelete = viewModel::deleteTransaction,
+            contactSearchQuery = contactSearchQuery,
+            onContactSearchQueryChange = viewModel::onContactSearchQueryChanged,
+            searchedContacts = searchedContacts,
+            receiptPaths = selectedAttachments,
+            onAddAttachment = viewModel::addAttachmentPath,
+            onRemoveAttachment = viewModel::removeAttachmentPath,
+            currencySymbol = currencySymbol,
+            initialContact = searchedContacts.find { it.id == editingTransaction!!.contactId },
+            isContactLocked = true
+        )
+    }
+
     if (selectedNote != null) {
         NoteViewerSheet(
             note = selectedNote!!,
             sheetState = sheetState,
             onDismiss = viewModel::dismissNoteViewer,
-            onUpdate = viewModel::updateNote,
+            onEdit = { viewModel.onEditNote(it) },
             onDelete = viewModel::deleteNote
         )
     }
@@ -117,7 +166,7 @@ fun InsightsScreen(
             currencySymbol = currencySymbol,
             sheetState = sheetState,
             onDismiss = viewModel::dismissTransactionViewer,
-            onUpdate = viewModel::updateTransaction,
+            onEdit = { viewModel.onEditTransaction(it) },
             onDelete = viewModel::deleteTransaction
         )
     }
@@ -192,6 +241,17 @@ fun InsightsScreen(
                         )
                     },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = AccentCyan) },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { viewModel.onSearchQueryChanged("") }) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Clear Search",
+                                    tint = TextSecondary
+                                )
+                            }
+                        }
+                    },
                     shape = RoundedCornerShape(16.dp),
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Surface,

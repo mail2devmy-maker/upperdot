@@ -3,6 +3,7 @@ package com.mail2dev.upperdot.ui.add_contact
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mail2dev.upperdot.data.local.entity.ContactEntity
+import com.mail2dev.upperdot.data.repository.BankSuggestionRepository
 import com.mail2dev.upperdot.data.repository.ContactRepository
 import com.mail2dev.upperdot.data.repository.HierarchyRepository
 import com.mail2dev.upperdot.ui.relationship_hierarchy.HierarchyGroup
@@ -20,14 +21,15 @@ data class SocialProfile(
 
 @Serializable
 data class BankAccount(
-    val bankName: String = "Maybank",
+    val bankName: String = "",
     val holderName: String = "",
     val accountNumber: String = ""
 )
 
 class AddContactViewModel(
     private val repository: ContactRepository,
-    private val hierarchyRepository: HierarchyRepository
+    private val hierarchyRepository: HierarchyRepository,
+    private val bankSuggestionRepository: BankSuggestionRepository
 ) : ViewModel() {
 
     private var editingContactId: Long? = null
@@ -70,6 +72,9 @@ class AddContactViewModel(
     // Step 4: Financial
     private val _bankAccounts = MutableStateFlow(listOf(BankAccount()))
     val bankAccounts: StateFlow<List<BankAccount>> = _bankAccounts.asStateFlow()
+
+    val savedBanks: StateFlow<List<String>> = bankSuggestionRepository.savedBanks
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // UI State
     private val _currentStep = MutableStateFlow(0)
@@ -177,6 +182,25 @@ class AddContactViewModel(
         _socialProfiles.value = _socialProfiles.value + SocialProfile()
     }
 
+    // Bank Suggestion Management
+    fun onAddCustomBank(name: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            bankSuggestionRepository.saveBankName(name)
+        }
+    }
+
+    fun onRenameBank(oldName: String, newName: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            bankSuggestionRepository.renameBank(oldName, newName)
+        }
+    }
+
+    fun onDeleteBank(name: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            bankSuggestionRepository.deleteBank(name)
+        }
+    }
+
     // Corporate Updates
     fun onCompanyNameChange(value: String) { _companyName.value = value }
     fun onBusinessCategoryChange(value: String) { _businessCategory.value = value }
@@ -239,12 +263,15 @@ class AddContactViewModel(
         }
         
         viewModelScope.launch(Dispatchers.IO) {
+            val primaryPhone = _phoneNumbers.value.firstOrNull() ?: ""
+            val sanitized = com.mail2dev.upperdot.util.ContactUtils.smartSanitize(primaryPhone)
+            
             val entity = ContactEntity(
                 id = editingContactId ?: 0L,
                 fullName = _fullName.value,
                 nicknames = _nicknames.value.split(",").map { it.trim() }.filter { it.isNotEmpty() },
                 phoneNumbers = _phoneNumbers.value.filter { it.isNotEmpty() },
-                sanitizedPrimaryPhone = _phoneNumbers.value.firstOrNull()?.replace(Regex("[^0-9]"), "") ?: "",
+                sanitizedPrimaryPhone = sanitized,
                 emails = _emails.value.filter { it.isNotEmpty() },
                 groupName = _groupName.value.ifEmpty { "Unassigned" },
                 tagName = _tagName.value.ifEmpty { null },
@@ -259,6 +286,13 @@ class AddContactViewModel(
                 repository.updateContact(entity)
             } else {
                 repository.insertContact(entity)
+            }
+
+            // Learning: Save new bank names to suggestions
+            _bankAccounts.value.forEach { account ->
+                if (account.bankName.isNotBlank()) {
+                    bankSuggestionRepository.saveBankName(account.bankName)
+                }
             }
 
             withContext(Dispatchers.Main) {

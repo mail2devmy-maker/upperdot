@@ -18,6 +18,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -123,6 +124,7 @@ fun QuickCardDisplay(
 ) {
     var showFullScreenQr by remember { mutableStateOf(false) }
     val bankColor = Color(card.themeColor.toInt())
+    val context = LocalContext.current
 
     if (showFullScreenQr) {
         FullScreenQrDialog(
@@ -131,47 +133,49 @@ fun QuickCardDisplay(
         )
     }
 
-    Column(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp)
-            .background(Surface, RoundedCornerShape(24.dp))
             .border(
                 width = 2.dp,
                 color = bankColor.copy(alpha = 0.30f),
-                shape = RoundedCornerShape(24.dp)
-            )
-            .background(bankColor.copy(alpha = 0.20f), RoundedCornerShape(24.dp))
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+                shape = RoundedCornerShape(20.dp)
+            ),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Surface)
     ) {
-        Text(
-            text = card.bankName.uppercase(),
-            color = Color.White,
-            style = TextStyle(
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.5.sp
-            )
-        )
-        Text(text = card.cardHolderName, color = TextSecondary, fontSize = 14.sp)
-        
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // QR and Share Layout Block
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(bankColor.copy(alpha = 0.20f))
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Text(
+                text = card.bankName.uppercase(),
+                color = Color.White,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 1.sp
+            )
+            Text(
+                text = card.cardHolderName,
+                color = TextSecondary,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium
+            )
+            
+            Spacer(modifier = Modifier.height(20.dp))
+
             // White QR Card Template
             Surface(
                 modifier = Modifier
-                    .size(220.dp) // Slightly reduced to ensure fit on smaller screens
+                    .fillMaxWidth(0.85f)
+                    .height(200.dp)
+                    .clipToBounds()
                     .clickable { showFullScreenQr = true },
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(12.dp),
                 color = Color.White
             ) {
                 Box(contentAlignment = Alignment.Center) {
@@ -181,7 +185,7 @@ fun QuickCardDisplay(
                             contentDescription = "QR Code",
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(20.dp),
+                                .padding(16.dp),
                             contentScale = ContentScale.Fit
                         )
                     } else {
@@ -189,77 +193,90 @@ fun QuickCardDisplay(
                             imageVector = Icons.Default.QrCode2,
                             contentDescription = null,
                             tint = Color.Black,
-                            modifier = Modifier.size(140.dp)
+                            modifier = Modifier.size(120.dp)
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // Glassmorphic Share Action Button
-            val context = LocalContext.current
-            Surface(
-                shape = CircleShape,
-                color = Color.White.copy(alpha = 0.15f),
-                modifier = Modifier
-                    .size(44.dp) // Reduced size to sit cleanly inside safe zone
-                    .border(1.dp, Color.White.copy(alpha = 0.3f), CircleShape)
-                    .clickable { 
-                        if (card.qrImagePath != null) {
-                            val file = File(card.qrImagePath)
-                            if (file.exists()) {
-                                try {
-                                    val uri = FileProvider.getUriForFile(
-                                        context,
-                                        "${context.packageName}.fileprovider",
-                                        file
-                                    )
-                                    val intent = Intent(Intent.ACTION_SEND).apply {
-                                        type = "image/*"
-                                        putExtra(Intent.EXTRA_STREAM, uri)
-                                        putExtra(Intent.EXTRA_TEXT, "${card.bankName} - ${card.accountNumber}")
-                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                    }
-                                    context.startActivity(Intent.createChooser(intent, "Share Payment QR"))
-                                } catch (e: Exception) {
-                                    Toast.makeText(context, "Failed to share QR code", Toast.LENGTH_SHORT).show()
-                                }
-                            } else {
-                                Toast.makeText(context, "QR image file not found", Toast.LENGTH_SHORT).show()
-                            }
-                        } else {
-                            Toast.makeText(context, "No QR code attached", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.Share,
-                        contentDescription = "Share",
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Clipboard Copy Pill
-        Surface(
-            onClick = onCopy,
-            shape = RoundedCornerShape(20.dp),
-            color = Color.Black.copy(alpha = 0.3f),
-            modifier = Modifier.height(44.dp)
-        ) {
+            // Unified Action Bottom Row
             Row(
-                modifier = Modifier.padding(horizontal = 20.dp),
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.ContentCopy, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(text = formatAccountNumber(card.accountNumber), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                // Clipboard Copy Pill
+                Surface(
+                    onClick = onCopy,
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color.Black.copy(alpha = 0.3f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(Icons.Default.ContentCopy, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = formatAccountNumber(card.accountNumber),
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1
+                        )
+                    }
+                }
+
+                // Share Action Button
+                Surface(
+                    shape = CircleShape,
+                    color = Color.White.copy(alpha = 0.15f),
+                    modifier = Modifier
+                        .size(48.dp)
+                        .border(1.dp, Color.White.copy(alpha = 0.3f), CircleShape)
+                        .clickable { 
+                            if (card.qrImagePath != null) {
+                                val file = File(card.qrImagePath)
+                                if (file.exists()) {
+                                    try {
+                                        val uri = FileProvider.getUriForFile(
+                                            context,
+                                            "${context.packageName}.fileprovider",
+                                            file
+                                        )
+                                        val intent = Intent(Intent.ACTION_SEND).apply {
+                                            type = "image/*"
+                                            putExtra(Intent.EXTRA_STREAM, uri)
+                                            putExtra(Intent.EXTRA_TEXT, "${card.bankName} - ${card.accountNumber}")
+                                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                        }
+                                        context.startActivity(Intent.createChooser(intent, "Share Payment QR"))
+                                    } catch (e: Exception) {
+                                        Toast.makeText(context, "Failed to share QR code", Toast.LENGTH_SHORT).show()
+                                    }
+                                } else {
+                                    Toast.makeText(context, "QR image file not found", Toast.LENGTH_SHORT).show()
+                                }
+                            } else {
+                                Toast.makeText(context, "No QR code attached", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = "Share",
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
             }
         }
     }

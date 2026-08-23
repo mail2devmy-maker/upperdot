@@ -1,7 +1,6 @@
 package com.mail2dev.upperdot.ui.profile_settings
 
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -21,6 +20,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -104,102 +104,139 @@ fun MyProfileSettingsScreen(
                     )
                 }
 
-                // User Account Summary Card
+                // New User Account Summary Card
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(containerColor = Surface)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp)
-                    ) {
+                    Column {
+                        // Top Section: Identity
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.Top,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Left Side: Identity
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                                Surface(
-                                    shape = CircleShape,
-                                    color = Color.Black.copy(alpha = 0.3f),
-                                    modifier = Modifier.size(64.dp).border(1.dp, AccentCyan.copy(alpha = 0.5f), CircleShape)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Icon(Icons.Default.Person, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(32.dp))
-                                    }
+                            Surface(
+                                shape = CircleShape,
+                                color = Color.Black.copy(alpha = 0.3f),
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .border(1.dp, AccentCyan.copy(alpha = 0.5f), CircleShape)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        Icons.Default.Person,
+                                        contentDescription = null,
+                                        tint = AccentCyan,
+                                        modifier = Modifier.size(32.dp)
+                                    )
                                 }
-                                Spacer(modifier = Modifier.width(16.dp))
-                                Column {
+                            }
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
                                         text = userSummary.name,
                                         color = Color.White,
                                         fontSize = 20.sp,
-                                        fontWeight = FontWeight.Bold
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
-                                    Text(
-                                        text = userSummary.email,
-                                        color = TextSecondary,
-                                        fontSize = 12.sp
-                                    )
-                                }
-                            }
-
-                            // Right Side: Status & Session Stack
-                            Column(horizontalAlignment = Alignment.End) {
-                                if (userSummary.isPremium) {
-                                    Surface(
-                                        shape = RoundedCornerShape(12.dp),
-                                        color = AccentCyan.copy(alpha = 0.1f),
-                                        border = androidx.compose.foundation.BorderStroke(1.dp, AccentCyan.copy(alpha = 0.3f))
-                                    ) {
-                                        Text(
-                                            text = "PREMIUM",
-                                            color = AccentCyan,
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                            letterSpacing = 1.sp
-                                        )
+                                    if (userSummary.isPremium) {
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Surface(
+                                            shape = RoundedCornerShape(12.dp),
+                                            color = AccentCyan.copy(alpha = 0.1f),
+                                            border = androidx.compose.foundation.BorderStroke(1.dp, AccentCyan.copy(alpha = 0.3f))
+                                        ) {
+                                            Text(
+                                                text = "PREMIUM",
+                                                color = AccentCyan,
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                                letterSpacing = 1.sp
+                                            )
+                                        }
                                     }
                                 }
-                                
-                                Spacer(modifier = Modifier.height(12.dp))
-
-                                // Sign Out compact button
-                                Surface(
-                                    onClick = { viewModel.onSignOut(onSignOut) },
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = Color.Transparent,
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, NegativeRed.copy(alpha = 0.5f))
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(Icons.Default.Logout, contentDescription = null, tint = NegativeRed, modifier = Modifier.size(12.dp))
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text(
-                                            text = "Sign Out",
-                                            color = NegativeRed,
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                }
+                                Text(
+                                    text = userSummary.email,
+                                    color = TextSecondary,
+                                    fontSize = 12.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
                             }
+                        }
+
+                        // Middle Section: Stats Grid
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            MetricCard(count = userSummary.contactCount.toString(), label = "Contacts", modifier = Modifier.weight(1f))
+                            MetricCard(count = userSummary.noteCount.toString(), label = "Notes", modifier = Modifier.weight(1f))
+                            MetricCard(count = userSummary.transactionCount.toString(), label = "Trans", modifier = Modifier.weight(1f))
                         }
 
                         Spacer(modifier = Modifier.height(24.dp))
 
-                        // Metrics Bar
+                        // Bottom Section: Cloud Backup & Sync Footer
+                        HorizontalDivider(color = Color.DarkGray.copy(alpha = 0.3f))
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            MetricItem(icon = Icons.Default.Groups, count = userSummary.contactCount, label = "Contacts")
-                            MetricItem(icon = Icons.Default.Description, count = userSummary.noteCount, label = "Notes")
-                            MetricItem(icon = Icons.Default.CreditCard, count = userSummary.transactionCount, label = "Trans")
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                val syncIcon = if (userSummary.isSyncing) Icons.Default.Sync else Icons.Default.CloudDone
+                                val rotation by rememberInfiniteTransition(label = "").animateFloat(
+                                    initialValue = 0f,
+                                    targetValue = 360f,
+                                    animationSpec = infiniteRepeatable(
+                                        animation = tween(2000, easing = LinearEasing),
+                                        repeatMode = RepeatMode.Restart
+                                    ),
+                                    label = ""
+                                )
+
+                                Icon(
+                                    imageVector = syncIcon,
+                                    contentDescription = null,
+                                    tint = if (userSummary.isSyncing) AccentCyan else Color.Gray,
+                                    modifier = Modifier.size(16.dp).then(if (userSummary.isSyncing) Modifier.rotate(rotation) else Modifier)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = if (userSummary.isSyncing) "Syncing..." else "Last sync: ${userSummary.lastSync}",
+                                    color = Color.Gray,
+                                    fontSize = 11.sp
+                                )
+                            }
+
+                            if (userSummary.isSyncing) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    color = AccentCyan,
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                TextButton(
+                                    onClick = { viewModel.triggerManualSync() },
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                    colors = ButtonDefaults.textButtonColors(contentColor = AccentCyan)
+                                ) {
+                                    Text("Sync Now", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
                         }
                     }
                 }
@@ -232,7 +269,7 @@ fun MyProfileSettingsScreen(
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.DarkGray.copy(alpha = 0.3f))
                         MenuListItem(
                             icon = Icons.Default.CreditCard,
-                            title = "My Digital Business Wallet",
+                            title = "My Digital Wallet",
                             subtitle = "Secure card storage and dynamic keys",
                             onClick = { onNavigate("digital_wallet_management") }
                         )
@@ -257,6 +294,15 @@ fun MyProfileSettingsScreen(
                             subtitle = "Check tiers limits and security controls",
                             onClick = { onNavigate("plans") }
                         )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.DarkGray.copy(alpha = 0.3f))
+                        // Relocated Sign Out
+                        MenuListItem(
+                            icon = Icons.Default.Logout,
+                            iconColor = NegativeRed,
+                            title = "Sign Out",
+                            subtitle = "Securely end your current session",
+                            onClick = { viewModel.onSignOut(onSignOut) }
+                        )
                     }
                 }
                 
@@ -267,17 +313,28 @@ fun MyProfileSettingsScreen(
 }
 
 @Composable
-fun MetricItem(icon: ImageVector, count: Int, label: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(16.dp))
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(text = "$count $label", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+fun MetricCard(count: String, label: String, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        color = Color.Black.copy(alpha = 0.2f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color.DarkGray.copy(alpha = 0.2f))
+    ) {
+        Column(
+            modifier = Modifier.padding(vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(text = count, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text(text = label, color = TextSecondary, fontSize = 10.sp)
+        }
     }
 }
 
 @Composable
 fun MenuListItem(
     icon: ImageVector,
+    iconColor: Color = AccentCyan,
     title: String,
     subtitle: String,
     onClick: () -> Unit
@@ -295,7 +352,7 @@ fun MenuListItem(
             modifier = Modifier.size(40.dp)
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Icon(icon, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(20.dp))
+                Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(20.dp))
             }
         }
         Spacer(modifier = Modifier.width(16.dp))

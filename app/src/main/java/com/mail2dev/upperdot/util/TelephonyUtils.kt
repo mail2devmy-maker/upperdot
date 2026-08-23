@@ -20,7 +20,21 @@ object TelephonyUtils {
         val telecomManager = context.getSystemService(Context.TELECOM_SERVICE) as TelecomManager
         val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
 
-        // 1. Detect device's active country ISO code (e.g., "MY", "SG", "US")
+        // 1. Detect USSD/MMI Code
+        if (ContactUtils.isUssdCode(rawNumber)) {
+            Log.d("CallDebug", "Placing USSD call: $rawNumber")
+            val uri = Uri.parse("tel:" + Uri.encode(rawNumber))
+            if (context.checkSelfPermission(Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
+                try {
+                    telecomManager.placeCall(uri, null)
+                } catch (e: Exception) {
+                    Log.e("CallDebug", "Error placing USSD call: ${e.message}")
+                }
+            }
+            return
+        }
+
+        // 2. Detect device's active country ISO code (e.g., "MY", "SG", "US")
         val countryIso = try {
             telephonyManager.simCountryIso.ifEmpty {
                 Locale.getDefault().country

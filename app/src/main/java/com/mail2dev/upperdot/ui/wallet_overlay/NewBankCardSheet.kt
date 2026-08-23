@@ -8,8 +8,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -73,8 +75,11 @@ fun NewBankCardSheet(
         ) 
     }
 
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
+        sheetState = sheetState,
         containerColor = Surface,
         dragHandle = { BottomSheetDefaults.DragHandle(color = Color.DarkGray) },
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
@@ -82,8 +87,11 @@ fun NewBankCardSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .windowInsetsPadding(WindowInsets.ime)
+                .navigationBarsPadding()
                 .padding(24.dp)
-                .padding(bottom = 32.dp)
+                .padding(bottom = 8.dp) // Total 32dp bottom padding
         ) {
             Text(
                 text = if (editingCard == null) "New Bank Card" else "Edit Bank Card",

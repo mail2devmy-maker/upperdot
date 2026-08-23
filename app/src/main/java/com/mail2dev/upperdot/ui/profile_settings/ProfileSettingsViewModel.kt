@@ -8,6 +8,8 @@ import com.mail2dev.upperdot.data.repository.ContactRepository
 import com.mail2dev.upperdot.data.repository.NoteRepository
 import com.mail2dev.upperdot.data.repository.PreferenceRepository
 import com.mail2dev.upperdot.data.repository.TransactionRepository
+import com.mail2dev.upperdot.data.sync.SyncManager
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -20,7 +22,8 @@ data class UserSummary(
     val lastSync: String = "Not Synced",
     val contactCount: Int = 0,
     val noteCount: Int = 0,
-    val transactionCount: Int = 0
+    val transactionCount: Int = 0,
+    val isSyncing: Boolean = false
 )
 
 class ProfileSettingsViewModel(
@@ -29,6 +32,7 @@ class ProfileSettingsViewModel(
     private val noteRepository: NoteRepository,
     private val transactionRepository: TransactionRepository,
     private val preferenceRepository: PreferenceRepository,
+    private val syncManager: SyncManager,
     context: Context
 ) : ViewModel() {
 
@@ -48,20 +52,28 @@ class ProfileSettingsViewModel(
                 contactRepository.contactCount,
                 noteRepository.noteCount,
                 transactionRepository.transactionCount,
-                preferenceRepository.preferences
-            ) { contacts, notes, trans, prefs ->
+                preferenceRepository.preferences,
+                syncManager.syncStatus
+            ) { contacts, notes, trans, prefs, isSyncing ->
                 UserSummary(
-                    name = account?.displayName ?: "Guest User",
-                    email = account?.email ?: "local.only@upperdot.dev",
-                    isPremium = true, // Mocked as premium for now
+                    name = account?.displayName ?: "",
+                    email = account?.email ?: "",
+                    isPremium = true,
                     lastSync = if (prefs.lastSyncTime > 0) dateFormatter.format(Date(prefs.lastSyncTime)) else "Not Synced",
                     contactCount = contacts,
                     noteCount = notes,
-                    transactionCount = trans
+                    transactionCount = trans,
+                    isSyncing = isSyncing
                 )
             }.collect {
                 _userSummary.value = it
             }
+        }
+    }
+
+    fun triggerManualSync() {
+        viewModelScope.launch(Dispatchers.IO) {
+            syncManager.startImmediateSync()
         }
     }
 

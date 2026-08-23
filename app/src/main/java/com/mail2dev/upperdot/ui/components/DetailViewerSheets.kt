@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -29,6 +30,9 @@ import com.mail2dev.upperdot.ui.theme.*
 import com.mail2dev.upperdot.utils.toFormattedDate
 import java.io.File
 import java.util.Locale
+import android.media.MediaPlayer
+import android.media.MediaMetadataRetriever
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,15 +40,11 @@ fun NoteViewerSheet(
     note: NoteEntity,
     sheetState: SheetState,
     onDismiss: () -> Unit,
-    onUpdate: (NoteEntity) -> Unit,
+    onEdit: (NoteEntity) -> Unit,
     onDelete: (NoteEntity) -> Unit
 ) {
     var fullScreenImagePath by remember { mutableStateOf<String?>(null) }
-    var isEditingMode by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
-    
-    var editedTitle by remember(note) { mutableStateOf(note.title) }
-    var editedContent by remember(note) { mutableStateOf(note.content) }
 
     if (fullScreenImagePath != null) {
         FullScreenImagePreview(
@@ -59,7 +59,7 @@ fun NoteViewerSheet(
             title = { Text("Delete Note?", color = Color.White) },
             text = { Text("Are you sure you want to permanently remove this note?", color = TextSecondary) },
             confirmButton = {
-                TextButton(onClick = { 
+                TextButton(onClick = {
                     onDelete(note)
                     showDeleteConfirm = false
                 }) {
@@ -93,33 +93,18 @@ fun NoteViewerSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    if (isEditingMode) {
-                        StitchTextField(
-                            value = editedTitle,
-                            onValueChange = { editedTitle = it },
-                            placeholder = "Note Title"
-                        )
-                    } else {
-                        Text(
-                            text = note.title,
-                            color = Color.White,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    Text(
+                        text = note.title,
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
-                
+
                 Row {
-                    IconButton(onClick = { 
-                        if (isEditingMode) {
-                            onUpdate(note.copy(title = editedTitle, content = editedContent))
-                            isEditingMode = false
-                        } else {
-                            isEditingMode = true
-                        }
-                    }) {
+                    IconButton(onClick = { onEdit(note) }) {
                         Icon(
-                            imageVector = if (isEditingMode) Icons.Default.Save else Icons.Default.Edit,
+                            imageVector = Icons.Default.Edit,
                             contentDescription = "Edit",
                             tint = AccentCyan
                         )
@@ -129,101 +114,55 @@ fun NoteViewerSheet(
                     }
                 }
             }
-            
+
             Text(
                 text = note.createdAt.toFormattedDate(),
                 color = TextSecondary,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(top = 4.dp)
             )
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
-            if (isEditingMode) {
-                StitchTextField(
-                    value = editedContent,
-                    onValueChange = { editedContent = it },
-                    placeholder = "Content",
-                    singleLine = false,
-                    minLines = 4
-                )
-            } else {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 100.dp, max = 300.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color.Black.copy(alpha = 0.3f)
-                ) {
-                    Box(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = note.content,
-                            color = Color.White,
-                            fontSize = 14.sp
-                        )
-                    }
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 100.dp, max = 300.dp),
+                shape = RoundedCornerShape(16.dp),
+                color = Color.Black.copy(alpha = 0.3f)
+            ) {
+                Box(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = note.content,
+                        color = Color.White,
+                        fontSize = 14.sp
+                    )
                 }
             }
 
-            if (isEditingMode) {
-                Spacer(modifier = Modifier.height(24.dp))
-                Button(
-                    onClick = {
-                        onUpdate(note.copy(title = editedTitle, content = editedContent))
-                        isEditingMode = false
-                    },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    shape = RoundedCornerShape(28.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = AccentCyan, contentColor = Color.Black)
-                ) {
-                    Text("Save Changes", fontWeight = FontWeight.Bold)
-                }
-            } else {
-                if (note.voiceRecordingPath != null) {
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Text("Voice Memo", color = AccentCyan, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color.DarkGray.copy(alpha = 0.5f)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.White)
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(4.dp)
-                                    .background(Color.Gray, CircleShape)
-                            )
-                        }
-                    }
-                }
+            if (note.voiceRecordingPath != null) {
+                AudioPlayerSection(audioPath = note.voiceRecordingPath)
+            }
 
-                if (note.attachmentPaths.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Text("Attachments", color = AccentCyan, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    LazyRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(note.attachmentPaths) { path ->
-                            AsyncImage(
-                                model = File(path),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(64.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(Color.DarkGray)
-                                    .clickable { fullScreenImagePath = path },
-                                contentScale = ContentScale.Crop
-                            )
-                        }
+            if (note.attachmentPaths.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(24.dp))
+                Text("Attachments", color = AccentCyan, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(8.dp))
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(note.attachmentPaths) { path ->
+                        AsyncImage(
+                            model = File(path),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color.DarkGray)
+                                .clickable { fullScreenImagePath = path },
+                            contentScale = ContentScale.Crop
+                        )
                     }
                 }
             }
@@ -238,16 +177,11 @@ fun TransactionViewerSheet(
     currencySymbol: String,
     sheetState: SheetState,
     onDismiss: () -> Unit,
-    onUpdate: (TransactionEntity) -> Unit,
+    onEdit: (TransactionEntity) -> Unit,
     onDelete: (TransactionEntity) -> Unit
 ) {
     var fullScreenImagePath by remember { mutableStateOf<String?>(null) }
-    var isEditingMode by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
-    
-    var editedTitle by remember(transaction) { mutableStateOf(transaction.title) }
-    var editedAmount by remember(transaction) { mutableStateOf(transaction.amount.toString()) }
-    var editedDetail by remember(transaction) { mutableStateOf(transaction.detail) }
 
     if (fullScreenImagePath != null) {
         FullScreenImagePreview(
@@ -296,20 +230,12 @@ fun TransactionViewerSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    if (isEditingMode) {
-                        StitchTextField(
-                            value = editedTitle,
-                            onValueChange = { editedTitle = it },
-                            placeholder = "Transaction Title"
-                        )
-                    } else {
-                        Text(
-                            text = transaction.title,
-                            color = Color.White,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    Text(
+                        text = transaction.title,
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                     Text(
                         text = transaction.createdAt.toFormattedDate(),
                         color = TextSecondary,
@@ -319,17 +245,9 @@ fun TransactionViewerSheet(
                 }
                 
                 Row {
-                    IconButton(onClick = { 
-                        if (isEditingMode) {
-                            val newAmount = editedAmount.toDoubleOrNull() ?: transaction.amount
-                            onUpdate(transaction.copy(title = editedTitle, amount = newAmount, detail = editedDetail))
-                            isEditingMode = false
-                        } else {
-                            isEditingMode = true
-                        }
-                    }) {
+                    IconButton(onClick = { onEdit(transaction) }) {
                         Icon(
-                            imageVector = if (isEditingMode) Icons.Default.Save else Icons.Default.Edit,
+                            imageVector = Icons.Default.Edit,
                             contentDescription = "Edit",
                             tint = AccentCyan
                         )
@@ -342,71 +260,45 @@ fun TransactionViewerSheet(
 
             Spacer(modifier = Modifier.height(24.dp))
             
-            if (isEditingMode) {
-                StitchTextField(
-                    value = editedAmount,
-                    onValueChange = { editedAmount = it },
-                    placeholder = "Amount ($currencySymbol)",
-                    keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                StitchTextField(
-                    value = editedDetail,
-                    onValueChange = { editedDetail = it },
-                    placeholder = "Details",
-                    singleLine = false,
-                    minLines = 3
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-                Button(
-                    onClick = {
-                        val newAmount = editedAmount.toDoubleOrNull() ?: transaction.amount
-                        onUpdate(transaction.copy(title = editedTitle, amount = newAmount, detail = editedDetail))
-                        isEditingMode = false
-                    },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    shape = RoundedCornerShape(28.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = AccentCyan, contentColor = Color.Black)
-                ) {
-                    Text("Save Changes", fontWeight = FontWeight.Bold)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Details", color = AccentCyan, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                
+                val amountText = if (transaction.isRevenue) {
+                    "+$currencySymbol${String.format(Locale.getDefault(), "%.2f", transaction.amount)}"
+                } else {
+                    "-$currencySymbol${String.format(Locale.getDefault(), "%.2f", transaction.amount)}"
                 }
-            } else {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                val amountColor = if (transaction.isRevenue) PositiveGreen else NegativeRed
+                
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = amountColor.copy(alpha = 0.1f)
                 ) {
-                    Text("Details", color = AccentCyan, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    
-                    val amountText = if (transaction.isRevenue) {
-                        "+$currencySymbol${String.format(Locale.getDefault(), "%.2f", transaction.amount)}"
-                    } else {
-                        "-$currencySymbol${String.format(Locale.getDefault(), "%.2f", transaction.amount)}"
-                    }
-                    val amountColor = if (transaction.isRevenue) PositiveGreen else NegativeRed
-                    
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = amountColor.copy(alpha = 0.1f)
-                    ) {
-                        Text(
-                            text = amountText,
-                            color = amountColor,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                        )
-                    }
+                    Text(
+                        text = amountText,
+                        color = amountColor,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = transaction.detail,
-                    color = Color.White,
-                    fontSize = 14.sp
-                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = transaction.detail,
+                color = Color.White,
+                fontSize = 14.sp
+            )
+
+            if (transaction.voiceRecordingPath != null) {
+                AudioPlayerSection(audioPath = transaction.voiceRecordingPath)
             }
 
-            if (!isEditingMode && transaction.receiptPaths.isNotEmpty()) {
+            if (transaction.receiptPaths.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(24.dp))
                 Text("Receipts", color = AccentCyan, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
@@ -466,4 +358,133 @@ fun FullScreenImagePreview(
             }
         }
     }
+}
+
+@Composable
+fun AudioPlayerSection(
+    audioPath: String
+) {
+    var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
+    var isPlaying by remember { mutableStateOf(false) }
+    var playbackPosition by remember { mutableLongStateOf(0L) }
+    var audioDuration by remember { mutableLongStateOf(0L) }
+
+    // Initialize duration
+    LaunchedEffect(audioPath) {
+        audioDuration = getAudioDuration(audioPath)
+    }
+
+    // Cleanup MediaPlayer
+    DisposableEffect(audioPath) {
+        onDispose {
+            mediaPlayer?.release()
+            mediaPlayer = null
+        }
+    }
+
+    // Playback Timer
+    LaunchedEffect(isPlaying) {
+        if (isPlaying) {
+            while (isPlaying) {
+                delay(100)
+                playbackPosition = mediaPlayer?.currentPosition?.toLong() ?: 0L
+                if (playbackPosition >= audioDuration - 200) {
+                    isPlaying = false
+                    playbackPosition = audioDuration
+                }
+            }
+        }
+    }
+
+    fun togglePlayback() {
+        if (mediaPlayer == null) {
+            mediaPlayer = MediaPlayer().apply {
+                setDataSource(audioPath)
+                prepare()
+                audioDuration = duration.toLong()
+                setOnCompletionListener {
+                    isPlaying = false
+                    playbackPosition = duration.toLong()
+                }
+            }
+        }
+
+        if (isPlaying) {
+            mediaPlayer?.pause()
+        } else {
+            if (playbackPosition >= audioDuration) {
+                mediaPlayer?.seekTo(0)
+                playbackPosition = 0
+            }
+            mediaPlayer?.start()
+        }
+        isPlaying = mediaPlayer?.isPlaying ?: false
+    }
+
+    Column {
+        Spacer(modifier = Modifier.height(24.dp))
+        Text("Voice Memo", color = AccentCyan, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(8.dp))
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            color = Color.DarkGray.copy(alpha = 0.5f)
+        ) {
+            Row(
+                modifier = Modifier.padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = { togglePlayback() }) {
+                    Icon(
+                        imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = if (isPlaying) "Pause" else "Play",
+                        tint = Color.White
+                    )
+                }
+                
+                Spacer(modifier = Modifier.width(8.dp))
+                
+                Column(modifier = Modifier.weight(1f)) {
+                    Slider(
+                        value = if (audioDuration > 0) playbackPosition.toFloat() / audioDuration else 0f,
+                        onValueChange = { 
+                            val newPos = (it * audioDuration).toLong()
+                            playbackPosition = newPos
+                            mediaPlayer?.seekTo(newPos.toInt())
+                        },
+                        colors = SliderDefaults.colors(
+                            thumbColor = AccentCyan,
+                            activeTrackColor = AccentCyan,
+                            inactiveTrackColor = Color.Gray
+                        )
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(formatDuration(playbackPosition), color = TextSecondary, fontSize = 10.sp)
+                        Text(formatDuration(audioDuration), color = TextSecondary, fontSize = 10.sp)
+                    }
+                }
+            }
+        }
+    }
+}
+
+fun getAudioDuration(path: String): Long {
+    return try {
+        val retriever = MediaMetadataRetriever()
+        retriever.setDataSource(path)
+        val time = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+        retriever.release()
+        time?.toLong() ?: 0L
+    } catch (e: Exception) {
+        0L
+    }
+}
+
+fun formatDuration(ms: Long): String {
+    val seconds = (ms / 1000) % 60
+    val minutes = (ms / (1000 * 60)) % 60
+    return String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds)
 }

@@ -73,8 +73,14 @@ class InsightsViewModel(
     private val _selectedNote = MutableStateFlow<NoteEntity?>(null)
     val selectedNote: StateFlow<NoteEntity?> = _selectedNote.asStateFlow()
 
+    private val _editingNote = MutableStateFlow<NoteEntity?>(null)
+    val editingNote: StateFlow<NoteEntity?> = _editingNote.asStateFlow()
+
     private val _selectedTransaction = MutableStateFlow<TransactionEntity?>(null)
     val selectedTransaction: StateFlow<TransactionEntity?> = _selectedTransaction.asStateFlow()
+
+    private val _editingTransaction = MutableStateFlow<TransactionEntity?>(null)
+    val editingTransaction: StateFlow<TransactionEntity?> = _editingTransaction.asStateFlow()
 
     private val _eventFlow = MutableSharedFlow<String>()
     val eventFlow = _eventFlow.asSharedFlow()
@@ -209,8 +215,19 @@ class InsightsViewModel(
         }
     }
 
+    fun onEditNote(note: NoteEntity) {
+        _selectedNote.value = null
+        _editingNote.value = note
+        _selectedAttachments.value = note.attachmentPaths
+    }
+
     fun dismissNoteViewer() {
         _selectedNote.value = null
+    }
+
+    fun dismissEditNote() {
+        _editingNote.value = null
+        _selectedAttachments.value = emptyList()
     }
 
     fun selectTransaction(transactionId: Long) {
@@ -219,8 +236,19 @@ class InsightsViewModel(
         }
     }
 
+    fun onEditTransaction(transaction: TransactionEntity) {
+        _selectedTransaction.value = null
+        _editingTransaction.value = transaction
+        _selectedAttachments.value = transaction.receiptPaths
+    }
+
     fun dismissTransactionViewer() {
         _selectedTransaction.value = null
+    }
+
+    fun dismissEditTransaction() {
+        _editingTransaction.value = null
+        _selectedAttachments.value = emptyList()
     }
 
     fun deleteNote(note: NoteEntity) {
@@ -270,20 +298,44 @@ class InsightsViewModel(
         title: String, 
         content: String, 
         attachments: List<String> = emptyList(), 
-        voicePath: String? = null
+        voicePath: String? = null,
+        noteId: Long? = null,
+        createdAt: Long? = null
     ) {
         viewModelScope.launch(Dispatchers.IO) {
-            val note = NoteEntity(
-                contactId = contactId,
-                title = title,
-                content = content,
-                attachmentPaths = attachments,
-                voiceRecordingPath = voicePath
-            )
-            noteRepository.insertNote(note)
+            val note = if (noteId == null) {
+                NoteEntity(
+                    contactId = contactId,
+                    title = title,
+                    content = content,
+                    attachmentPaths = attachments,
+                    voiceRecordingPath = voicePath,
+                    createdAt = createdAt ?: System.currentTimeMillis()
+                )
+            } else {
+                NoteEntity(
+                    id = noteId,
+                    contactId = contactId,
+                    title = title,
+                    content = content,
+                    attachmentPaths = attachments,
+                    voiceRecordingPath = voicePath,
+                    createdAt = createdAt ?: System.currentTimeMillis(),
+                    lastModifiedAt = System.currentTimeMillis()
+                )
+            }
+            
+            if (noteId == null) {
+                noteRepository.insertNote(note)
+            } else {
+                noteRepository.updateNote(note)
+            }
+            
             withContext(Dispatchers.Main) {
                 _showAddNoteSheet.value = false
+                _editingNote.value = null
                 _contactSearchQuery.value = ""
+                _selectedAttachments.value = emptyList()
             }
         }
     }
@@ -295,22 +347,48 @@ class InsightsViewModel(
         amount: String, 
         detail: String,
         attachments: List<String> = emptyList(),
-        voicePath: String? = null
+        voicePath: String? = null,
+        transactionId: Long? = null,
+        createdAt: Long? = null
     ) {
         viewModelScope.launch(Dispatchers.IO) {
-            val transaction = TransactionEntity(
-                contactId = contactId,
-                title = title,
-                amount = amount.toDoubleOrNull() ?: 0.0,
-                isRevenue = isRevenue,
-                detail = detail,
-                receiptPaths = attachments,
-                voiceRecordingPath = voicePath
-            )
-            transactionRepository.insertTransaction(transaction)
+            val transaction = if (transactionId == null) {
+                TransactionEntity(
+                    contactId = contactId,
+                    title = title,
+                    amount = amount.toDoubleOrNull() ?: 0.0,
+                    isRevenue = isRevenue,
+                    detail = detail,
+                    receiptPaths = attachments,
+                    voiceRecordingPath = voicePath,
+                    createdAt = createdAt ?: System.currentTimeMillis()
+                )
+            } else {
+                TransactionEntity(
+                    id = transactionId,
+                    contactId = contactId,
+                    title = title,
+                    amount = amount.toDoubleOrNull() ?: 0.0,
+                    isRevenue = isRevenue,
+                    detail = detail,
+                    receiptPaths = attachments,
+                    voiceRecordingPath = voicePath,
+                    createdAt = createdAt ?: System.currentTimeMillis(),
+                    lastModifiedAt = System.currentTimeMillis()
+                )
+            }
+            
+            if (transactionId == null) {
+                transactionRepository.insertTransaction(transaction)
+            } else {
+                transactionRepository.updateTransaction(transaction)
+            }
+
             withContext(Dispatchers.Main) {
                 _showAddTransactionSheet.value = false
+                _editingTransaction.value = null
                 _contactSearchQuery.value = ""
+                _selectedAttachments.value = emptyList()
             }
         }
     }

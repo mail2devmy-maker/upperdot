@@ -33,7 +33,7 @@ class AdvancedSettingsViewModel(
     private val preferenceRepository: PreferenceRepository
 ) : ViewModel() {
 
-    private val _syncOverWifi = MutableStateFlow(true)
+    private val _syncOverWifi = MutableStateFlow(false)
     val syncOverWifi: StateFlow<Boolean> = _syncOverWifi.asStateFlow()
 
     private val _syncFrequency = MutableStateFlow("1h")
@@ -51,6 +51,13 @@ class AdvancedSettingsViewModel(
                 _syncOverWifi.value = prefs.syncOverWifi
                 _syncFrequency.value = prefs.syncFrequency
                 _currencySymbol.value = prefs.currencySymbol
+            }
+        }
+        // Force set to false for first launch if preference has not been updated
+        viewModelScope.launch(Dispatchers.IO) {
+            val currentPrefs = preferenceRepository.preferences.first()
+            if (currentPrefs.syncOverWifi) {
+                preferenceRepository.savePreferences(currentPrefs.copy(syncOverWifi = false))
             }
         }
     }

@@ -1,19 +1,24 @@
 package com.mail2dev.upperdot.util
 
+import android.telephony.PhoneNumberUtils
+import com.mail2dev.upperdot.R
+
 object ContactUtils {
     /**
      * Smart Number Matcher: Compares numbers by stripping symbols (+, -, spaces) and country codes.
      */
     fun smartSanitize(number: String): String {
-        val digits = number.replace(Regex("[^0-9]"), "")
-        // Strip common country codes and leading zero
-        // Malaysia: 60... or 0...
-        // Let's remove leading 60, 6, 0.
-        var s = digits
-        if (s.startsWith("60")) s = s.substring(2)
-        else if (s.startsWith("6")) s = s.substring(1)
-        else if (s.startsWith("0")) s = s.substring(1)
-        return s
+        if (isUssdCode(number)) return ""
+        
+        // Use Android's normalizeNumber for basic cleaning (strips non-digits, keeps +)
+        val normalized = PhoneNumberUtils.normalizeNumber(number)
+        
+        // Strip leading zeros or '+' for global matching of suffix
+        return normalized.trimStart('+', '0')
+    }
+
+    fun isUssdCode(number: String): Boolean {
+        return number.startsWith("*") || number.endsWith("#")
     }
 
     fun isSamePhoneNumber(num1: String, num2: String): Boolean {
@@ -47,5 +52,20 @@ object ContactUtils {
 
         // Fallback for other formats or international
         return if (number.startsWith("+")) number else "+$digits"
+    }
+
+    fun getSocialPlatformDrawable(platform: String): Int {
+        return when (platform.uppercase()) {
+            "WHATSAPP" -> R.drawable.ic_whatsapp
+            "FACEBOOK" -> R.drawable.ic_facebook
+            "INSTAGRAM" -> R.drawable.ic_instagram
+            "X", "TWITTER" -> R.drawable.ic_twitter
+            "TIKTOK" -> R.drawable.ic_tiktok
+            "YOUTUBE" -> R.drawable.ic_youtube
+            "SHOPEE" -> R.drawable.ic_shopee
+            "LAZADA" -> R.drawable.ic_lazada
+            "TELEGRAM" -> R.drawable.ic_telegram
+            else -> R.drawable.ic_web
+        }
     }
 }

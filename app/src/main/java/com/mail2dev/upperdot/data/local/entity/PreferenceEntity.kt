@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class PreferenceEntity(
     @PrimaryKey val id: Int = 0,
-    val syncOverWifi: Boolean = true,
+    val syncOverWifi: Boolean = false,
     val syncFrequency: String = "1h",
     val currencySymbol: String = "$",
     val lastSyncTime: Long = 0L

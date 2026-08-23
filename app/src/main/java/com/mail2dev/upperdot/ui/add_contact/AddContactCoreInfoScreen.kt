@@ -1,5 +1,6 @@
 package com.mail2dev.upperdot.ui.add_contact
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -155,12 +156,13 @@ fun AddContactCoreInfoScreen(
 
                 Spacer(modifier = Modifier.height(48.dp))
 
-                // Form Fields
+                // Standalone Core Info Fields
                 StitchTextField(
                     value = fullName,
                     onValueChange = viewModel::onFullNameChange,
                     placeholder = "Full Name (Required)",
-                    leadingIcon = Icons.Default.Person
+                    leadingIcon = Icons.Default.Person,
+                    shape = RoundedCornerShape(12.dp)
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -169,50 +171,95 @@ fun AddContactCoreInfoScreen(
                     value = nicknames,
                     onValueChange = viewModel::onNicknamesChange,
                     placeholder = "Nicknames (Comma Separated)",
-                    leadingIcon = Icons.Default.Label
+                    leadingIcon = Icons.Default.Label,
+                    shape = RoundedCornerShape(12.dp)
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                phoneNumbers.forEachIndexed { index, number ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        StitchTextField(
-                            value = number,
-                            onValueChange = { viewModel.onPhoneNumberChange(index, it) },
-                            placeholder = if (index == 0) "Primary Phone Number" else "Additional Number",
-                            leadingIcon = Icons.Default.Phone,
-                            modifier = Modifier.weight(1f)
-                        )
-                        if (index > 0) {
-                            IconButton(
-                                onClick = { viewModel.removePhoneNumber(index) },
-                                modifier = Modifier.padding(start = 8.dp)
+                // Phone Numbers Card
+                Text(
+                    text = "PHONE NUMBERS",
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Surface),
+                    border = BorderStroke(1.dp, Color.DarkGray.copy(alpha = 0.3f))
+                ) {
+                    Column {
+                        phoneNumbers.forEachIndexed { index, number ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    Icons.Default.Clear,
-                                    contentDescription = "Remove Number",
-                                    tint = Color.Gray
+                                StitchTextField(
+                                    value = number,
+                                    onValueChange = { viewModel.onPhoneNumberChange(index, it) },
+                                    placeholder = if (index == 0) "Primary Phone" else "Additional Number",
+                                    leadingIcon = Icons.Default.Phone,
+                                    modifier = Modifier.weight(1f),
+                                    showBorder = false,
+                                    containerColor = Color.Transparent
+                                )
+                                if (index > 0) {
+                                    IconButton(onClick = { viewModel.removePhoneNumber(index) }) {
+                                        Icon(
+                                            Icons.Default.Close,
+                                            contentDescription = "Remove Number",
+                                            tint = Color.Gray,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            }
+                            if (index < phoneNumbers.size - 1) {
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                    color = Color.DarkGray.copy(alpha = 0.2f)
                                 )
                             }
                         }
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
                 }
 
-                Text(
-                    text = "[ + Add Another Number ]",
-                    color = AccentCyan,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { viewModel.addPhoneNumber() }
-                        .padding(vertical = 8.dp)
+                GhostAddButton(
+                    text = "Add phone number",
+                    onClick = viewModel::addPhoneNumber
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun GhostAddButton(
+    text: String,
+    onClick: () -> Unit
+) {
+    TextButton(
+        onClick = onClick,
+        modifier = Modifier.padding(vertical = 4.dp).fillMaxWidth(),
+        contentPadding = PaddingValues(0.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Start
+        ) {
+            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp), tint = AccentCyan)
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(text, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = AccentCyan)
         }
     }
 }
