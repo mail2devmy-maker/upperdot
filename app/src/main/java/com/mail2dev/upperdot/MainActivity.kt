@@ -1,5 +1,6 @@
 package com.mail2dev.upperdot
 
+import android.app.role.RoleManager
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
@@ -71,8 +72,54 @@ class MainActivity : ComponentActivity() {
         setContent {
             UpperDotTheme {
                 CallPermissionHandler()
+                DialerRoleHandler()
                 RootNavigation()
             }
+        }
+    }
+}
+
+@Composable
+fun DialerRoleHandler() {
+    val context = LocalContext.current
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+        val roleManager = context.getSystemService(RoleManager::class.java)
+        var showRoleDialog by remember { mutableStateOf(false) }
+
+        val roleLauncher = rememberLauncherForActivityResult(
+            ActivityResultContracts.StartActivityForResult()
+        ) { /* State refresh occurs on next launch/resume */ }
+
+        LaunchedEffect(Unit) {
+            if (roleManager != null && roleManager.isRoleAvailable(RoleManager.ROLE_DIALER)) {
+                if (!roleManager.isRoleHeld(RoleManager.ROLE_DIALER)) {
+                    showRoleDialog = true
+                }
+            }
+        }
+
+        if (showRoleDialog) {
+            AlertDialog(
+                onDismissRequest = { showRoleDialog = false },
+                title = { Text("Default Dialer Required", color = com.mail2dev.upperdot.ui.theme.PrimaryYellow) },
+                text = { Text("UpperDot needs to be your default phone app to manage calls and show custom call screens.", color = Color.White) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showRoleDialog = false
+                        val intent = roleManager!!.createRequestRoleIntent(RoleManager.ROLE_DIALER)
+                        roleLauncher.launch(intent)
+                    }) {
+                        Text("Set as Default", color = com.mail2dev.upperdot.ui.theme.AccentCyan)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showRoleDialog = false }) {
+                        Text("Later", color = com.mail2dev.upperdot.ui.theme.TextSecondary)
+                    }
+                },
+                containerColor = com.mail2dev.upperdot.ui.theme.Surface,
+                shape = RoundedCornerShape(24.dp)
+            )
         }
     }
 }
@@ -161,7 +208,7 @@ fun RootNavigation() {
             val authViewModel: AuthViewModel = viewModel(
                 factory = viewModelFactory {
                     initializer {
-                        AuthViewModel(app.googleAuthService, app.syncManager)
+                        AuthViewModel(app, app.googleAuthService, app.syncManager)
                     }
                 }
             )
@@ -217,7 +264,7 @@ fun RootNavigation() {
                 viewModelStoreOwner = backStackEntry,
                 factory = viewModelFactory {
                     initializer {
-                        AddContactViewModel(app.contactRepository, app.hierarchyRepository)
+                        AddContactViewModel(app.contactRepository, app.hierarchyRepository, app.bankSuggestionRepository)
                     }
                 }
             )
@@ -261,11 +308,14 @@ fun RootNavigation() {
             }
         }
         
-        composable("call_history") {
+        composable(
+            "call_history",
+            deepLinks = listOf(navDeepLink { uriPattern = "upperdot://call_history" })
+        ) {
             val callHistoryViewModel: com.mail2dev.upperdot.ui.call_history.CallHistoryViewModel = viewModel(
                 factory = viewModelFactory {
                     initializer {
-                        com.mail2dev.upperdot.ui.call_history.CallHistoryViewModel(app.callLogRepository)
+                        com.mail2dev.upperdot.ui.call_history.CallHistoryViewModel(app.callLogRepository, app.applicationContext)
                     }
                 }
             )
@@ -273,10 +323,14 @@ fun RootNavigation() {
                 onNavigate = { route ->
                     navController.navigate(route) {
                         launchSingleTop = true
+                        restoreState = true
                     }
                 },
                 onNavigateToDialer = {
                     navController.navigate("dialer")
+                },
+                onNavigateToContact = { contactId ->
+                    navController.navigate("client_profile/$contactId")
                 },
                 onNavigateToAddContact = { phone ->
                     navController.navigate("add_contact?contactId=&phone=$phone")
@@ -287,7 +341,10 @@ fun RootNavigation() {
 
         composable("dialer") {
             DialerScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToAddContact = { phone: String ->
+                    navController.navigate("add_contact?contactId=&phone=$phone")
+                }
             )
         }
 
@@ -349,6 +406,7 @@ fun RootNavigation() {
                             app.noteRepository,
                             app.transactionRepository,
                             app.preferenceRepository,
+                            app.syncManager,
                             app.applicationContext
                         )
                     }

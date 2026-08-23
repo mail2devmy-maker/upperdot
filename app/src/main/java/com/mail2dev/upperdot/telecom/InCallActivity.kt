@@ -1,5 +1,6 @@
 package com.mail2dev.upperdot.telecom
 
+import android.app.KeyguardManager
 import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
@@ -61,10 +62,18 @@ class InCallActivity : ComponentActivity() {
         
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         
+        // Initial state from service
+        UpperDotInCallService.instance?.callAudioState?.let {
+            isMuted = it.isMuted
+            isSpeakerOn = it.route == CallAudioState.ROUTE_SPEAKER
+        }
+
         // Show over lock screen
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)
             setTurnScreenOn(true)
+            val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+            keyguardManager.requestDismissKeyguard(this, null)
         } else {
             @Suppress("DEPRECATION")
             window.addFlags(
@@ -87,7 +96,7 @@ class InCallActivity : ComponentActivity() {
 
         // Resolve Caller Name
         val handle = call.details.handle?.schemeSpecificPart
-        if (handle != null) {
+        if (handle != null && !com.mail2dev.upperdot.util.ContactUtils.isUssdCode(handle)) {
             val app = applicationContext as com.mail2dev.upperdot.UpperDotApp
             lifecycleScope.launch {
                 val contact = app.contactRepository.findContactByPhone(handle)

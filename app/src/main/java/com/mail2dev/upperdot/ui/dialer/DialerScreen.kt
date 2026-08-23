@@ -6,21 +6,32 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -30,17 +41,53 @@ import com.mail2dev.upperdot.util.TelephonyUtils
 
 @Composable
 fun DialerScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToAddContact: (String) -> Unit
 ) {
-    var dialString by remember { mutableStateOf("") }
+    var dialValue by remember { mutableStateOf(TextFieldValue("")) }
     val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
+    
+    var clipboardContent by remember { mutableStateOf<String?>(null) }
+
+    // Check clipboard on launch
+    LaunchedEffect(Unit) {
+        val text = clipboardManager.getText()?.text
+        if (text != null && text.any { it.isDigit() }) {
+            // Basic validation: must contain digits
+            clipboardContent = text.filter { it.isDigit() || it == '+' || it == '*' || it == '#' }
+        }
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         val allGranted = permissions.entries.all { it.value }
-        if (allGranted && dialString.isNotEmpty()) {
-            TelephonyUtils.placeOutgoingCall(context, dialString)
+        if (allGranted && dialValue.text.isNotEmpty()) {
+            TelephonyUtils.placeOutgoingCall(context, dialValue.text)
+        }
+    }
+
+    fun handleDigitClick(digit: String) {
+        if (dialValue.text.length >= 20) return
+        
+        val start = dialValue.selection.start
+        val end = dialValue.selection.end
+        val newText = StringBuilder(dialValue.text).replace(start, end, digit).toString()
+        val newSelection = TextRange(start + 1)
+        dialValue = TextFieldValue(newText, newSelection)
+    }
+
+    fun handleBackspace() {
+        if (dialValue.selection.length > 0) {
+            val start = dialValue.selection.start
+            val end = dialValue.selection.end
+            val newText = StringBuilder(dialValue.text).delete(start, end).toString()
+            dialValue = TextFieldValue(newText, TextRange(start))
+        } else if (dialValue.selection.start > 0) {
+            val index = dialValue.selection.start
+            val newText = StringBuilder(dialValue.text).deleteCharAt(index - 1).toString()
+            dialValue = TextFieldValue(newText, TextRange(index - 1))
         }
     }
 
@@ -51,23 +98,18 @@ fun DialerScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Bottom
+                .padding(horizontal = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Header with Back button
+            // Header
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp),
+                    .padding(top = 16.dp, bottom = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onNavigateBack) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color.White
-                    )
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Text("Dialer", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
@@ -75,18 +117,58 @@ fun DialerScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // Number Display
-            Text(
-                text = dialString,
-                fontSize = 48.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
+            // Contact Action Pills
+            if (dialValue.text.isNotEmpty()) {
+                ActionPill(
+                    icon = Icons.Default.PersonAdd,
+                    text = "Create new contact",
+                    onClick = { onNavigateToAddContact(dialValue.text) }
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+
+            // Interactive Number Display
+            BasicTextField(
+                value = dialValue,
+                onValueChange = { dialValue = it },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 32.dp),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                maxLines = 1
+                    .padding(vertical = 16.dp),
+                textStyle = TextStyle(
+                    fontSize = 40.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    textAlign = TextAlign.Center
+                ),
+                cursorBrush = SolidColor(AccentCyan),
+                readOnly = false,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
             )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Clipboard Paste Chip
+            if (clipboardContent != null && dialValue.text.isEmpty()) {
+                Surface(
+                    onClick = { 
+                        dialValue = TextFieldValue(clipboardContent!!, TextRange(clipboardContent!!.length))
+                        clipboardContent = null
+                    },
+                    shape = RoundedCornerShape(16.dp),
+                    color = Surface,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, AccentCyan.copy(alpha = 0.3f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(imageVector = Icons.Default.Call, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Paste $clipboardContent", color = Color.White, fontSize = 12.sp)
+                    }
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+            }
 
             // Dial Pad
             val keys = listOf(
@@ -104,7 +186,7 @@ fun DialerScreen(
                     row.forEach { key ->
                         DialButton(
                             text = key,
-                            onClick = { if (dialString.length < 15) dialString += key }
+                            onClick = { handleDigitClick(key) }
                         )
                     }
                 }
@@ -121,25 +203,21 @@ fun DialerScreen(
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Backspace (Invisible placeholder for symmetry if needed)
                 Box(modifier = Modifier.size(72.dp))
 
-                // Call Button
                 FloatingActionButton(
                     onClick = {
-                        if (dialString.isNotEmpty()) {
+                        if (dialValue.text.isNotEmpty()) {
                             val requiredPermissions = arrayOf(
                                 Manifest.permission.CALL_PHONE,
                                 Manifest.permission.RECORD_AUDIO,
                                 Manifest.permission.READ_PHONE_STATE
                             )
-                            
                             val missingPermissions = requiredPermissions.filter {
                                 ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
                             }
-
                             if (missingPermissions.isEmpty()) {
-                                TelephonyUtils.placeOutgoingCall(context, dialString)
+                                TelephonyUtils.placeOutgoingCall(context, dialValue.text)
                             } else {
                                 permissionLauncher.launch(requiredPermissions)
                             }
@@ -150,22 +228,44 @@ fun DialerScreen(
                     shape = CircleShape,
                     modifier = Modifier.size(72.dp)
                 ) {
-                    Icon(Icons.Default.Call, contentDescription = "Dial", modifier = Modifier.size(32.dp))
+                    Icon(Icons.Default.Call, "Dial", modifier = Modifier.size(32.dp))
                 }
 
-                // Backspace Button
                 IconButton(
-                    onClick = { if (dialString.isNotEmpty()) dialString = dialString.dropLast(1) },
+                    onClick = { handleBackspace() },
                     modifier = Modifier.size(72.dp)
                 ) {
                     Icon(
                         Icons.AutoMirrored.Filled.Backspace,
-                        contentDescription = "Backspace",
+                        "Backspace",
                         tint = Color.White,
                         modifier = Modifier.size(32.dp)
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun ActionPill(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    text: String,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(20.dp),
+        color = AccentCyan.copy(alpha = 0.1f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, AccentCyan.copy(alpha = 0.2f))
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(icon, null, tint = AccentCyan, modifier = Modifier.size(14.dp))
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(text, color = AccentCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         }
     }
 }

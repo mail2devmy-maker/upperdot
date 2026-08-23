@@ -21,6 +21,8 @@ data class ContactSummary(
     val fullName: String,
     val nicknames: List<String>,
     val primaryPhone: String,
+    val phoneNumbers: List<String> = emptyList(),
+    val socialProfiles: List<com.mail2dev.upperdot.ui.add_contact.SocialProfile> = emptyList(),
     val group: String? = null,
     val tag: String? = null
 )
@@ -174,34 +176,76 @@ class ConnectionsListViewModel(
         clearMedia()
     }
 
-    fun saveNote(contactId: Long, title: String, content: String, attachments: List<String>, voice: String?) {
+    fun saveNote(contactId: Long, title: String, content: String, attachments: List<String>, voice: String?, noteId: Long? = null, createdAt: Long? = null) {
         viewModelScope.launch(Dispatchers.IO) {
-            val note = NoteEntity(
-                contactId = contactId,
-                title = title,
-                content = content,
-                attachmentPaths = attachments,
-                voiceRecordingPath = voice
-            )
-            noteRepository.insertNote(note)
+            val note = if (noteId == null) {
+                NoteEntity(
+                    contactId = contactId,
+                    title = title,
+                    content = content,
+                    attachmentPaths = attachments,
+                    voiceRecordingPath = voice,
+                    createdAt = createdAt ?: System.currentTimeMillis()
+                )
+            } else {
+                NoteEntity(
+                    id = noteId,
+                    contactId = contactId,
+                    title = title,
+                    content = content,
+                    attachmentPaths = attachments,
+                    voiceRecordingPath = voice,
+                    createdAt = createdAt ?: System.currentTimeMillis(),
+                    lastModifiedAt = System.currentTimeMillis()
+                )
+            }
+
+            if (noteId == null) {
+                noteRepository.insertNote(note)
+            } else {
+                noteRepository.updateNote(note)
+            }
+
             withContext(Dispatchers.Main) {
                 dismissAddNoteSheet()
             }
         }
     }
 
-    fun saveTransaction(contactId: Long, isRevenue: Boolean, title: String, amount: String, detail: String, attachments: List<String>, voice: String?) {
+    fun saveTransaction(contactId: Long, isRevenue: Boolean, title: String, amount: String, detail: String, attachments: List<String>, voice: String?, transactionId: Long? = null, createdAt: Long? = null) {
         viewModelScope.launch(Dispatchers.IO) {
-            val transaction = TransactionEntity(
-                contactId = contactId,
-                title = title,
-                amount = amount.toDoubleOrNull() ?: 0.0,
-                isRevenue = isRevenue,
-                detail = detail,
-                receiptPaths = attachments,
-                voiceRecordingPath = voice
-            )
-            transactionRepository.insertTransaction(transaction)
+            val transaction = if (transactionId == null) {
+                TransactionEntity(
+                    contactId = contactId,
+                    title = title,
+                    amount = amount.toDoubleOrNull() ?: 0.0,
+                    isRevenue = isRevenue,
+                    detail = detail,
+                    receiptPaths = attachments,
+                    voiceRecordingPath = voice,
+                    createdAt = createdAt ?: System.currentTimeMillis()
+                )
+            } else {
+                TransactionEntity(
+                    id = transactionId,
+                    contactId = contactId,
+                    title = title,
+                    amount = amount.toDoubleOrNull() ?: 0.0,
+                    isRevenue = isRevenue,
+                    detail = detail,
+                    receiptPaths = attachments,
+                    voiceRecordingPath = voice,
+                    createdAt = createdAt ?: System.currentTimeMillis(),
+                    lastModifiedAt = System.currentTimeMillis()
+                )
+            }
+            
+            if (transactionId == null) {
+                transactionRepository.insertTransaction(transaction)
+            } else {
+                transactionRepository.updateTransaction(transaction)
+            }
+
             withContext(Dispatchers.Main) {
                 dismissAddTransactionSheet()
             }
@@ -214,6 +258,8 @@ private fun ContactEntity.toSummary() = ContactSummary(
     fullName = fullName,
     nicknames = nicknames,
     primaryPhone = sanitizedPrimaryPhone,
+    phoneNumbers = phoneNumbers,
+    socialProfiles = socialProfiles,
     group = groupName,
     tag = tagName
 )

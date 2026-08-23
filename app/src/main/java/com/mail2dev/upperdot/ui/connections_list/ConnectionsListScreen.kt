@@ -18,7 +18,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.*
+import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.automirrored.filled.NoteAdd
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -34,13 +36,16 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mail2dev.upperdot.R
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mail2dev.upperdot.ui.components.UpperDotBottomNavigation
-import com.mail2dev.upperdot.ui.new_cash_transaction.NewCashTransactionSheet
-import com.mail2dev.upperdot.ui.new_relationship_note.NewRelationshipNoteSheet
+import com.mail2dev.upperdot.ui.new_cash_transaction.TransactionSheet
+import com.mail2dev.upperdot.ui.new_relationship_note.RelationshipNoteSheet
 import com.mail2dev.upperdot.ui.theme.AccentCyan
 import com.mail2dev.upperdot.ui.theme.Surface
 import com.mail2dev.upperdot.ui.theme.TextSecondary
@@ -67,6 +72,72 @@ fun ConnectionsListScreen(
     val selectedAttachments by viewModel.selectedAttachments.collectAsState()
     val currencySymbol by viewModel.currencySymbol.collectAsState()
 
+    var whatsappTargetContact by remember { mutableStateOf<ContactSummary?>(null) }
+    val context = LocalContext.current
+
+    fun launchWhatsApp(number: String) {
+        val cleaned = number.filter { it.isDigit() }
+        val normalized = if (cleaned.startsWith("0")) "60$cleaned" else cleaned
+        val uri = Uri.parse("https://wa.me/$normalized")
+        val intent = Intent(Intent.ACTION_VIEW, uri)
+        try {
+            context.startActivity(intent)
+        } catch (e: android.content.ActivityNotFoundException) {
+            // Fallback to browser
+            context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+        }
+    }
+
+    if (whatsappTargetContact != null) {
+        val contact = whatsappTargetContact!!
+        val whatsappProfile = contact.socialProfiles.find { it.platform.equals("WhatsApp", ignoreCase = true) }
+        
+        if (whatsappProfile != null && whatsappProfile.handle.isNotBlank()) {
+            launchWhatsApp(whatsappProfile.handle)
+            whatsappTargetContact = null
+        } else {
+            val numbers = contact.phoneNumbers.filter { it.isNotBlank() }
+            when {
+                numbers.isEmpty() -> {
+                    android.widget.Toast.makeText(context, "No phone number available", android.widget.Toast.LENGTH_SHORT).show()
+                    whatsappTargetContact = null
+                }
+                numbers.size == 1 -> {
+                    launchWhatsApp(numbers[0])
+                    whatsappTargetContact = null
+                }
+                else -> {
+                    AlertDialog(
+                        onDismissRequest = { whatsappTargetContact = null },
+                        title = { Text("Select number for WhatsApp", color = Color.White) },
+                        text = {
+                            Column {
+                                numbers.forEach { number ->
+                                    TextButton(
+                                        onClick = {
+                                            launchWhatsApp(number)
+                                            whatsappTargetContact = null
+                                        },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(number, color = AccentCyan, textAlign = TextAlign.Start, modifier = Modifier.fillMaxWidth())
+                                    }
+                                }
+                            }
+                        },
+                        confirmButton = {},
+                        dismissButton = {
+                            TextButton(onClick = { whatsappTargetContact = null }) {
+                                Text("Cancel", color = Color.Gray)
+                            }
+                        },
+                        containerColor = Surface
+                    )
+                }
+            }
+        }
+    }
+
     LaunchedEffect(initialPhone) {
         if (!initialPhone.isNullOrEmpty()) {
             viewModel.onAddNoteByPhone(initialPhone)
@@ -74,10 +145,10 @@ fun ConnectionsListScreen(
     }
 
     if (showAddNoteSheet) {
-        NewRelationshipNoteSheet(
+        RelationshipNoteSheet(
             onDismiss = viewModel::dismissAddNoteSheet,
-            onSave = { contactId, title, content, attachments, voice ->
-                viewModel.saveNote(contactId, title, content, attachments, voice)
+            onSave = { contactId, title, content, attachments, voice, noteId, createdAt ->
+                viewModel.saveNote(contactId, title, content, attachments, voice, noteId, createdAt)
             },
             contactSearchQuery = contactSearchQuery,
             onContactSearchQueryChange = viewModel::onContactSearchQueryChanged,
@@ -92,10 +163,10 @@ fun ConnectionsListScreen(
     }
 
     if (showAddTransactionSheet) {
-        NewCashTransactionSheet(
+        TransactionSheet(
             onDismiss = viewModel::dismissAddTransactionSheet,
-            onSave = { contactId, isRevenue, title, amount, detail, attachments, voice ->
-                viewModel.saveTransaction(contactId, isRevenue, title, amount, detail, attachments, voice)
+            onSave = { contactId, isRevenue, title, amount, detail, attachments, voice, transactionId, createdAt ->
+                viewModel.saveTransaction(contactId, isRevenue, title, amount, detail, attachments, voice, transactionId, createdAt)
             },
             contactSearchQuery = contactSearchQuery,
             onContactSearchQueryChange = viewModel::onContactSearchQueryChanged,
@@ -168,6 +239,17 @@ fun ConnectionsListScreen(
                         .height(56.dp),
                     placeholder = { Text("Search by name or number...", color = TextSecondary) },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = AccentCyan) },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { viewModel.onSearchQueryChanged("") }) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Clear Search",
+                                    tint = TextSecondary
+                                )
+                            }
+                        }
+                    },
                     shape = RoundedCornerShape(16.dp),
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Surface,
@@ -210,7 +292,10 @@ fun ConnectionsListScreen(
                             contacts = state.contacts,
                             onContactClick = onNavigateToContact,
                             onAddNote = viewModel::onAddNote,
-                            onAddTransaction = viewModel::onAddTransaction
+                            onAddTransaction = viewModel::onAddTransaction,
+                            onWhatsAppClick = { contact ->
+                                whatsappTargetContact = contact
+                            }
                         )
                     }
                     is ConnectionsUIState.Loading -> {
@@ -311,7 +396,8 @@ fun ConnectionsList(
     contacts: List<ContactSummary>,
     onContactClick: (Long) -> Unit,
     onAddNote: (Long) -> Unit,
-    onAddTransaction: (Long) -> Unit
+    onAddTransaction: (Long) -> Unit,
+    onWhatsAppClick: (ContactSummary) -> Unit
 ) {
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -322,7 +408,8 @@ fun ConnectionsList(
                 contact = contact,
                 onClick = { onContactClick(contact.id) },
                 onAddNote = { onAddNote(contact.id) },
-                onAddTransaction = { onAddTransaction(contact.id) }
+                onAddTransaction = { onAddTransaction(contact.id) },
+                onWhatsAppClick = { onWhatsAppClick(contact) }
             )
         }
     }
@@ -333,7 +420,8 @@ fun ContactCard(
     contact: ContactSummary,
     onClick: () -> Unit,
     onAddNote: () -> Unit,
-    onAddTransaction: () -> Unit
+    onAddTransaction: () -> Unit,
+    onWhatsAppClick: () -> Unit
 ) {
     var isExpanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -418,12 +506,8 @@ fun ContactCard(
                         }
                     )
                 }
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onLongPress = { isExpanded = !isExpanded },
-                        onTap = { onClick() }
-                    )
-                },
+                .clickable { isExpanded = !isExpanded }
+                .animateContentSize(),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = Surface)
         ) {
@@ -431,7 +515,8 @@ fun ContactCard(
                 modifier = Modifier.padding(16.dp)
             ) {
                 Row(
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Surface(
                         shape = CircleShape,
@@ -448,7 +533,7 @@ fun ContactCard(
                         }
                     }
                     Spacer(modifier = Modifier.width(16.dp))
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = contact.fullName,
                             color = Color.White,
@@ -463,6 +548,14 @@ fun ContactCard(
                             )
                         }
                     }
+
+                    IconButton(onClick = onClick) {
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowRight,
+                            contentDescription = "View Profile",
+                            tint = Color.Gray
+                        )
+                    }
                 }
                 
                 AnimatedVisibility(
@@ -476,17 +569,26 @@ fun ContactCard(
                         Spacer(modifier = Modifier.height(16.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
+                            QuickActionButton(
+                                painter = painterResource(R.drawable.ic_whatsapp),
+                                text = "WhatsApp",
+                                onClick = onWhatsAppClick,
+                                modifier = Modifier.weight(1f),
+                                tint = Color.Unspecified
+                            )
                             QuickActionButton(
                                 icon = Icons.AutoMirrored.Filled.NoteAdd,
                                 text = "Add Note",
-                                onClick = onAddNote
+                                onClick = onAddNote,
+                                modifier = Modifier.weight(1f)
                             )
                             QuickActionButton(
                                 icon = Icons.AutoMirrored.Filled.ReceiptLong,
                                 text = "Add Trans",
-                                onClick = onAddTransaction
+                                onClick = onAddTransaction,
+                                modifier = Modifier.weight(1f)
                             )
                         }
                     }
@@ -498,25 +600,45 @@ fun ContactCard(
 
 @Composable
 fun QuickActionButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    painter: Painter? = null,
     text: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    tint: Color = AccentCyan
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable { onClick() }
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(12.dp),
+        color = Color.Black.copy(alpha = 0.3f),
+        modifier = modifier
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = AccentCyan,
-            modifier = Modifier.size(24.dp)
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = text,
-            color = Color.White,
-            fontSize = 12.sp
-        )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(vertical = 8.dp)
+        ) {
+            if (painter != null) {
+                Icon(
+                    painter = painter,
+                    contentDescription = null,
+                    tint = tint,
+                    modifier = Modifier.size(20.dp)
+                )
+            } else if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = tint,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = text,
+                color = Color.White,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
     }
 }

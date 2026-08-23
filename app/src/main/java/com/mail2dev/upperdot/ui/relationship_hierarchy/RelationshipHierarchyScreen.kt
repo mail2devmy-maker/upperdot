@@ -1,12 +1,10 @@
 package com.mail2dev.upperdot.ui.relationship_hierarchy
 
 import androidx.compose.animation.*
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -17,10 +15,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mail2dev.upperdot.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,9 +29,9 @@ fun RelationshipHierarchyScreen(
     val groups by viewModel.groups.collectAsState()
     val expandedGroups by viewModel.expandedGroups.collectAsState()
 
-    var showAddTagDialog by remember { mutableStateOf<String?>(null) } // GroupId
-    var showRenameGroupDialog by remember { mutableStateOf<String?>(null) } // GroupId
-    var showRenameTagDialog by remember { mutableStateOf<Pair<String, String>?>(null) } // GroupId, TagId
+    var showAddTagDialog by remember { mutableStateOf<String?>(null) }
+    var showRenameGroupDialog by remember { mutableStateOf<String?>(null) }
+    var showRenameTagDialog by remember { mutableStateOf<Pair<String, String>?>(null) }
     var tempName by remember { mutableStateOf("") }
 
     if (showAddTagDialog != null) {
@@ -135,8 +132,8 @@ fun RelationshipHierarchyScreen(
             CenterAlignedTopAppBar(
                 title = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Relationship Hierarchy", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                        Text("In-Place Configuration", fontSize = 11.sp, color = TextSecondary)
+                        Text("Contact Groups", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        Text("Organize your contacts", fontSize = 11.sp, color = TextSecondary)
                     }
                 },
                 navigationIcon = {
@@ -207,62 +204,96 @@ fun HierarchyGroupItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { onToggle() },
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = Surface)
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // 1. Expand Arrow
                 Icon(
                     imageVector = if (isExpanded) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowRight,
                     contentDescription = null,
                     tint = AccentCyan,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(20.dp)
                 )
-                
+
                 Spacer(modifier = Modifier.width(12.dp))
 
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = group.name,
-                            color = Color.White,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Surface(
-                            shape = CircleShape,
-                            color = AccentCyan.copy(alpha = 0.1f)
-                        ) {
-                            Text(
-                                text = group.contactCount.toString(),
-                                color = AccentCyan,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                            )
-                        }
-                    }
+                // 2. Title + Count Pill Row
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Start
+                ) {
                     Text(
-                        text = "Hierarchy Group Node",
-                        color = TextSecondary,
-                        fontSize = 11.sp
+                        text = group.name,
+                        color = Color.White,
+                        fontSize = 15.sp, // Reduced from 18.sp for a sleeker look
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
                     )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = AccentCyan.copy(alpha = 0.15f)
+                    ) {
+                        Text(
+                            text = String.format("%,d", group.contactCount),
+                            color = AccentCyan,
+                            fontSize = 10.sp, // Sleek, clean badge text
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
                 }
 
-                Row {
-                    IconButton(onClick = onAddTag) {
-                        Icon(Icons.Default.AddCircleOutline, contentDescription = "Add Tag", tint = AccentCyan, modifier = Modifier.size(20.dp))
+                Spacer(modifier = Modifier.width(12.dp))
+
+                // 3. Action Buttons
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(
+                        onClick = onAddTag,
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.AddCircleOutline,
+                            contentDescription = "Add Tag",
+                            tint = AccentCyan,
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
-                    IconButton(onClick = onRename) {
-                        Icon(Icons.Default.Edit, contentDescription = "Rename", tint = Color.Gray, modifier = Modifier.size(20.dp))
+                    IconButton(
+                        onClick = onRename,
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = "Rename",
+                            tint = Color.Gray,
+                            modifier = Modifier.size(18.dp)
+                        )
                     }
-                    IconButton(onClick = onDelete) {
-                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = NegativeRed, modifier = Modifier.size(20.dp))
+                    IconButton(
+                        onClick = onDelete,
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "Delete",
+                            tint = NegativeRed,
+                            modifier = Modifier.size(18.dp)
+                        )
                     }
                 }
             }
@@ -313,7 +344,7 @@ fun HierarchyTagItem(
                 tint = Color.Gray,
                 modifier = Modifier.size(16.dp)
             )
-            
+
             Spacer(modifier = Modifier.width(12.dp))
 
             Text(

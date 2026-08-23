@@ -3,9 +3,19 @@ package com.mail2dev.upperdot.data.sync
 import android.content.Context
 import androidx.work.*
 import com.mail2dev.upperdot.data.worker.DriveSyncWorker
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import java.util.concurrent.TimeUnit
 
 class SyncManager(private val context: Context) {
+
+    val syncStatus: Flow<Boolean> = WorkManager.getInstance(context)
+        .getWorkInfosForUniqueWorkFlow("ImmediateDriveSync")
+        .map { it.any { info -> info.state == WorkInfo.State.RUNNING || info.state == WorkInfo.State.ENQUEUED } }
+
+    val periodicSyncStatus: Flow<Boolean> = WorkManager.getInstance(context)
+        .getWorkInfosForUniqueWorkFlow("PeriodicDriveSync")
+        .map { it.any { info -> info.state == WorkInfo.State.RUNNING } }
 
     fun schedulePeriodicSync(intervalHours: Long, wifiOnly: Boolean) {
         val constraints = Constraints.Builder()

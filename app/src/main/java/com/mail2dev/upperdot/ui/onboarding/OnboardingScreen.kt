@@ -32,16 +32,20 @@ import androidx.compose.ui.unit.sp
 import com.mail2dev.upperdot.ui.theme.AccentCyan
 import com.mail2dev.upperdot.ui.theme.PrimaryYellow
 import com.mail2dev.upperdot.ui.theme.Surface
+import com.mail2dev.upperdot.util.MiuiPermissionUtils
 
 @Composable
 fun OnboardingScreen(
     onComplete: () -> Unit
 ) {
     val context = LocalContext.current
+    val isMiui = remember { MiuiPermissionUtils.isMiui() }
+    
     var isDialerDefault by remember { mutableStateOf(false) }
     var isOverlayGranted by remember { mutableStateOf(false) }
     var isBatteryIgnored by remember { mutableStateOf(false) }
     var isPermissionsGranted by remember { mutableStateOf(false) }
+    var isMiuiConfirmed by remember { mutableStateOf(false) }
 
     // Launcher for Dialer Role
     val roleLauncher = rememberLauncherForActivityResult(
@@ -58,7 +62,13 @@ fun OnboardingScreen(
     }
 
     // Auto-complete check
-    if (isDialerDefault && isOverlayGranted && isBatteryIgnored && isPermissionsGranted) {
+    val requirementsMet = if (isMiui) {
+        isDialerDefault && isOverlayGranted && isBatteryIgnored && isPermissionsGranted && isMiuiConfirmed
+    } else {
+        isDialerDefault && isOverlayGranted && isBatteryIgnored && isPermissionsGranted
+    }
+
+    if (requirementsMet) {
         SideEffect { onComplete() }
     }
 
@@ -151,6 +161,26 @@ fun OnboardingScreen(
                     ))
                 }
             )
+
+            if (isMiui) {
+                SetupItem(
+                    title = "MIUI Background Popups",
+                    description = "Enable 'Display pop-up windows' and 'Show on Lock screen'.",
+                    isGranted = isMiuiConfirmed,
+                    onClick = {
+                        try {
+                            context.startActivity(MiuiPermissionUtils.getMiuiPermissionEditorIntent(context))
+                        } catch (_: Exception) {
+                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                data = Uri.fromParts("package", context.packageName, null)
+                            }
+                            context.startActivity(intent)
+                        }
+                        // Manual toggle for now as check is unreliable
+                        isMiuiConfirmed = true
+                    }
+                )
+            }
 
             Spacer(modifier = Modifier.height(32.dp))
 

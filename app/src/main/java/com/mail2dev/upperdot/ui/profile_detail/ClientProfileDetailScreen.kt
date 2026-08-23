@@ -16,15 +16,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mail2dev.upperdot.R
 import com.mail2dev.upperdot.data.local.entity.NoteEntity
 import com.mail2dev.upperdot.data.local.entity.TransactionEntity
 import com.mail2dev.upperdot.ui.components.NoteViewerSheet
 import com.mail2dev.upperdot.ui.components.TransactionViewerSheet
+import com.mail2dev.upperdot.ui.new_cash_transaction.TransactionSheet
+import com.mail2dev.upperdot.ui.new_relationship_note.RelationshipNoteSheet
 import com.mail2dev.upperdot.ui.theme.*
+import com.mail2dev.upperdot.util.ContactUtils
 import com.mail2dev.upperdot.utils.toFormattedDate
 import java.util.Locale
 
@@ -42,7 +48,12 @@ fun ClientProfileDetailScreen(
     val isNotesExpanded by viewModel.isNotesExpanded.collectAsState()
     val isTransactionsExpanded by viewModel.isTransactionsExpanded.collectAsState()
     val currencySymbol by viewModel.currencySymbol.collectAsState()
-    
+    val editingNote by viewModel.editingNote.collectAsState()
+    val editingTransaction by viewModel.editingTransaction.collectAsState()
+    val selectedAttachments by viewModel.selectedAttachments.collectAsState()
+    val contactSearchQuery by viewModel.contactSearchQuery.collectAsState()
+    val searchedContacts by viewModel.searchedContacts.collectAsState()
+
     var showDeleteDialog by remember { mutableStateOf(false) }
     var selectedNote by remember { mutableStateOf<NoteEntity?>(null) }
     var selectedTransaction by remember { mutableStateOf<TransactionEntity?>(null) }
@@ -84,11 +95,32 @@ fun ClientProfileDetailScreen(
             note = selectedNote!!,
             sheetState = sheetState,
             onDismiss = { selectedNote = null },
-            onUpdate = viewModel::updateNote,
+            onEdit = { viewModel.onEditNote(it) },
             onDelete = { note ->
                 viewModel.deleteNote(note)
                 selectedNote = null
             }
+        )
+    }
+
+    if (editingNote != null) {
+        RelationshipNoteSheet(
+            existingNote = editingNote,
+            onDismiss = { viewModel.dismissEditNote() },
+            onSave = { contactId, title, content, attachments, voice, noteId, createdAt ->
+                if (noteId != null) {
+                    viewModel.updateNote(noteId, contactId, title, content, attachments, voice, createdAt)
+                }
+            },
+            contactSearchQuery = contactSearchQuery,
+            onContactSearchQueryChange = viewModel::onContactSearchQueryChanged,
+            searchedContacts = searchedContacts,
+            attachmentPaths = selectedAttachments,
+            onAddAttachment = viewModel::addAttachmentPath,
+            onRemoveAttachment = viewModel::removeAttachmentPath,
+            currencySymbol = currencySymbol,
+            initialContact = searchedContacts.find { it.id == editingNote!!.contactId },
+            isContactLocked = true
         )
     }
 
@@ -98,11 +130,32 @@ fun ClientProfileDetailScreen(
             currencySymbol = currencySymbol,
             sheetState = sheetState,
             onDismiss = { selectedTransaction = null },
-            onUpdate = viewModel::updateTransaction,
+            onEdit = { viewModel.onEditTransaction(it) },
             onDelete = { trans ->
                 viewModel.deleteTransaction(trans)
                 selectedTransaction = null
             }
+        )
+    }
+
+    if (editingTransaction != null) {
+        TransactionSheet(
+            existingTransaction = editingTransaction,
+            onDismiss = { viewModel.dismissEditTransaction() },
+            onSave = { contactId, isRevenue, title, amount, detail, attachments, voice, transactionId, createdAt ->
+                if (transactionId != null) {
+                    viewModel.updateTransaction(transactionId, contactId, isRevenue, title, amount, detail, attachments, voice, createdAt)
+                }
+            },
+            contactSearchQuery = contactSearchQuery,
+            onContactSearchQueryChange = viewModel::onContactSearchQueryChanged,
+            searchedContacts = searchedContacts,
+            receiptPaths = selectedAttachments,
+            onAddAttachment = viewModel::addAttachmentPath,
+            onRemoveAttachment = viewModel::removeAttachmentPath,
+            currencySymbol = currencySymbol,
+            initialContact = searchedContacts.find { it.id == editingTransaction!!.contactId },
+            isContactLocked = true
         )
     }
 
@@ -243,7 +296,12 @@ fun ClientProfileDetailScreen(
                 item {
                     ProfileCard(title = "SOCIAL PROFILES") {
                         profile.socialProfiles.forEach { social ->
-                            ProfileDataRow(icon = Icons.Default.Circle, label = social.platform, value = social.handle)
+                            ProfileDataRow(
+                                painter = painterResource(ContactUtils.getSocialPlatformDrawable(social.platform)),
+                                label = social.platform,
+                                value = social.handle,
+                                tint = Color.Unspecified
+                            )
                         }
                     }
                     Spacer(modifier = Modifier.height(24.dp))
@@ -449,9 +507,11 @@ fun ProfileCard(
 
 @Composable
 fun ProfileDataRow(
-    icon: ImageVector,
+    icon: ImageVector? = null,
+    painter: Painter? = null,
     label: String,
-    value: String
+    value: String,
+    tint: Color = AccentCyan
 ) {
     Row(
         modifier = Modifier
@@ -465,7 +525,11 @@ fun ProfileDataRow(
             modifier = Modifier.size(40.dp)
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Icon(icon, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(20.dp))
+                if (painter != null) {
+                    Icon(painter, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
+                } else if (icon != null) {
+                    Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
+                }
             }
         }
         Spacer(modifier = Modifier.width(16.dp))

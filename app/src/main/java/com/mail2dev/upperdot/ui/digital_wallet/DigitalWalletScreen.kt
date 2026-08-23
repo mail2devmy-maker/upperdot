@@ -52,7 +52,7 @@ fun DigitalWalletScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Digital Wallet Management", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
+                title = { Text("My Digital Wallet", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")

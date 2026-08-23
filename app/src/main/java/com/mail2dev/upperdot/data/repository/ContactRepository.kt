@@ -9,12 +9,15 @@ class ContactRepository(private val contactDao: ContactDao) {
     val allContacts: Flow<List<ContactEntity>> = contactDao.getAllContacts()
     val contactCount: Flow<Int> = contactDao.getContactCount()
 
+    suspend fun getAllContactsList(): List<ContactEntity> = contactDao.getAllContactsList()
+
     suspend fun getContactById(id: Long): ContactEntity? = contactDao.getContactById(id)
     
     suspend fun getContactByPhone(sanitizedPhone: String): ContactEntity? = contactDao.getContactByPhone(sanitizedPhone)
 
     suspend fun findContactByPhone(rawPhone: String): ContactEntity? {
         val sanitized = com.mail2dev.upperdot.util.ContactUtils.smartSanitize(rawPhone)
+        if (sanitized.isEmpty()) return null
         return contactDao.getContactByPhone(sanitized)
     }
 

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -66,6 +67,18 @@ fun CompactSearchField(
             .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(24.dp)),
         placeholder = { Text(placeholder, color = TextSecondary, fontSize = 12.sp) },
         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(18.dp)) },
+        trailingIcon = {
+            if (value.isNotEmpty()) {
+                IconButton(onClick = { onValueChange("") }) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Clear Search",
+                        tint = TextSecondary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+        },
         shape = RoundedCornerShape(24.dp),
         textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
         colors = TextFieldDefaults.colors(
@@ -91,7 +104,10 @@ fun StitchTextField(
     leadingIcon: ImageVector? = null,
     singleLine: Boolean = true,
     minLines: Int = 1,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    showBorder: Boolean = true,
+    containerColor: Color = Surface,
+    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(16.dp)
 ) {
     TextField(
         value = value,
@@ -99,16 +115,16 @@ fun StitchTextField(
         modifier = modifier
             .fillMaxWidth()
             .then(if (minLines > 1) Modifier.heightIn(min = 112.dp) else Modifier.height(56.dp))
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp)),
+            .then(if (showBorder) Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape) else Modifier),
         placeholder = { Text(placeholder, color = TextSecondary, fontSize = 14.sp) },
         leadingIcon = leadingIcon?.let {
             { Icon(it, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(20.dp)) }
         },
-        shape = RoundedCornerShape(16.dp),
+        shape = shape,
         colors = TextFieldDefaults.colors(
-            focusedContainerColor = Surface,
-            unfocusedContainerColor = Surface,
-            disabledContainerColor = Surface,
+            focusedContainerColor = containerColor,
+            unfocusedContainerColor = containerColor,
+            disabledContainerColor = containerColor,
             focusedIndicatorColor = Color.Transparent,
             unfocusedIndicatorColor = Color.Transparent,
             cursorColor = AccentCyan,

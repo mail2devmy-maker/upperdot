@@ -88,6 +88,31 @@ class ClientProfileDetailViewModel(
     private val _isTransactionsExpanded = MutableStateFlow(true)
     val isTransactionsExpanded: StateFlow<Boolean> = _isTransactionsExpanded.asStateFlow()
 
+    private val _editingNote = MutableStateFlow<NoteEntity?>(null)
+    val editingNote: StateFlow<NoteEntity?> = _editingNote.asStateFlow()
+
+    private val _editingTransaction = MutableStateFlow<TransactionEntity?>(null)
+    val editingTransaction: StateFlow<TransactionEntity?> = _editingTransaction.asStateFlow()
+
+    private val _selectedAttachments = MutableStateFlow<List<String>>(emptyList())
+    val selectedAttachments: StateFlow<List<String>> = _selectedAttachments.asStateFlow()
+
+    private val _contactSearchQuery = MutableStateFlow("")
+    val contactSearchQuery: StateFlow<String> = _contactSearchQuery.asStateFlow()
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val searchedContacts: StateFlow<List<com.mail2dev.upperdot.ui.insights.ContactSummary>> = _contactSearchQuery
+        .debounce(300)
+        .flatMapLatest { query ->
+            if (query.isEmpty()) {
+                contactRepository.allContacts
+            } else {
+                contactRepository.searchContacts(query)
+            }
+        }.map { entities ->
+            entities.map { com.mail2dev.upperdot.ui.insights.ContactSummary(it.id, it.fullName) }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     fun loadContact(id: Long) {
         _contactId.value = id
     }
@@ -100,9 +125,57 @@ class ClientProfileDetailViewModel(
         _isTransactionsExpanded.value = !_isTransactionsExpanded.value
     }
 
-    fun updateNote(note: NoteEntity) {
+    fun onContactSearchQueryChanged(query: String) {
+        _contactSearchQuery.value = query
+    }
+
+    fun addAttachmentPath(path: String) {
+        _selectedAttachments.value = _selectedAttachments.value + path
+    }
+
+    fun removeAttachmentPath(index: Int) {
+        val list = _selectedAttachments.value.toMutableList()
+        if (index < list.size) {
+            list.removeAt(index)
+            _selectedAttachments.value = list
+        }
+    }
+
+    fun onEditNote(note: NoteEntity) {
+        _editingNote.value = note
+        _selectedAttachments.value = note.attachmentPaths
+    }
+
+    fun dismissEditNote() {
+        _editingNote.value = null
+        _selectedAttachments.value = emptyList()
+    }
+
+    fun onEditTransaction(transaction: TransactionEntity) {
+        _editingTransaction.value = transaction
+        _selectedAttachments.value = transaction.receiptPaths
+    }
+
+    fun dismissEditTransaction() {
+        _editingTransaction.value = null
+        _selectedAttachments.value = emptyList()
+    }
+
+    fun updateNote(noteId: Long, contactId: Long, title: String, content: String, attachments: List<String>, voice: String?, createdAt: Long? = null) {
         viewModelScope.launch {
+            val note = NoteEntity(
+                id = noteId,
+                contactId = contactId,
+                title = title,
+                content = content,
+                attachmentPaths = attachments,
+                voiceRecordingPath = voice,
+                createdAt = createdAt ?: System.currentTimeMillis(),
+                lastModifiedAt = System.currentTimeMillis()
+            )
             noteRepository.updateNote(note)
+            _editingNote.value = null
+            _selectedAttachments.value = emptyList()
         }
     }
 
@@ -112,9 +185,23 @@ class ClientProfileDetailViewModel(
         }
     }
 
-    fun updateTransaction(transaction: TransactionEntity) {
+    fun updateTransaction(noteId: Long, contactId: Long, isRevenue: Boolean, title: String, amount: String, detail: String, attachments: List<String>, voice: String?, createdAt: Long? = null) {
         viewModelScope.launch {
+            val transaction = TransactionEntity(
+                id = noteId,
+                contactId = contactId,
+                title = title,
+                amount = amount.toDoubleOrNull() ?: 0.0,
+                isRevenue = isRevenue,
+                detail = detail,
+                receiptPaths = attachments,
+                voiceRecordingPath = voice,
+                createdAt = createdAt ?: System.currentTimeMillis(),
+                lastModifiedAt = System.currentTimeMillis()
+            )
             transactionRepository.updateTransaction(transaction)
+            _editingTransaction.value = null
+            _selectedAttachments.value = emptyList()
         }
     }
 

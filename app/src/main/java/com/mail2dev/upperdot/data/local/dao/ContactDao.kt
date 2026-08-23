@@ -10,6 +10,9 @@ interface ContactDao {
     @Query("SELECT * FROM contacts ORDER BY fullName ASC")
     fun getAllContacts(): Flow<List<ContactEntity>>
 
+    @Query("SELECT * FROM contacts ORDER BY fullName ASC")
+    suspend fun getAllContactsList(): List<ContactEntity>
+
     @Query("SELECT * FROM contacts WHERE id = :id")
     suspend fun getContactById(id: Long): ContactEntity?
 
