@@ -1,528 +1,495 @@
 package com.mail2dev.upperdot
 
-import android.app.role.RoleManager
-import android.Manifest
-import android.content.Context
-import android.content.pm.PackageManager
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.navigation.NavController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
-import com.mail2dev.upperdot.ui.add_contact.AddContactCoreInfoScreen
-import com.mail2dev.upperdot.ui.add_contact.AddContactCorporateScreen
-import com.mail2dev.upperdot.ui.add_contact.AddContactFinancialScreen
-import com.mail2dev.upperdot.ui.add_contact.AddContactIdentityScreen
+import com.mail2dev.upperdot.ui.add_contact.AddContactScreen
 import com.mail2dev.upperdot.ui.add_contact.AddContactViewModel
 import com.mail2dev.upperdot.ui.app_settings.AdvancedSettingsScreen
 import com.mail2dev.upperdot.ui.app_settings.AdvancedSettingsViewModel
 import com.mail2dev.upperdot.ui.auth_launchpad.AuthLaunchpadScreen
+import com.mail2dev.upperdot.ui.auth_launchpad.AuthState
 import com.mail2dev.upperdot.ui.auth_launchpad.AuthViewModel
 import com.mail2dev.upperdot.ui.call_history.CallHistoryScreen
+import com.mail2dev.upperdot.ui.call_history.CallHistoryViewModel
+import com.mail2dev.upperdot.ui.call_security.CallWhitelistScreen
+import com.mail2dev.upperdot.ui.call_security.CallWhitelistViewModel
 import com.mail2dev.upperdot.ui.connections_list.ConnectionsListScreen
 import com.mail2dev.upperdot.ui.connections_list.ConnectionsListViewModel
-import com.mail2dev.upperdot.ui.dialer.DialerScreen
-import com.mail2dev.upperdot.ui.onboarding.OnboardingScreen
 import com.mail2dev.upperdot.ui.data_vault.DataVaultManagementScreen
 import com.mail2dev.upperdot.ui.data_vault.DataVaultViewModel
+import com.mail2dev.upperdot.ui.dialer.DialerScreen
 import com.mail2dev.upperdot.ui.digital_wallet.DigitalWalletScreen
 import com.mail2dev.upperdot.ui.digital_wallet.DigitalWalletViewModel
-import com.mail2dev.upperdot.ui.insights.InsightTab
 import com.mail2dev.upperdot.ui.insights.InsightsScreen
 import com.mail2dev.upperdot.ui.insights.InsightsViewModel
+import com.mail2dev.upperdot.ui.onboarding.OnboardingScreen
 import com.mail2dev.upperdot.ui.profile_detail.ClientProfileDetailScreen
 import com.mail2dev.upperdot.ui.profile_detail.ClientProfileDetailViewModel
 import com.mail2dev.upperdot.ui.profile_settings.MyProfileSettingsScreen
 import com.mail2dev.upperdot.ui.profile_settings.ProfileSettingsViewModel
 import com.mail2dev.upperdot.ui.relationship_hierarchy.RelationshipHierarchyScreen
 import com.mail2dev.upperdot.ui.relationship_hierarchy.RelationshipHierarchyViewModel
+import com.mail2dev.upperdot.ui.theme.PrimaryYellow
 import com.mail2dev.upperdot.ui.theme.UpperDotTheme
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+    private var internalNavController: NavController? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        val app = application as UpperDotApp
+
         setContent {
             UpperDotTheme {
-                CallPermissionHandler()
-                DialerRoleHandler()
-                RootNavigation()
-            }
-        }
-    }
-}
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    val navController = rememberNavController()
+                    internalNavController = navController
+                    val scope = rememberCoroutineScope()
 
-@Composable
-fun DialerRoleHandler() {
-    val context = LocalContext.current
-    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-        val roleManager = context.getSystemService(RoleManager::class.java)
-        var showRoleDialog by remember { mutableStateOf(false) }
+                    // Shared ViewModels requiring custom factories
+                    val authViewModel: AuthViewModel = viewModel(
+                        factory = object : ViewModelProvider.Factory {
+                            @Suppress("UNCHECKED_CAST")
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                return AuthViewModel(
+                                    application = app,
+                                    authService = app.googleAuthService,
+                                    syncManager = app.syncManager,
+                                    preferenceRepository = app.preferenceRepository
+                                ) as T
+                            }
+                        }
+                    )
 
-        val roleLauncher = rememberLauncherForActivityResult(
-            ActivityResultContracts.StartActivityForResult()
-        ) { /* State refresh occurs on next launch/resume */ }
+                    val callHistoryViewModel: CallHistoryViewModel = viewModel(
+                        factory = object : ViewModelProvider.Factory {
+                            @Suppress("UNCHECKED_CAST")
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                return CallHistoryViewModel(
+                                    repository = app.callLogRepository,
+                                    contactRepository = app.contactRepository,
+                                    context = applicationContext
+                                ) as T
+                            }
+                        }
+                    )
 
-        LaunchedEffect(Unit) {
-            if (roleManager != null && roleManager.isRoleAvailable(RoleManager.ROLE_DIALER)) {
-                if (!roleManager.isRoleHeld(RoleManager.ROLE_DIALER)) {
-                    showRoleDialog = true
-                }
-            }
-        }
+                    val digitalWalletViewModel: DigitalWalletViewModel = viewModel(
+                        factory = object : ViewModelProvider.Factory {
+                            @Suppress("UNCHECKED_CAST")
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                return DigitalWalletViewModel(
+                                    repository = app.bankCardRepository,
+                                    preferenceRepository = app.preferenceRepository
+                                ) as T
+                            }
+                        }
+                    )
 
-        if (showRoleDialog) {
-            AlertDialog(
-                onDismissRequest = { showRoleDialog = false },
-                title = { Text("Default Dialer Required", color = com.mail2dev.upperdot.ui.theme.PrimaryYellow) },
-                text = { Text("UpperDot needs to be your default phone app to manage calls and show custom call screens.", color = Color.White) },
-                confirmButton = {
-                    TextButton(onClick = {
-                        showRoleDialog = false
-                        val intent = roleManager!!.createRequestRoleIntent(RoleManager.ROLE_DIALER)
-                        roleLauncher.launch(intent)
-                    }) {
-                        Text("Set as Default", color = com.mail2dev.upperdot.ui.theme.AccentCyan)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showRoleDialog = false }) {
-                        Text("Later", color = com.mail2dev.upperdot.ui.theme.TextSecondary)
-                    }
-                },
-                containerColor = com.mail2dev.upperdot.ui.theme.Surface,
-                shape = RoundedCornerShape(24.dp)
-            )
-        }
-    }
-}
+                    val addContactViewModel: AddContactViewModel = viewModel(
+                        factory = object : ViewModelProvider.Factory {
+                            @Suppress("UNCHECKED_CAST")
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                return AddContactViewModel(
+                                    repository = app.contactRepository,
+                                    hierarchyRepository = app.hierarchyRepository,
+                                    bankSuggestionRepository = app.bankSuggestionRepository
+                                ) as T
+                            }
+                        }
+                    )
 
-@Composable
-fun CallPermissionHandler() {
-    val context = LocalContext.current
-    var showDialog by remember { mutableStateOf(false) }
+                    NavHost(
+                        navController = navController,
+                        startDestination = "splash"
+                    ) {
+                        // 0. Route Dispatcher (Splash)
+                        composable("splash") {
+                            SplashDispatcher(
+                                authViewModel = authViewModel,
+                                preferenceRepository = app.preferenceRepository,
+                                onNavigate = { route ->
+                                    navController.navigate(route) {
+                                        popUpTo("splash") { inclusive = true }
+                                    }
+                                }
+                            )
+                        }
 
-    val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        val prefs = context.getSharedPreferences("upperdot_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putBoolean("call_permission_granted", isGranted).apply()
-    }
+                        // 1. Connections List (Dashboard)
+                        composable("connections_list") {
+                            val vm: ConnectionsListViewModel = viewModel(
+                                factory = object : ViewModelProvider.Factory {
+                                    @Suppress("UNCHECKED_CAST")
+                                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                        return ConnectionsListViewModel(
+                                            repository = app.contactRepository,
+                                            noteRepository = app.noteRepository,
+                                            transactionRepository = app.transactionRepository,
+                                            preferenceRepository = app.preferenceRepository
+                                        ) as T
+                                    }
+                                }
+                            )
+                            ConnectionsListScreen(
+                                onNavigate = { route -> navController.navigate(route) },
+                                onNavigateToContact = { id -> navController.navigate("profile_detail/$id") },
+                                onNavigateToAddContact = { 
+                                    addContactViewModel.resetForm()
+                                    navController.navigate("add_contact") 
+                                },
+                                viewModel = vm
+                            )
+                        }
 
-    LaunchedEffect(Unit) {
-        val prefs = context.getSharedPreferences("upperdot_prefs", Context.MODE_PRIVATE)
-        val isFirstLaunch = !prefs.contains("call_permission_granted")
-        val hasPermission = ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.CALL_PHONE
-        ) == PackageManager.PERMISSION_GRANTED
+                        // 2. Client Profile Detail
+                        composable(
+                            route = "profile_detail/{contactId}",
+                            arguments = listOf(navArgument("contactId") { type = NavType.LongType }),
+                            deepLinks = listOf(navDeepLink { uriPattern = "upperdot://profile_detail/{contactId}" })
+                        ) { backStackEntry ->
+                            val contactId = backStackEntry.arguments?.getLong("contactId") ?: 0L
+                            val vm: ClientProfileDetailViewModel = viewModel(
+                                factory = object : ViewModelProvider.Factory {
+                                    @Suppress("UNCHECKED_CAST")
+                                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                        return ClientProfileDetailViewModel(
+                                            contactRepository = app.contactRepository,
+                                            noteRepository = app.noteRepository,
+                                            transactionRepository = app.transactionRepository,
+                                            preferenceRepository = app.preferenceRepository
+                                        ) as T
+                                    }
+                                }
+                            )
+                            ClientProfileDetailScreen(
+                                contactId = contactId,
+                                onNavigateBack = { navController.popBackStack() },
+                                onEditContact = { id -> navController.navigate("add_contact?editId=$id") },
+                                viewModel = vm
+                            )
+                        }
 
-        if (isFirstLaunch || !hasPermission) {
-            showDialog = true
-        }
-    }
+                        // 3. Add Contact Wizard
+                        composable(
+                            route = "add_contact?editId={editId}&phone={phone}",
+                            arguments = listOf(
+                                navArgument("editId") { type = NavType.LongType; defaultValue = -1L },
+                                navArgument("phone") { type = NavType.StringType; nullable = true; defaultValue = null }
+                            ),
+                            deepLinks = listOf(navDeepLink { uriPattern = "upperdot://add_contact?phone={phone}" })
+                        ) { backStackEntry ->
+                            val editId = backStackEntry.arguments?.getLong("editId") ?: -1L
+                            val phone = backStackEntry.arguments?.getString("phone")
 
-    if (showDialog) {
-        AlertDialog(
-            onDismissRequest = { showDialog = false },
-            title = { Text("Call Permission Required", color = com.mail2dev.upperdot.ui.theme.PrimaryYellow) },
-            text = { Text("UpperDot requires Call permission to enable swipe-to-call functionality for your connections.", color = Color.White) },
-            confirmButton = {
-                TextButton(onClick = {
-                    showDialog = false
-                    permissionLauncher.launch(Manifest.permission.CALL_PHONE)
-                }) {
-                    Text("Grant Permission", color = com.mail2dev.upperdot.ui.theme.AccentCyan)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDialog = false }) {
-                    Text("Later", color = com.mail2dev.upperdot.ui.theme.TextSecondary)
-                }
-            },
-            containerColor = com.mail2dev.upperdot.ui.theme.Surface,
-            shape = RoundedCornerShape(24.dp)
-        )
-    }
-}
+                            LaunchedEffect(phone) {
+                                if (phone != null && editId <= 0L) {
+                                    addContactViewModel.prefillPhoneNumber(phone)
+                                }
+                            }
 
-@Composable
-fun RootNavigation() {
-    val navController = rememberNavController()
-    val context = LocalContext.current
-    val app = context.applicationContext as UpperDotApp
+                            AddContactScreen(
+                                editId = editId,
+                                onNavigateBack = { 
+                                    navController.popBackStack("connections_list", inclusive = false) 
+                                },
+                                viewModel = addContactViewModel
+                            )
+                        }
 
-    val startRoute = remember {
-        val prefs = context.getSharedPreferences("upperdot_prefs", Context.MODE_PRIVATE)
-        if (prefs.getBoolean("isSetupComplete", false)) "auth_launchpad" else "onboarding"
-    }
-    
-    NavHost(
-        navController = navController,
-        startDestination = startRoute,
-        modifier = Modifier.fillMaxSize(),
-        enterTransition = { EnterTransition.None },
-        exitTransition = { ExitTransition.None },
-        popEnterTransition = { EnterTransition.None },
-        popExitTransition = { ExitTransition.None }
-    ) {
-        composable("onboarding") {
-            OnboardingScreen(
-                onComplete = {
-                    val prefs = context.getSharedPreferences("upperdot_prefs", Context.MODE_PRIVATE)
-                    prefs.edit().putBoolean("isSetupComplete", true).apply()
-                    navController.navigate("auth_launchpad") {
-                        popUpTo("onboarding") { inclusive = true }
-                    }
-                }
-            )
-        }
-        composable("auth_launchpad") {
-            val authViewModel: AuthViewModel = viewModel(
-                factory = viewModelFactory {
-                    initializer {
-                        AuthViewModel(app, app.googleAuthService, app.syncManager)
-                    }
-                }
-            )
-            AuthLaunchpadScreen(
-                onNavigateToDashboard = {
-                    navController.navigate("connections_list") {
-                        popUpTo("auth_launchpad") { inclusive = true }
-                    }
-                },
-                viewModel = authViewModel
-            )
-        }
-        composable(
-            "connections_list?phone={phone}",
-            deepLinks = listOf(navDeepLink { uriPattern = "upperdot://create_note?phone={phone}" })
-        ) { backStackEntry ->
-            val phone = backStackEntry.arguments?.getString("phone")
-            val connectionsViewModel: ConnectionsListViewModel = viewModel(
-                factory = viewModelFactory {
-                    initializer {
-                        ConnectionsListViewModel(
-                            app.contactRepository,
-                            app.noteRepository,
-                            app.transactionRepository,
-                            app.preferenceRepository
-                        )
-                    }
-                }
-            )
-            
-            ConnectionsListScreen(
-                onNavigate = { route ->
-                    navController.navigate(route) {
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
-                onNavigateToContact = { contactId ->
-                    navController.navigate("client_profile/$contactId")
-                },
-                onNavigateToAddContact = {
-                    navController.navigate("add_contact?contactId=&phone=")
-                },
-                viewModel = connectionsViewModel,
-                initialPhone = phone
-            )
-        }
+                        // 4. Call History
+                        composable(
+                            route = "call_history",
+                            deepLinks = listOf(navDeepLink { uriPattern = "upperdot://call_history" })
+                        ) {
+                            CallHistoryScreen(
+                                onNavigate = { route -> navController.navigate(route) },
+                                onNavigateToDialer = { navController.navigate("dialer") },
+                                onNavigateToContact = { id -> navController.navigate("profile_detail/$id") },
+                                onNavigateToAddContact = { phone: String -> 
+                                    addContactViewModel.resetForm()
+                                    navController.navigate("add_contact?phone=$phone") 
+                                },
+                                viewModel = callHistoryViewModel
+                            )
+                        }
 
-        composable("add_contact?contactId={contactId}&phone={phone}") { backStackEntry ->
-            val contactId = backStackEntry.arguments?.getString("contactId")?.toLongOrNull()
-            val phone = backStackEntry.arguments?.getString("phone")
-            val addContactViewModel: AddContactViewModel = viewModel(
-                viewModelStoreOwner = backStackEntry,
-                factory = viewModelFactory {
-                    initializer {
-                        AddContactViewModel(app.contactRepository, app.hierarchyRepository, app.bankSuggestionRepository)
-                    }
-                }
-            )
+                        // 5. Dialer
+                        composable("dialer") {
+                            DialerScreen(
+                                onNavigateBack = { navController.popBackStack() },
+                                onNavigateToAddContact = { phone: String -> 
+                                    addContactViewModel.resetForm()
+                                    navController.navigate("add_contact?phone=$phone")
+                                },
+                                onNavigateToContact = { id: Long -> 
+                                    navController.navigate("profile_detail/$id") 
+                                },
+                                viewModel = callHistoryViewModel
+                            )
+                        }
 
-            LaunchedEffect(contactId, phone) {
-                if (contactId != null) {
-                    addContactViewModel.loadContact(contactId)
-                } else if (!phone.isNullOrEmpty()) {
-                    addContactViewModel.prefillPhoneNumber(phone)
-                }
-            }
+                        // 6. Relationship Hierarchy
+                        composable("relationship_hierarchy") {
+                            val vm: RelationshipHierarchyViewModel = viewModel(
+                                factory = object : ViewModelProvider.Factory {
+                                    @Suppress("UNCHECKED_CAST")
+                                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                        return RelationshipHierarchyViewModel(
+                                            contactRepository = app.contactRepository,
+                                            hierarchyRepository = app.hierarchyRepository
+                                        ) as T
+                                    }
+                                }
+                            )
+                            RelationshipHierarchyScreen(
+                                onNavigateBack = { navController.popBackStack() },
+                                viewModel = vm
+                            )
+                        }
 
-            val currentStep by addContactViewModel.currentStep.collectAsState()
-            
-            when (currentStep) {
-                0 -> AddContactCoreInfoScreen(
-                    onNavigateBack = { navController.popBackStack() },
-                    onStepSelected = { addContactViewModel.onStepSelected(it) },
-                    viewModel = addContactViewModel
-                )
-                1 -> AddContactIdentityScreen(
-                    onNavigateBack = { navController.popBackStack() },
-                    onStepSelected = { addContactViewModel.onStepSelected(it) },
-                    viewModel = addContactViewModel
-                )
-                2 -> AddContactCorporateScreen(
-                    onNavigateBack = { navController.popBackStack() },
-                    onStepSelected = { addContactViewModel.onStepSelected(it) },
-                    viewModel = addContactViewModel
-                )
-                3 -> AddContactFinancialScreen(
-                    onNavigateBack = { navController.popBackStack() },
-                    onStepSelected = { addContactViewModel.onStepSelected(it) },
-                    viewModel = addContactViewModel
-                )
-                else -> AddContactCoreInfoScreen(
-                    onNavigateBack = { navController.popBackStack() },
-                    onStepSelected = { addContactViewModel.onStepSelected(it) },
-                    viewModel = addContactViewModel
-                )
-            }
-        }
-        
-        composable(
-            "call_history",
-            deepLinks = listOf(navDeepLink { uriPattern = "upperdot://call_history" })
-        ) {
-            val callHistoryViewModel: com.mail2dev.upperdot.ui.call_history.CallHistoryViewModel = viewModel(
-                factory = viewModelFactory {
-                    initializer {
-                        com.mail2dev.upperdot.ui.call_history.CallHistoryViewModel(
-                            app.callLogRepository,
-                            app.contactRepository,
-                            app.applicationContext
-                        )
-                    }
-                }
-            )
-            CallHistoryScreen(
-                onNavigate = { route ->
-                    navController.navigate(route) {
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
-                onNavigateToDialer = {
-                    navController.navigate("dialer")
-                },
-                onNavigateToContact = { contactId ->
-                    navController.navigate("client_profile/$contactId")
-                },
-                onNavigateToAddContact = { phone ->
-                    navController.navigate("add_contact?contactId=&phone=$phone")
-                },
-                viewModel = callHistoryViewModel
-            )
-        }
+                        // 7. Data Vault Management
+                        composable("data_vault") {
+                            val vm: DataVaultViewModel = viewModel(
+                                factory = object : ViewModelProvider.Factory {
+                                    @Suppress("UNCHECKED_CAST")
+                                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                        return DataVaultViewModel(
+                                            contactRepository = app.contactRepository,
+                                            noteRepository = app.noteRepository,
+                                            transactionRepository = app.transactionRepository,
+                                            bankCardRepository = app.bankCardRepository,
+                                            preferenceRepository = app.preferenceRepository,
+                                            driveService = app.googleDriveService,
+                                            context = applicationContext
+                                        ) as T
+                                    }
+                                }
+                            )
+                            DataVaultManagementScreen(
+                                navController = navController,
+                                viewModel = vm
+                            )
+                        }
 
-        composable("dialer") {
-            val callHistoryViewModel: com.mail2dev.upperdot.ui.call_history.CallHistoryViewModel = viewModel(
-                factory = viewModelFactory {
-                    initializer {
-                        com.mail2dev.upperdot.ui.call_history.CallHistoryViewModel(
-                            app.callLogRepository,
-                            app.contactRepository,
-                            app.applicationContext
-                        )
-                    }
-                }
-            )
-            DialerScreen(
-                onNavigateBack = { navController.popBackStack() },
-                onNavigateToAddContact = { phone: String ->
-                    navController.navigate("add_contact?contactId=&phone=$phone")
-                },
-                onNavigateToContact = { contactId ->
-                    navController.navigate("client_profile/$contactId")
-                },
-                viewModel = callHistoryViewModel
-            )
-        }
+                        // 8. Advanced Settings
+                        composable("app_settings") {
+                            val vm: AdvancedSettingsViewModel = viewModel(
+                                factory = object : ViewModelProvider.Factory {
+                                    @Suppress("UNCHECKED_CAST")
+                                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                        return AdvancedSettingsViewModel(
+                                            contactRepository = app.contactRepository,
+                                            bankCardRepository = app.bankCardRepository,
+                                            noteRepository = app.noteRepository,
+                                            transactionRepository = app.transactionRepository,
+                                            syncManager = app.syncManager,
+                                            preferenceRepository = app.preferenceRepository
+                                        ) as T
+                                    }
+                                }
+                            )
+                            AdvancedSettingsScreen(
+                                onNavigateBack = { navController.popBackStack() },
+                                onNavigate = { route -> navController.navigate(route) },
+                                viewModel = vm
+                            )
+                        }
 
-        composable("client_profile/{contactId}") { backStackEntry ->
-            val contactId = backStackEntry.arguments?.getString("contactId")?.toLongOrNull() ?: 0L
-            val profileViewModel: ClientProfileDetailViewModel = viewModel(
-                factory = viewModelFactory {
-                    initializer {
-                        ClientProfileDetailViewModel(
-                            app.contactRepository,
-                            app.noteRepository,
-                            app.transactionRepository,
-                            app.preferenceRepository
-                        )
-                    }
-                }
-            )
-            ClientProfileDetailScreen(
-                contactId = contactId,
-                onNavigateBack = { navController.popBackStack() },
-                onEditContact = { id ->
-                    // Navigation to edit mode
-                    navController.navigate("add_contact?contactId=$id")
-                },
-                viewModel = profileViewModel
-            )
-        }
-        
-        composable("insights") {
-            InsightsScreen(
-                onNavigate = { route ->
-                    navController.navigate(route) {
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
-                viewModel = viewModel(
-                    factory = viewModelFactory {
-                        initializer {
-                            InsightsViewModel(
-                                app.contactRepository,
-                                app.noteRepository,
-                                app.transactionRepository,
-                                app.preferenceRepository
+                        composable("call_whitelist") {
+                            val vm: CallWhitelistViewModel = viewModel(
+                                factory = object : ViewModelProvider.Factory {
+                                    @Suppress("UNCHECKED_CAST")
+                                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                        return CallWhitelistViewModel(
+                                            contactRepository = app.contactRepository
+                                        ) as T
+                                    }
+                                }
+                            )
+                            CallWhitelistScreen(
+                                onNavigateBack = { navController.popBackStack() },
+                                viewModel = vm
+                            )
+                        }
+
+                        // 9. Digital Wallet
+                        composable("digital_wallet") {
+                            DigitalWalletScreen(
+                                onNavigateBack = { navController.popBackStack() },
+                                onNavigateToPlans = { navController.navigate("profile_settings") },
+                                viewModel = digitalWalletViewModel
+                            )
+                        }
+
+                        // 10. Insights
+                        composable("insights") {
+                            val vm: InsightsViewModel = viewModel(
+                                factory = object : ViewModelProvider.Factory {
+                                    @Suppress("UNCHECKED_CAST")
+                                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                        return InsightsViewModel(
+                                            contactRepository = app.contactRepository,
+                                            noteRepository = app.noteRepository,
+                                            transactionRepository = app.transactionRepository,
+                                            preferenceRepository = app.preferenceRepository,
+                                            audioHandler = app.audioHandler
+                                        ) as T
+                                    }
+                                }
+                            )
+                            InsightsScreen(
+                                onNavigate = { route -> navController.navigate(route) },
+                                viewModel = vm
+                            )
+                        }
+
+                        // 11. Profile Settings
+                        composable("my_profile") {
+                            val vm: ProfileSettingsViewModel = viewModel(
+                                factory = object : ViewModelProvider.Factory {
+                                    @Suppress("UNCHECKED_CAST")
+                                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                        return ProfileSettingsViewModel(
+                                            authService = app.googleAuthService,
+                                            contactRepository = app.contactRepository,
+                                            noteRepository = app.noteRepository,
+                                            transactionRepository = app.transactionRepository,
+                                            preferenceRepository = app.preferenceRepository,
+                                            syncManager = app.syncManager,
+                                            context = applicationContext
+                                        ) as T
+                                    }
+                                }
+                            )
+                            MyProfileSettingsScreen(
+                                onNavigate = { route -> navController.navigate(route) },
+                                onSignOut = { navController.navigate("auth_launchpad") },
+                                viewModel = vm,
+                                walletViewModel = digitalWalletViewModel
+                            )
+                        }
+
+                        // 12. Auth Launchpad
+                        composable("auth_launchpad") {
+                            AuthLaunchpadScreen(
+                                onNavigateToDashboard = {
+                                    navController.navigate("splash") {
+                                        popUpTo("auth_launchpad") { inclusive = true }
+                                    }
+                                },
+                                viewModel = authViewModel
+                            )
+                        }
+
+                        // 13. Onboarding
+                        composable("onboarding") {
+                            OnboardingScreen(
+                                onComplete = {
+                                    scope.launch {
+                                        val current = app.preferenceRepository.preferences.first()
+                                        app.preferenceRepository.savePreferences(current.copy(isOnboardingCompleted = true))
+                                        navController.navigate("connections_list") {
+                                            popUpTo("onboarding") { inclusive = true }
+                                        }
+                                    }
+                                }
                             )
                         }
                     }
-                )
-            )
+                }
+            }
         }
+    }
 
-        composable("my_profile") {
-            val profileSettingsViewModel: ProfileSettingsViewModel = viewModel(
-                factory = viewModelFactory {
-                    initializer {
-                        ProfileSettingsViewModel(
-                            app.googleAuthService,
-                            app.contactRepository,
-                            app.noteRepository,
-                            app.transactionRepository,
-                            app.preferenceRepository,
-                            app.syncManager,
-                            app.applicationContext
-                        )
-                    }
-                }
-            )
-            val walletViewModel: DigitalWalletViewModel = viewModel(
-                factory = viewModelFactory {
-                    initializer {
-                        DigitalWalletViewModel(app.bankCardRepository, app.preferenceRepository)
-                    }
-                }
-            )
-            MyProfileSettingsScreen(
-                onNavigate = { route ->
-                    navController.navigate(route) {
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
-                onSignOut = {
-                    navController.navigate("auth_launchpad") {
-                        popUpTo(0) { inclusive = true }
-                    }
-                },
-                viewModel = profileSettingsViewModel,
-                walletViewModel = walletViewModel
-            )
-        }
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        internalNavController?.handleDeepLink(intent)
+    }
+}
 
-        composable("digital_wallet_management") {
-            val walletViewModel: DigitalWalletViewModel = viewModel(
-                factory = viewModelFactory {
-                    initializer {
-                        DigitalWalletViewModel(app.bankCardRepository, app.preferenceRepository)
-                    }
-                }
-            )
-            DigitalWalletScreen(
-                onNavigateBack = { navController.popBackStack() },
-                onNavigateToPlans = { navController.navigate("plans") },
-                viewModel = walletViewModel
-            )
-        }
+@Composable
+fun SplashDispatcher(
+    authViewModel: AuthViewModel,
+    preferenceRepository: com.mail2dev.upperdot.data.repository.PreferenceRepository,
+    onNavigate: (String) -> Unit
+) {
+    val authState by authViewModel.authState.collectAsState()
+    val preferences by preferenceRepository.preferences.collectAsState(initial = null)
+    val context = LocalContext.current
 
-        composable("manage_custom_groups") {
-            val hierarchyViewModel: RelationshipHierarchyViewModel = viewModel(
-                factory = viewModelFactory {
-                    initializer {
-                        RelationshipHierarchyViewModel(app.contactRepository, app.hierarchyRepository)
-                    }
-                }
-            )
-            RelationshipHierarchyScreen(
-                onNavigateBack = { navController.popBackStack() },
-                viewModel = hierarchyViewModel
-            )
-        }
+    LaunchedEffect(authState, preferences) {
+        if (preferences == null) return@LaunchedEffect
 
-        composable("advanced_app_settings") {
-            val settingsViewModel: AdvancedSettingsViewModel = viewModel(
-                factory = viewModelFactory {
-                    initializer {
-                        AdvancedSettingsViewModel(
-                            app.contactRepository,
-                            app.bankCardRepository,
-                            app.syncManager,
-                            app.preferenceRepository
-                        )
-                    }
+        when (authState) {
+            is AuthState.Authenticated -> {
+                val hasCorePermissions = checkCorePermissions(context)
+                if (!hasCorePermissions || !preferences!!.isOnboardingCompleted) {
+                    onNavigate("onboarding")
+                } else {
+                    // ALWAYS navigate to dashboard and pop splash.
+                    // If a deep link is present, NavHost will handle the secondary navigation on top.
+                    onNavigate("connections_list")
                 }
-            )
-            AdvancedSettingsScreen(
-                onNavigateBack = { navController.popBackStack() },
-                viewModel = settingsViewModel
-            )
+            }
+            is AuthState.Unauthenticated -> {
+                onNavigate("auth_launchpad")
+            }
+            AuthState.Loading -> {
+                // Wait for auth check
+            }
         }
+    }
 
-        composable("data_vault_hub") {
-            val dataVaultViewModel: DataVaultViewModel = viewModel(
-                factory = viewModelFactory {
-                    initializer {
-                        DataVaultViewModel(
-                            app.contactRepository,
-                            app.noteRepository,
-                            app.transactionRepository,
-                            app.bankCardRepository,
-                            app.preferenceRepository,
-                            app.googleDriveService,
-                            app.applicationContext
-                        )
-                    }
-                }
-            )
-            DataVaultManagementScreen(
-                navController = navController,
-                viewModel = dataVaultViewModel
-            )
-        }
+    Box(
+        modifier = Modifier.fillMaxSize().background(Color.Black),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(color = PrimaryYellow)
+    }
+}
+
+private fun checkCorePermissions(context: android.content.Context): Boolean {
+    val permissions = arrayOf(
+        android.Manifest.permission.CALL_PHONE,
+        android.Manifest.permission.RECORD_AUDIO,
+        android.Manifest.permission.READ_PHONE_STATE,
+        android.Manifest.permission.READ_CALL_LOG,
+        android.Manifest.permission.READ_CONTACTS
+    )
+    return permissions.all {
+        androidx.core.content.ContextCompat.checkSelfPermission(context, it) == android.content.pm.PackageManager.PERMISSION_GRANTED
     }
 }

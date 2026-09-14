@@ -58,7 +58,23 @@ fun OnboardingScreen(
     ) { updateState(context) { d, o, b, p -> isDialerDefault = d; isOverlayGranted = o; isBatteryIgnored = b; isPermissionsGranted = p } }
 
     LaunchedEffect(Unit) {
-        updateState(context) { d, o, b, p -> isDialerDefault = d; isOverlayGranted = o; isBatteryIgnored = b; isPermissionsGranted = p }
+        updateState(context) { d, o, b, p -> 
+            isDialerDefault = d
+            isOverlayGranted = o
+            isBatteryIgnored = b
+            isPermissionsGranted = p
+            
+            // Auto-trigger core permissions if not granted yet
+            if (!p) {
+                permissionLauncher.launch(arrayOf(
+                    android.Manifest.permission.CALL_PHONE,
+                    android.Manifest.permission.RECORD_AUDIO,
+                    android.Manifest.permission.READ_PHONE_STATE,
+                    android.Manifest.permission.READ_CALL_LOG,
+                    android.Manifest.permission.READ_CONTACTS
+                ))
+            }
+        }
     }
 
     // Auto-complete check

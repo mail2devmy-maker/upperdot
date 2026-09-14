@@ -12,5 +12,8 @@ data class PreferenceEntity(
     val syncFrequency: String = "1h",
     val currencySymbol: String = "$",
     val lastSyncTime: Long = 0L,
-    val isMediaCompressionEnabled: Boolean = true
+    val isMediaCompressionEnabled: Boolean = true,
+    val isOnboardingCompleted: Boolean = false,
+    val blockUnknownNumbers: Boolean = false,
+    val strictPrivacyMode: Boolean = false
 )

@@ -107,34 +107,54 @@ fun StitchTextField(
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     showBorder: Boolean = true,
     containerColor: Color = Surface,
-    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(16.dp)
+    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(16.dp),
+    trailingIcon: @Composable (() -> Unit)? = null,
+    isError: Boolean = false,
+    supportingText: String? = null
 ) {
-    TextField(
-        value = value,
-        onValueChange = onValueChange,
-        modifier = modifier
-            .fillMaxWidth()
-            .then(if (minLines > 1) Modifier.heightIn(min = 112.dp) else Modifier.height(56.dp))
-            .then(if (showBorder) Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape) else Modifier),
-        placeholder = { Text(placeholder, color = TextSecondary, fontSize = 14.sp) },
-        leadingIcon = leadingIcon?.let {
-            { Icon(it, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(20.dp)) }
-        },
-        shape = shape,
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = containerColor,
-            unfocusedContainerColor = containerColor,
-            disabledContainerColor = containerColor,
-            focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent,
-            cursorColor = AccentCyan,
-            focusedTextColor = Color.White,
-            unfocusedTextColor = Color.White
-        ),
-        singleLine = singleLine,
-        minLines = minLines,
-        keyboardOptions = keyboardOptions
-    )
+    val borderColor = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outlineVariant
+    
+    Column(modifier = modifier.fillMaxWidth()) {
+        TextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(if (minLines > 1) Modifier.heightIn(min = 112.dp) else Modifier.height(56.dp))
+                .then(if (showBorder) Modifier.border(1.dp, borderColor, shape) else Modifier),
+            placeholder = { Text(placeholder, color = TextSecondary, fontSize = 14.sp) },
+            leadingIcon = leadingIcon?.let {
+                { Icon(it, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(20.dp)) }
+            },
+            trailingIcon = trailingIcon,
+            shape = shape,
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = containerColor,
+                unfocusedContainerColor = containerColor,
+                disabledContainerColor = containerColor,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                cursorColor = AccentCyan,
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                errorIndicatorColor = Color.Transparent,
+                errorContainerColor = containerColor
+            ),
+            singleLine = singleLine,
+            minLines = minLines,
+            keyboardOptions = keyboardOptions,
+            isError = isError
+        )
+        
+        if (supportingText != null && isError) {
+            Text(
+                text = supportingText,
+                color = MaterialTheme.colorScheme.error,
+                fontSize = 11.sp,
+                modifier = Modifier.padding(start = 12.dp, top = 4.dp)
+            )
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -199,45 +219,4 @@ fun StitchDropdown(
     }
 }
 
-@Composable
-fun WizardTabRow(
-    selectedStep: Int,
-    onStepSelected: (Int) -> Unit
-) {
-    val steps = listOf("Core Info", "Identity", "Corporate", "Financial")
-    ScrollableTabRow(
-        selectedTabIndex = selectedStep,
-        containerColor = Color.Black,
-        contentColor = AccentCyan,
-        edgePadding = 24.dp,
-        indicator = {},
-        divider = {}
-    ) {
-        steps.forEachIndexed { index, title ->
-            val isSelected = selectedStep == index
-            Tab(
-                selected = isSelected,
-                onClick = { onStepSelected(index) },
-                modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp)
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = if (isSelected) AccentCyan else Surface,
-                    modifier = Modifier.height(40.dp)
-                ) {
-                    Box(
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = title,
-                            fontSize = 13.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isSelected) Color.Black else Color.White
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
+

@@ -64,4 +64,12 @@ object StorageUtils {
             copyUriToInternalStorage(context, uri, folderName)
         }
     }
+
+    fun getSafeAbsolutePath(context: Context, pathString: String?): String? {
+        if (pathString.isNullOrEmpty()) return null
+        val file = File(pathString)
+        val folder = File(context.filesDir, "attachments")
+        if (!folder.exists()) folder.mkdirs()
+        return File(folder, file.name).absolutePath
+    }
 }

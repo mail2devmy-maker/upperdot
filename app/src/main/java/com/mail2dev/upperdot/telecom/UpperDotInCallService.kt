@@ -4,6 +4,10 @@ import android.app.*
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.media.AudioAttributes
+import android.media.Ringtone
+import android.media.RingtoneManager
+import android.provider.Settings
 import android.telecom.Call
 import android.telecom.CallAudioState
 import android.telecom.InCallService
@@ -36,11 +40,13 @@ class UpperDotInCallService : InCallService() {
     private val serviceJob = Job()
     private val serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)
     private var resolvedCallerName: String? = null
+    private var ringtone: Ringtone? = null
 
     private val callCallback = object : Call.Callback() {
         override fun onStateChanged(call: Call, state: Int) {
             if (state == Call.STATE_ACTIVE) {
                 wasCallAnswered = true
+                stopRingtone()
             }
             updateNotification(call)
         }
@@ -57,23 +63,60 @@ class UpperDotInCallService : InCallService() {
         when (intent?.action) {
             ACTION_ANSWER -> {
                 activeCall?.answer(android.telecom.VideoProfile.STATE_AUDIO_ONLY)
+                stopRingtone()
                 showInCallActivity()
             }
-            ACTION_DECLINE -> activeCall?.disconnect()
-            ACTION_HANGUP -> activeCall?.disconnect()
+            ACTION_DECLINE -> {
+                stopRingtone()
+                activeCall?.disconnect()
+            }
+            ACTION_HANGUP -> {
+                stopRingtone()
+                activeCall?.disconnect()
+            }
             ACTION_TOGGLE_MUTE -> toggleMute()
         }
         return super.onStartCommand(intent, flags, startId)
     }
 
-    private fun toggleMute() {
+    private fun startRingtone() {
+        if (ringtone != null) return
+        try {
+            val uri = Settings.System.DEFAULT_RINGTONE_URI
+            ringtone = RingtoneManager.getRingtone(applicationContext, uri)
+            ringtone?.audioAttributes = AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build()
+            ringtone?.play()
+        } catch (e: Exception) {
+            Log.e("InCallService", "Error playing ringtone", e)
+        }
+    }
+
+    private fun stopRingtone() {
+        ringtone?.stop()
+        ringtone = null
+    }
+
+    fun toggleMute() {
+        @Suppress("DEPRECATION")
         val currentMute = callAudioState?.isMuted ?: false
         setMuted(!currentMute)
         activeCall?.let { updateNotification(it) }
     }
 
+    fun playDtmf(digit: Char) {
+        activeCall?.playDtmfTone(digit)
+    }
+
+    fun stopDtmf() {
+        activeCall?.stopDtmfTone()
+    }
+
     override fun onDestroy() {
         super.onDestroy()
+        stopRingtone()
         serviceJob.cancel()
         instance = null
     }
@@ -88,8 +131,14 @@ class UpperDotInCallService : InCallService() {
         resolvedCallerName = null
         call.registerCallback(callCallback)
 
-        // Trigger notification
-        updateNotification(call)
+        // Handle Ringing Logic
+        if (call.state == Call.STATE_RINGING) {
+            startRingtone()
+            updateNotification(call)
+        } else {
+            updateNotification(call)
+            showInCallActivity()
+        }
 
         // Asynchronous Name Resolution
         if (!com.mail2dev.upperdot.util.ContactUtils.isUssdCode(handle)) {
@@ -102,9 +151,6 @@ class UpperDotInCallService : InCallService() {
                 }
             }
         }
-
-        // Force activity launch directly for all calls
-        showInCallActivity()
     }
 
     private fun showInCallActivity() {
@@ -118,15 +164,15 @@ class UpperDotInCallService : InCallService() {
         try {
             startActivity(intent)
         } catch (e: Exception) {
-            Log.e("UpperDotInCallService", "Failed to launch InCallActivity directly from service", e)
+            Log.e("UpperDotInCallService", "Failed to launch InCallActivity", e)
         }
     }
 
     override fun onCallRemoved(call: Call) {
         super.onCallRemoved(call)
         Log.d("UpperDotInCallService", "Call removed")
+        stopRingtone()
 
-        // Handle missed call notification
         if (!wasCallAnswered && call.state == Call.STATE_DISCONNECTED) {
             val cause = call.details.disconnectCause
             if (cause.code == android.telecom.DisconnectCause.MISSED ||
@@ -141,50 +187,6 @@ class UpperDotInCallService : InCallService() {
         }
         stopForeground(STOP_FOREGROUND_REMOVE)
         (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).cancel(NOTIFICATION_ID)
-    }
-    private fun showCallNotification(call: Call) {
-        val CHANNEL_ID = "upperdot_incall_channel"
-        val NOTIFICATION_ID = 1001
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                "In-Call Screen",
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "Active incoming and outgoing call overlay"
-                lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
-            }
-            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            manager.createNotificationChannel(channel)
-        }
-
-        val intent = Intent(this, InCallActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
-
-        val pendingIntent = PendingIntent.getActivity(
-            this,
-            0,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("Incoming Call")
-            .setContentText("Tap to open call controls")
-            .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setCategory(NotificationCompat.CATEGORY_CALL)
-            .setOngoing(true)
-            .setFullScreenIntent(pendingIntent, true) // Launches screen when locked or app closed
-            .setContentIntent(pendingIntent)
-
-        try {
-            startForeground(NOTIFICATION_ID, builder.build())
-        } catch (e: Exception) {
-            Log.e("InCallService", "Error starting foreground service", e)
-        }
     }
 
     private fun createMissedCallChannel() {
@@ -254,6 +256,7 @@ class UpperDotInCallService : InCallService() {
         val handle = call.details.handle?.schemeSpecificPart ?: "Unknown"
         val displayName = resolvedCallerName ?: handle
         val state = call.state
+        @Suppress("DEPRECATION")
         val isMuted = callAudioState?.isMuted ?: false
 
         val contentIntent = PendingIntent.getActivity(
@@ -271,11 +274,14 @@ class UpperDotInCallService : InCallService() {
             .setContentIntent(contentIntent)
             .setOngoing(true)
             .setCategory(NotificationCompat.CATEGORY_CALL)
-            .setPriority(NotificationCompat.PRIORITY_MAX)
             .setAutoCancel(false)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
         if (state == Call.STATE_RINGING) {
+            // HIGH PRIORITY: Triggers heads-up popup and lockscreen intent
+            builder.setPriority(NotificationCompat.PRIORITY_MAX)
+            builder.setFullScreenIntent(contentIntent, true)
+
             val answerIntent = PendingIntent.getService(
                 this, 1,
                 Intent(this, UpperDotInCallService::class.java).apply { action = ACTION_ANSWER },
@@ -287,8 +293,6 @@ class UpperDotInCallService : InCallService() {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
-            builder.setFullScreenIntent(contentIntent, true)
-
             val style = NotificationCompat.CallStyle.forIncomingCall(
                 Person.Builder().setName(displayName).build(),
                 declineIntent,
@@ -296,6 +300,10 @@ class UpperDotInCallService : InCallService() {
             )
             builder.setStyle(style)
         } else {
+            // DEFAULT PRIORITY: Ongoing call stays in status bar without "popping"
+            builder.setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            builder.setFullScreenIntent(null, false)
+
             val hangupIntent = PendingIntent.getService(
                 this, 3,
                 Intent(this, UpperDotInCallService::class.java).apply { action = ACTION_HANGUP },
@@ -313,10 +321,14 @@ class UpperDotInCallService : InCallService() {
                 hangupIntent
             )
             builder.setStyle(style)
-            builder.setUsesChronometer(true)
-            builder.setWhen(call.details.connectTimeMillis)
 
-            // Add custom Mute action
+            // Accuracy fix: only show timer for actually active calls
+            if (state == Call.STATE_ACTIVE) {
+                builder.setUsesChronometer(true)
+                builder.setWhen(call.details.connectTimeMillis)
+            }
+
+            // Custom Mute action in the notification body
             val muteLabel = if (isMuted) "Unmute" else "Mute"
             val muteIcon = if (isMuted) android.R.drawable.ic_lock_silent_mode else android.R.drawable.ic_lock_silent_mode_off
             builder.addAction(

@@ -49,8 +49,14 @@ class InsightsViewModel(
     private val contactRepository: ContactRepository,
     private val noteRepository: NoteRepository,
     private val transactionRepository: TransactionRepository,
-    private val preferenceRepository: PreferenceRepository
+    private val preferenceRepository: PreferenceRepository,
+    val audioHandler: com.mail2dev.upperdot.util.AudioHandler
 ) : ViewModel() {
+
+    override fun onCleared() {
+        super.onCleared()
+        audioHandler.release()
+    }
 
     private val _selectedTab = MutableStateFlow(InsightTab.NOTES)
     val selectedTab: StateFlow<InsightTab> = _selectedTab.asStateFlow()

@@ -9,24 +9,35 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import com.mail2dev.upperdot.data.repository.NoteRepository
+import com.mail2dev.upperdot.data.repository.TransactionRepository
 
 class UpperDotApp : Application() {
 
     private val applicationScope = CoroutineScope(SupervisorJob())
-    
+
     val database: AppDatabase by lazy {
         Room.databaseBuilder(
             this,
             AppDatabase::class.java,
             "upperdot_db"
         )
-        .addMigrations(AppDatabase.MIGRATION_1_2)
-        .build()
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     val contactRepository: ContactRepository by lazy {
         ContactRepository(database.contactDao())
     }
+
+    val noteRepository: NoteRepository by lazy {
+        NoteRepository(database.noteDao())
+    }
+
+    val transactionRepository: TransactionRepository by lazy {
+        TransactionRepository(database.transactionDao())
+    }
+
 
     val bankSuggestionRepository: BankSuggestionRepository by lazy {
         BankSuggestionRepository(database.savedBankDao())
@@ -57,14 +68,6 @@ class UpperDotApp : Application() {
         com.mail2dev.upperdot.data.repository.HierarchyRepository()
     }
 
-    val noteRepository: com.mail2dev.upperdot.data.repository.NoteRepository by lazy {
-        com.mail2dev.upperdot.data.repository.NoteRepository(database.noteDao())
-    }
-
-    val transactionRepository: com.mail2dev.upperdot.data.repository.TransactionRepository by lazy {
-        com.mail2dev.upperdot.data.repository.TransactionRepository(database.transactionDao())
-    }
-
     val bankCardRepository: com.mail2dev.upperdot.data.repository.BankCardRepository by lazy {
         com.mail2dev.upperdot.data.repository.BankCardRepository(database.bankCardDao())
     }
@@ -87,5 +90,9 @@ class UpperDotApp : Application() {
 
     val callLogRepository: com.mail2dev.upperdot.data.repository.telephony.CallLogRepository by lazy {
         com.mail2dev.upperdot.data.repository.telephony.CallLogRepository(this, contactRepository)
+    }
+
+    val audioHandler: com.mail2dev.upperdot.util.AudioHandler by lazy {
+        com.mail2dev.upperdot.util.AudioHandlerImpl(this)
     }
 }

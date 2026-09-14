@@ -3,6 +3,8 @@ package com.mail2dev.upperdot.data.repository
 import com.mail2dev.upperdot.data.local.dao.BankCardDao
 import com.mail2dev.upperdot.data.local.entity.BankCardEntity
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.firstOrNull
+import java.io.File
 
 class BankCardRepository(private val bankCardDao: BankCardDao) {
 
@@ -22,10 +24,28 @@ class BankCardRepository(private val bankCardDao: BankCardDao) {
     }
 
     suspend fun deleteCard(card: BankCardEntity) {
+        deleteCardFiles(card)
         bankCardDao.deleteCard(card)
     }
 
     suspend fun deleteAll() {
+        val cards = bankCardDao.getAllCards().firstOrNull()
+        cards?.forEach { deleteCardFiles(it) }
         bankCardDao.deleteAll()
+    }
+
+    private fun deleteCardFiles(card: BankCardEntity) {
+        try {
+            card.qrImagePath?.let { path ->
+                if (path.isNotBlank()) {
+                    val file = File(path)
+                    if (file.exists()) {
+                        file.delete()
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }

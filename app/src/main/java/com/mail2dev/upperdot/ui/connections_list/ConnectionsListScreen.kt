@@ -49,6 +49,7 @@ import com.mail2dev.upperdot.ui.new_relationship_note.RelationshipNoteSheet
 import com.mail2dev.upperdot.ui.theme.AccentCyan
 import com.mail2dev.upperdot.ui.theme.Surface
 import com.mail2dev.upperdot.ui.theme.TextSecondary
+import com.mail2dev.upperdot.ui.theme.StitchDesignSystem
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -195,15 +196,12 @@ fun ConnectionsListScreen(
                 )
             },
             floatingActionButton = {
-                FloatingActionButton(
+                StitchDesignSystem.FAB(
+                    icon = Icons.Default.Add,
+                    contentDescription = "Add Contact",
                     onClick = onNavigateToAddContact,
-                    containerColor = AccentCyan,
-                    contentColor = Color.Black,
-                    shape = CircleShape,
                     modifier = Modifier.padding(bottom = 16.dp, end = 8.dp)
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Contact")
-                }
+                )
             },
             containerColor = Color.Transparent
         ) { innerPadding ->
@@ -211,99 +209,86 @@ fun ConnectionsListScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .padding(horizontal = 24.dp)
             ) {
-                // Header
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(top = 24.dp, bottom = 24.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Groups,
-                        contentDescription = null,
-                        tint = AccentCyan,
-                        modifier = Modifier.size(32.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = "Connections",
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
-
-                // Search Bar
-                TextField(
-                    value = searchQuery,
-                    onValueChange = viewModel::onSearchQueryChanged,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    placeholder = { Text("Search by name or number...", color = TextSecondary) },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = AccentCyan) },
-                    trailingIcon = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { viewModel.onSearchQueryChanged("") }) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = "Clear Search",
-                                    tint = TextSecondary
-                                )
-                            }
-                        }
-                    },
-                    shape = RoundedCornerShape(16.dp),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Surface,
-                        unfocusedContainerColor = Surface,
-                        disabledContainerColor = Surface,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        cursorColor = AccentCyan,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White
-                    )
+                // Standardized Left-Aligned Top Bar
+                StitchDesignSystem.TopBar(
+                    title = "Connections",
+                    leadingIcon = Icons.Default.Groups
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Filters
-                val filters = listOf("All", "Favorites", "Work", "Family", "Vendor", "Unassigned")
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    items(filters) { filter ->
-                        FilterCapsule(
-                            text = filter,
-                            isSelected = filter == selectedFilter,
-                            onClick = { viewModel.onFilterSelected(filter) }
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Content
-                when (val state = uiState) {
-                    is ConnectionsUIState.Empty -> {
-                        EmptyConnectionsView()
-                    }
-                    is ConnectionsUIState.Success -> {
-                        ConnectionsList(
-                            contacts = state.contacts,
-                            onContactClick = onNavigateToContact,
-                            onAddNote = viewModel::onAddNote,
-                            onAddTransaction = viewModel::onAddTransaction,
-                            onWhatsAppClick = { contact ->
-                                whatsappTargetContact = contact
+                Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                    // Search Bar
+                    TextField(
+                        value = searchQuery,
+                        onValueChange = viewModel::onSearchQueryChanged,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        placeholder = { Text("Search by name or number...", color = TextSecondary) },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = AccentCyan) },
+                        trailingIcon = {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(onClick = { viewModel.onSearchQueryChanged("") }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "Clear Search",
+                                        tint = TextSecondary
+                                    )
+                                }
                             }
+                        },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Surface,
+                            unfocusedContainerColor = Surface,
+                            disabledContainerColor = Surface,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                            cursorColor = AccentCyan,
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
                         )
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Filters
+                    val filters = listOf("All", "Favorites", "Work", "Family", "Vendor", "Unassigned")
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(filters) { filter ->
+                            FilterCapsule(
+                                text = filter,
+                                isSelected = filter == selectedFilter,
+                                onClick = { viewModel.onFilterSelected(filter) }
+                            )
+                        }
                     }
-                    is ConnectionsUIState.Loading -> {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = AccentCyan)
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Content
+                    when (val state = uiState) {
+                        is ConnectionsUIState.Empty -> {
+                            EmptyConnectionsView()
+                        }
+                        is ConnectionsUIState.Success -> {
+                            ConnectionsList(
+                                contacts = state.contacts,
+                                onContactClick = onNavigateToContact,
+                                onAddNote = viewModel::onAddNote,
+                                onAddTransaction = viewModel::onAddTransaction,
+                                onWhatsAppClick = { contact ->
+                                    whatsappTargetContact = contact
+                                }
+                            )
+                        }
+                        is ConnectionsUIState.Loading -> {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(color = AccentCyan)
+                            }
                         }
                     }
                 }
@@ -404,7 +389,8 @@ fun ConnectionsList(
 ) {
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = 96.dp)
     ) {
         items(contacts, key = { it.id }) { contact ->
             ContactCard(
@@ -469,6 +455,12 @@ fun ContactCard(
                 .fillMaxWidth()
                 .offset { IntOffset(offsetX.value.roundToInt(), 0) }
                 .pointerInput(Unit) {
+                    detectTapGestures(
+                        onTap = { onClick() },
+                        onLongPress = { isExpanded = !isExpanded }
+                    )
+                }
+                .pointerInput(Unit) {
                     detectHorizontalDragGestures(
                         onHorizontalDrag = { _, dragAmount ->
                             scope.launch {
@@ -509,7 +501,6 @@ fun ContactCard(
                         }
                     )
                 }
-                .clickable { isExpanded = !isExpanded }
                 .animateContentSize(),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = Surface)

@@ -872,10 +872,21 @@ This file tracks all technical conflicts, layout choices, and architectural deci
 - **Final Decision:** Implement a centralized `TelephonyUtils.placeOutgoingCall` using `TelephonyManager` for country detection and `PhoneNumberUtils` for E.164 standard compliance.
 - **Impact:** `TelephonyUtils.kt`, `DialerScreen.kt`, `ConnectionsListScreen.kt`.
 
-### 2024-05-20 - Non-Destructive Room Migration (Version 1 -> 2)
-- **Context/Goal:** Implement a production-safe migration to add `isMediaCompressionEnabled` to the `app_preferences` table without data loss.
+### 2024-05-20 - Startup Routing & Permission Onboarding Fix
+- **Context/Goal:** Address the issue where the app bypassed authentication and onboarding on fresh installs by hardcoding the dashboard as the start destination. Ensure core permissions are proactively requested.
 - **Conflicts & Alternatives Considered:**
-  - *Conflict 1: Column Default Value:* `0` (False) vs `1` (True). *Decision:* Set default to `1` (True) to match the `PreferenceEntity` declaration where compression is enabled by default.
-  - *Conflict 2: Migration Strategy:* Destructive vs Non-destructive. *Decision:* Non-destructive was mandatory. Removed `.fallbackToDestructiveMigration()` from the Room builder and added an explicit `Migration(1, 2)` object using `ALTER TABLE` SQL.
-- **Final Decision:** Implement `MIGRATION_1_2` in `AppDatabase.kt` and wire it in `UpperDotApp.kt`. Verified the table name as `app_preferences` from the Entity definition.
-- **Impact:** `AppDatabase.kt`, `UpperDotApp.kt`, `PreferenceEntity.kt`.
+  - *Conflict 1: Navigation Dispatcher:* Should we use a splash screen or a conditional check in MainActivity? *Decision:* Implemented a `SplashDispatcher` composable as the `startDestination`. This provides a centralized, reactive location for all startup logic (Auth, Onboarding, and Dashboard routing).
+  - *Conflict 2: Permission Request Flow:* Standard Android UX expects a prompt. *Decision:* Updated `OnboardingScreen` to auto-trigger the permission launcher upon entry. This reduces friction by removing the need for a manual tap on the "Core Permissions" card.
+  - *Conflict 3: Persistence of State:* How to track if onboarding is done? *Decision:* Added `isOnboardingCompleted` to `PreferenceEntity` and implemented `MIGRATION_3_4`. This ensures the onboarding screen is only shown once per installation, even if the user restarts the app.
+- **Final Decision:** Use `SplashDispatcher` to route based on `AuthState` and `isOnboardingCompleted`. Proactively request permissions in `OnboardingScreen`.
+- **Impact:** `MainActivity.kt`, `OnboardingScreen.kt`, `PreferenceEntity.kt`, `AppDatabase.kt`, `UpperDotApp.kt`.
+
+### 2024-05-20 - Missed Call Notification Deep Link Fix
+- **Context/Goal:** Enable navigation to the Call Logs screen when tapping a missed call notification.
+- **Conflicts & Alternatives Considered:**
+  - *Conflict 1: Deep Link Registration:* The `upperdot://call_history` scheme was used in the service but not declared in the manifest. *Decision:* Added the necessary `intent-filter` to `MainActivity` in `AndroidManifest.xml`.
+  - *Conflict 2: Navigation Handling:* Jetpack Compose Navigation requires explicit deep link registration in the `composable` route. *Decision:* Updated the `call_history` route in `MainActivity.kt` to include `navDeepLink`.
+  - *Conflict 3: Activity Lifecycle:* Tapping a notification when the app is in the background doesn't trigger a new `onCreate`. *Decision:* Overrode `onNewIntent` in `MainActivity` to manually call `navController.handleDeepLink(intent)`.
+  - *Conflict 4: Splash Interference:* The `SplashDispatcher` was auto-redirecting to the dashboard on every authenticated launch, which could overwrite a deep link destination. *Decision:* Updated `SplashDispatcher` to check for `intent.data`. If a deep link is present, the dispatcher remains idle, allowing the `NavController` to handle the target destination.
+- **Final Decision:** Use manifest-registered deep links with explicit `NavHost` support and lifecycle-aware intent handling.
+- **Impact:** `AndroidManifest.xml`, `MainActivity.kt`, `UpperDotInCallService.kt`.

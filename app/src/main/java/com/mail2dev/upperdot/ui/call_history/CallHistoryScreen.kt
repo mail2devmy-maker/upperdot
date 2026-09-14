@@ -64,15 +64,12 @@ fun CallHistoryScreen(
                 )
             },
             floatingActionButton = {
-                FloatingActionButton(
+                StitchDesignSystem.FAB(
+                    icon = Icons.Default.Dialpad,
+                    contentDescription = "Open Dialpad",
                     onClick = onNavigateToDialer,
-                    containerColor = AccentCyan,
-                    contentColor = Color.Black,
-                    shape = CircleShape,
                     modifier = Modifier.padding(bottom = 16.dp, end = 8.dp)
-                ) {
-                    Icon(Icons.Default.Dialpad, contentDescription = "Open Dialpad")
-                }
+                )
             },
             containerColor = Color.Transparent
         ) { innerPadding ->

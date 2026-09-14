@@ -1,9 +1,9 @@
 package com.mail2dev.upperdot.ui.dialer
 
-import android.Manifest
-import android.content.pm.PackageManager
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+import android.telephony.SubscriptionInfo
+import androidx.compose.animation.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -14,30 +14,35 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Backspace
-import androidx.compose.material.icons.filled.Call
-import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
+import coil.compose.AsyncImage
+import com.mail2dev.upperdot.data.local.entity.ContactEntity
 import com.mail2dev.upperdot.ui.call_history.CallHistoryViewModel
+import com.mail2dev.upperdot.ui.components.TelephonyKeypad
 import com.mail2dev.upperdot.ui.theme.AccentCyan
 import com.mail2dev.upperdot.ui.theme.Surface
-import com.mail2dev.upperdot.util.TelephonyUtils
+import com.mail2dev.upperdot.ui.theme.StitchDesignSystem
+import java.io.File
 
 @Composable
 fun DialerScreen(
@@ -48,35 +53,26 @@ fun DialerScreen(
 ) {
     var dialValue by remember { mutableStateOf(TextFieldValue("")) }
     val searchResults by viewModel.searchResults.collectAsState()
-    val context = LocalContext.current
-    val clipboardManager = LocalClipboardManager.current
+    val favoriteContacts by viewModel.favoriteContacts.collectAsState()
+    val selectedSim by viewModel.selectedSim.collectAsState()
+    val availableSims by viewModel.availableSims.collectAsState()
     
+    val clipboardManager = LocalClipboardManager.current
     var clipboardContent by remember { mutableStateOf<String?>(null) }
 
-    // Check clipboard on launch
     LaunchedEffect(Unit) {
         val text = clipboardManager.getText()?.text
         if (text != null && text.any { it.isDigit() }) {
-            // Basic validation: must contain digits
             clipboardContent = text.filter { it.isDigit() || it == '+' || it == '*' || it == '#' }
         }
     }
 
-    val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        val allGranted = permissions.entries.all { it.value }
-        if (allGranted && dialValue.text.isNotEmpty()) {
-            TelephonyUtils.placeOutgoingCall(context, dialValue.text)
-        }
-    }
-
-    fun handleDigitClick(digit: String) {
+    fun handleDigitClick(digit: Char) {
         if (dialValue.text.length >= 20) return
-        
+        val digitStr = digit.toString()
         val start = dialValue.selection.start
         val end = dialValue.selection.end
-        val newText = StringBuilder(dialValue.text).replace(start, end, digit).toString()
+        val newText = StringBuilder(dialValue.text).replace(start, end, digitStr).toString()
         val newSelection = TextRange(start + 1)
         dialValue = TextFieldValue(newText, newSelection)
         viewModel.onSearchQueryChanged(newText)
@@ -85,7 +81,6 @@ fun DialerScreen(
     fun handleBackspace() {
         var newText = dialValue.text
         var newSelection = dialValue.selection
-        
         if (dialValue.selection.length > 0) {
             val start = dialValue.selection.start
             val end = dialValue.selection.end
@@ -105,212 +100,123 @@ fun DialerScreen(
         color = Color.Black
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp),
+            modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Header
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp, bottom = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
+            // Standardized Top Bar
+            StitchDesignSystem.TopBar(
+                title = "Dialer",
+                leadingIcon = Icons.Default.Dialpad,
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
+                    }
                 }
-                Spacer(modifier = Modifier.width(16.dp))
-                Text("Dialer", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            // Contact Action Pills
-            if (dialValue.text.isNotEmpty()) {
-                ActionPill(
-                    icon = Icons.Default.PersonAdd,
-                    text = "Create new contact",
-                    onClick = { onNavigateToAddContact(dialValue.text) }
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-            }
-
-            // Interactive Number Display
-            BasicTextField(
-                value = dialValue,
-                onValueChange = { 
-                    dialValue = it
-                    viewModel.onSearchQueryChanged(it.text)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 16.dp),
-                textStyle = TextStyle(
-                    fontSize = 40.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    textAlign = TextAlign.Center
-                ),
-                cursorBrush = SolidColor(AccentCyan),
-                readOnly = false,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
             )
 
-            // Search Results Chips
-            if (searchResults.isNotEmpty()) {
-                LazyRow(
+            // Results / Favorites / Identity Area
+            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.BottomCenter) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Bottom
+                ) {
+                    AnimatedContent(
+                        targetState = dialValue.text.isEmpty(),
+                        transitionSpec = {
+                            fadeIn() togetherWith fadeOut()
+                        },
+                        label = "DialerContentTransition"
+                    ) { isEmpty ->
+                        if (isEmpty) {
+                            FavoriteCarousel(
+                                contacts = favoriteContacts,
+                                onContactClick = { contact ->
+                                    contact.phoneNumbers.firstOrNull()?.let { viewModel.makeCall(it) }
+                                }
+                            )
+                        } else {
+                            ReconstructedResultsArea(
+                                dialValue = dialValue,
+                                searchResults = searchResults,
+                                clipboardContent = clipboardContent,
+                                onPaste = { 
+                                    dialValue = TextFieldValue(clipboardContent!!, TextRange(clipboardContent!!.length))
+                                    clipboardContent = null
+                                },
+                                onAddContact = { onNavigateToAddContact(dialValue.text) },
+                                onContactClick = onNavigateToContact,
+                                onValueChange = { 
+                                    dialValue = it
+                                    viewModel.onSearchQueryChanged(it.text)
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Keypad Area
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.Black)
+            ) {
+                TelephonyKeypad(
+                    onDigitClick = { handleDigitClick(it) },
+                    onLongClickZero = { 
+                        val start = dialValue.selection.start
+                        val end = dialValue.selection.end
+                        val newText = StringBuilder(dialValue.text).replace(start, end, "+").toString()
+                        val newSelection = TextRange(start + 1)
+                        dialValue = TextFieldValue(newText, newSelection)
+                        viewModel.onSearchQueryChanged(newText)
+                    }
+                )
+
+                // Reconstructed Action Row: Uniform with In-Call Primary Controls
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    contentPadding = PaddingValues(horizontal = 16.dp)
+                        .padding(vertical = 32.dp, horizontal = 32.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    items(searchResults) { contact ->
-                        SuggestionChip(
-                            onClick = {
-                                contact.phoneNumbers.firstOrNull()?.let { num ->
-                                    val requiredPermissions = arrayOf(
-                                        Manifest.permission.CALL_PHONE,
-                                        Manifest.permission.RECORD_AUDIO,
-                                        Manifest.permission.READ_PHONE_STATE
-                                    )
-                                    val missingPermissions = requiredPermissions.filter {
-                                        ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
-                                    }
-                                    if (missingPermissions.isEmpty()) {
-                                        viewModel.makeCall(num)
-                                    } else {
-                                        dialValue = TextFieldValue(num, TextRange(num.length))
-                                        permissionLauncher.launch(requiredPermissions)
-                                    }
-                                }
-                            },
-                            label = { 
-                                Text(
-                                    text = contact.fullName,
-                                    color = AccentCyan,
-                                    fontSize = 12.sp
-                                ) 
-                            },
-                            icon = {
-                                Icon(
-                                    imageVector = Icons.Default.Phone,
-                                    contentDescription = null,
-                                    tint = AccentCyan,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            },
-                            colors = SuggestionChipDefaults.suggestionChipColors(
-                                containerColor = Surface
-                            ),
-                            border = SuggestionChipDefaults.suggestionChipBorder(
-                                enabled = true,
-                                borderColor = AccentCyan.copy(alpha = 0.3f)
-                            ),
-                            shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier.padding(horizontal = 4.dp)
-                        )
-                    }
-                }
-            }
+                    // Sim Selector
+                    SimSelector(
+                        selectedSim = selectedSim,
+                        availableSims = availableSims,
+                        onClick = viewModel::toggleSim
+                    )
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Clipboard Paste Chip
-            if (clipboardContent != null && dialValue.text.isEmpty()) {
-                Surface(
-                    onClick = { 
-                        dialValue = TextFieldValue(clipboardContent!!, TextRange(clipboardContent!!.length))
-                        clipboardContent = null
-                    },
-                    shape = RoundedCornerShape(16.dp),
-                    color = Surface,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, AccentCyan.copy(alpha = 0.3f))
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(imageVector = Icons.Default.Call, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Paste $clipboardContent", color = Color.White, fontSize = 12.sp)
-                    }
-                }
-                Spacer(modifier = Modifier.height(24.dp))
-            }
-
-            // Dial Pad
-            val keys = listOf(
-                listOf("1", "2", "3"),
-                listOf("4", "5", "6"),
-                listOf("7", "8", "9"),
-                listOf("*", "0", "#")
-            )
-
-            keys.forEach { row ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    row.forEach { key ->
-                        DialButton(
-                            text = key,
-                            onClick = { handleDigitClick(key) }
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Action Row
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 32.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(modifier = Modifier.size(72.dp))
-
-                FloatingActionButton(
-                    onClick = {
-                        if (dialValue.text.isNotEmpty()) {
-                            val requiredPermissions = arrayOf(
-                                Manifest.permission.CALL_PHONE,
-                                Manifest.permission.RECORD_AUDIO,
-                                Manifest.permission.READ_PHONE_STATE
-                            )
-                            val missingPermissions = requiredPermissions.filter {
-                                ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
+                    // Large Green Call Button - 80dp for Uniformity
+                    FloatingActionButton(
+                        onClick = {
+                            if (dialValue.text.isNotEmpty()) {
+                                viewModel.makeCall(dialValue.text)
                             }
-                            if (missingPermissions.isEmpty()) {
-                                TelephonyUtils.placeOutgoingCall(context, dialValue.text)
-                            } else {
-                                permissionLauncher.launch(requiredPermissions)
+                        },
+                        containerColor = Color(0xFF4CAF50),
+                        contentColor = Color.White,
+                        shape = CircleShape,
+                        modifier = Modifier.size(80.dp)
+                    ) {
+                        Icon(Icons.Default.Call, "Dial", modifier = Modifier.size(32.dp))
+                    }
+
+                    // Backspace - Transparent and aligned
+                    Box(modifier = Modifier.size(80.dp), contentAlignment = Alignment.Center) {
+                        if (dialValue.text.isNotEmpty()) {
+                            IconButton(onClick = { handleBackspace() }) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.Backspace,
+                                    "Backspace",
+                                    tint = Color.Gray,
+                                    modifier = Modifier.size(32.dp)
+                                )
                             }
                         }
-                    },
-                    containerColor = Color(0xFF4CAF50),
-                    contentColor = Color.White,
-                    shape = CircleShape,
-                    modifier = Modifier.size(72.dp)
-                ) {
-                    Icon(Icons.Default.Call, "Dial", modifier = Modifier.size(32.dp))
-                }
-
-                IconButton(
-                    onClick = { handleBackspace() },
-                    modifier = Modifier.size(72.dp)
-                ) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.Backspace,
-                        "Backspace",
-                        tint = Color.White,
-                        modifier = Modifier.size(32.dp)
-                    )
+                    }
                 }
             }
         }
@@ -318,46 +224,245 @@ fun DialerScreen(
 }
 
 @Composable
-fun ActionPill(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    text: String,
-    onClick: () -> Unit
+fun ReconstructedResultsArea(
+    dialValue: TextFieldValue,
+    searchResults: List<ContactEntity>,
+    clipboardContent: String?,
+    onPaste: () -> Unit,
+    onAddContact: () -> Unit,
+    onContactClick: (Long) -> Unit,
+    onValueChange: (TextFieldValue) -> Unit
 ) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(20.dp),
-        color = AccentCyan.copy(alpha = 0.1f),
-        border = androidx.compose.foundation.BorderStroke(1.dp, AccentCyan.copy(alpha = 0.2f))
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
+        // 1. Identity Display (Glow Avatar)
+        if (searchResults.isNotEmpty()) {
+            val contact = searchResults.first()
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 24.dp)
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.size(110.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(90.dp)
+                            .background(
+                                Brush.radialGradient(
+                                    colors = listOf(AccentCyan.copy(alpha = 0.2f), Color.Transparent)
+                                ),
+                                CircleShape
+                            )
+                    )
+                    
+                    Surface(
+                        onClick = { onContactClick(contact.id) },
+                        shape = CircleShape,
+                        color = Surface,
+                        border = androidx.compose.foundation.BorderStroke(2.dp, AccentCyan),
+                        modifier = Modifier.size(80.dp)
+                    ) {
+                        if (contact.avatarPath != null) {
+                            AsyncImage(
+                                model = File(contact.avatarPath),
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    contact.fullName.take(1).uppercase(),
+                                    color = AccentCyan,
+                                    fontSize = 32.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+                Text(
+                    text = contact.fullName,
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+        } else if (dialValue.text.isNotEmpty()) {
+            Text(
+                text = "+ Add to connections",
+                color = AccentCyan,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 0.5.sp,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable { onAddContact() }
+                    .padding(horizontal = 16.dp, vertical = 24.dp)
+            )
+        }
+
+        // 2. Centered Digits with Highlight Capsule (Uniform with In-Call Style)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .height(64.dp)
+                .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(32.dp)),
+            contentAlignment = Alignment.Center
         ) {
-            Icon(icon, null, tint = AccentCyan, modifier = Modifier.size(14.dp))
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(text, color = AccentCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            BasicTextField(
+                value = dialValue,
+                onValueChange = onValueChange,
+                modifier = Modifier.fillMaxWidth(),
+                textStyle = TextStyle(
+                    fontSize = 38.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White,
+                    textAlign = TextAlign.Center,
+                    letterSpacing = 1.sp
+                ),
+                cursorBrush = SolidColor(AccentCyan),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+            )
+        }
+
+        // 3. Paste Action
+        if (clipboardContent != null && dialValue.text.isEmpty()) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Surface(
+                onClick = onPaste,
+                shape = RoundedCornerShape(20.dp),
+                color = Color.White.copy(alpha = 0.1f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, AccentCyan.copy(alpha = 0.3f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.ContentPaste, null, tint = AccentCyan, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Paste $clipboardContent", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(32.dp))
+    }
+}
+
+@Composable
+fun FavoriteCarousel(
+    contacts: List<ContactEntity>,
+    onContactClick: (ContactEntity) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        if (contacts.isNotEmpty()) {
+            Text(
+                "FAVORITES",
+                color = Color.Gray,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 1.sp,
+                modifier = Modifier.padding(start = 24.dp, bottom = 12.dp)
+            )
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                items(contacts) { contact ->
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .width(64.dp)
+                            .clickable { onContactClick(contact) }
+                    ) {
+                        Surface(
+                            modifier = Modifier.size(60.dp),
+                            shape = CircleShape,
+                            color = Surface,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
+                        ) {
+                            if (contact.avatarPath != null) {
+                                AsyncImage(
+                                    model = File(contact.avatarPath),
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(
+                                        contact.fullName.take(1).uppercase(),
+                                        color = AccentCyan,
+                                        fontSize = 24.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            contact.fullName,
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
 
 @Composable
-fun DialButton(
-    text: String,
+fun SimSelector(
+    selectedSim: SubscriptionInfo?,
+    availableSims: List<SubscriptionInfo>,
     onClick: () -> Unit
 ) {
     Surface(
-        onClick = onClick,
-        shape = CircleShape,
-        color = Surface,
-        modifier = Modifier.size(72.dp)
+        onClick = if (availableSims.size > 1) onClick else ({}),
+        shape = RoundedCornerShape(24.dp),
+        color = Color.Black.copy(alpha = 0.4f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
+        modifier = Modifier.width(80.dp)
     ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(
-                text = text,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color.White
+        Column(
+            modifier = Modifier.padding(vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = Icons.Default.SimCard,
+                contentDescription = null,
+                tint = if (availableSims.isNotEmpty()) AccentCyan else Color.Gray,
+                modifier = Modifier.size(18.dp)
             )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = if (selectedSim != null) "SIM ${selectedSim.simSlotIndex + 1}" else "NONE",
+                color = Color.White,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Black
+            )
+            if (availableSims.size > 1) {
+                Text(
+                    text = "SWITCH",
+                    color = AccentCyan,
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }

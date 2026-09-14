@@ -63,17 +63,12 @@ fun MyProfileSettingsScreen(
                 )
             },
             floatingActionButton = {
-                FloatingActionButton(
+                StitchDesignSystem.FAB(
+                    icon = Icons.Default.AccountBalanceWallet,
+                    contentDescription = "Quick Wallet",
                     onClick = { walletViewModel.onQuickWalletRequested() },
-                    containerColor = Color.Black,
-                    contentColor = AccentCyan,
-                    shape = CircleShape,
-                    modifier = Modifier
-                        .padding(bottom = 16.dp, end = 8.dp)
-                        .border(1.dp, AccentCyan, CircleShape)
-                ) {
-                    Icon(Icons.Default.AccountBalanceWallet, contentDescription = "Quick Wallet")
-                }
+                    modifier = Modifier.padding(bottom = 16.dp, end = 8.dp)
+                )
             },
             containerColor = Color.Transparent
         ) { innerPadding ->
@@ -115,14 +110,14 @@ fun MyProfileSettingsScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(24.dp),
+                                .padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Surface(
                                 shape = CircleShape,
                                 color = Color.Black.copy(alpha = 0.3f),
                                 modifier = Modifier
-                                    .size(64.dp)
+                                    .size(56.dp)
                                     .border(1.dp, AccentCyan.copy(alpha = 0.5f), CircleShape)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
@@ -130,20 +125,24 @@ fun MyProfileSettingsScreen(
                                         Icons.Default.Person,
                                         contentDescription = null,
                                         tint = AccentCyan,
-                                        modifier = Modifier.size(32.dp)
+                                        modifier = Modifier.size(28.dp)
                                     )
                                 }
                             }
                             Spacer(modifier = Modifier.width(16.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
                                     Text(
                                         text = userSummary.name,
                                         color = Color.White,
-                                        fontSize = 20.sp,
+                                        fontSize = 18.sp,
                                         fontWeight = FontWeight.Bold,
                                         maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f, fill = false)
                                     )
                                     if (userSummary.isPremium) {
                                         Spacer(modifier = Modifier.width(8.dp))
@@ -155,9 +154,9 @@ fun MyProfileSettingsScreen(
                                             Text(
                                                 text = "PREMIUM",
                                                 color = AccentCyan,
-                                                fontSize = 9.sp,
+                                                fontSize = 8.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                                 letterSpacing = 1.sp
                                             )
                                         }
@@ -166,7 +165,7 @@ fun MyProfileSettingsScreen(
                                 Text(
                                     text = userSummary.email,
                                     color = TextSecondary,
-                                    fontSize = 12.sp,
+                                    fontSize = 11.sp,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
@@ -177,8 +176,8 @@ fun MyProfileSettingsScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 24.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                .padding(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             MetricCard(count = userSummary.contactCount.toString(), label = "Contacts", modifier = Modifier.weight(1f))
                             MetricCard(count = userSummary.noteCount.toString(), label = "Notes", modifier = Modifier.weight(1f))
@@ -196,7 +195,10 @@ fun MyProfileSettingsScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            Row(
+                                modifier = Modifier.weight(1f),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 val syncIcon = if (userSummary.isSyncing) Icons.Default.Sync else Icons.Default.CloudDone
                                 val rotation by rememberInfiniteTransition(label = "").animateFloat(
                                     initialValue = 0f,
@@ -218,13 +220,16 @@ fun MyProfileSettingsScreen(
                                 Text(
                                     text = if (userSummary.isSyncing) "Syncing..." else "Last sync: ${userSummary.lastSync}",
                                     color = Color.Gray,
-                                    fontSize = 11.sp
+                                    fontSize = 11.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
 
                             if (userSummary.isSyncing) {
+                                Spacer(modifier = Modifier.width(8.dp))
                                 CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp),
+                                    modifier = Modifier.size(20.dp),
                                     color = AccentCyan,
                                     strokeWidth = 2.dp
                                 )
@@ -234,7 +239,7 @@ fun MyProfileSettingsScreen(
                                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                                     colors = ButtonDefaults.textButtonColors(contentColor = AccentCyan)
                                 ) {
-                                    Text("Sync Now", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    Text("Sync Now", fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                                 }
                             }
                         }
@@ -264,28 +269,28 @@ fun MyProfileSettingsScreen(
                             icon = Icons.Default.Dns,
                             title = "Data & Cloud Vault Management",
                             subtitle = "Cloud sync, backups and import/export",
-                            onClick = { onNavigate("data_vault_hub") }
+                            onClick = { onNavigate("data_vault") }
                         )
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.DarkGray.copy(alpha = 0.3f))
                         MenuListItem(
                             icon = Icons.Default.CreditCard,
                             title = "My Digital Wallet",
                             subtitle = "Secure card storage and dynamic keys",
-                            onClick = { onNavigate("digital_wallet_management") }
+                            onClick = { onNavigate("digital_wallet") }
                         )
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.DarkGray.copy(alpha = 0.3f))
                         MenuListItem(
                             icon = Icons.Default.AccountTree,
                             title = "Manage Custom Groups",
                             subtitle = "Configure custom relational categories",
-                            onClick = { onNavigate("manage_custom_groups") }
+                            onClick = { onNavigate("relationship_hierarchy") }
                         )
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.DarkGray.copy(alpha = 0.3f))
                         MenuListItem(
                             icon = Icons.Default.Settings,
                             title = "Advanced App Settings",
                             subtitle = "Storage configuration, local exports & backups",
-                            onClick = { onNavigate("advanced_app_settings") }
+                            onClick = { onNavigate("app_settings") }
                         )
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.DarkGray.copy(alpha = 0.3f))
                         MenuListItem(

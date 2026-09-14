@@ -73,7 +73,8 @@ class ProfileSettingsViewModel(
 
     fun triggerManualSync() {
         viewModelScope.launch(Dispatchers.IO) {
-            syncManager.startImmediateSync()
+            val prefs = preferenceRepository.preferences.first()
+            syncManager.startImmediateSync(wifiOnly = prefs.syncOverWifi)
         }
     }
 

@@ -33,5 +33,7 @@ data class ContactEntity(
     // Meta
     val createdAt: Long = System.currentTimeMillis(),
     val lastModifiedAt: Long = System.currentTimeMillis(),
-    val isSynced: Boolean = false
+    val isSynced: Boolean = false,
+    val isWhitelisted: Boolean = false,
+    val remark: String? = null
 )

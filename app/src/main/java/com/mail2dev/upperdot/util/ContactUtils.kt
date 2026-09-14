@@ -1,20 +1,28 @@
 package com.mail2dev.upperdot.util
 
-import android.telephony.PhoneNumberUtils
 import com.mail2dev.upperdot.R
 
 object ContactUtils {
     /**
      * Smart Number Matcher: Compares numbers by stripping symbols (+, -, spaces) and country codes.
+     * Specifically handles Malaysian +60 mapping to leading 0.
      */
     fun smartSanitize(number: String): String {
         if (isUssdCode(number)) return ""
         
-        // Use Android's normalizeNumber for basic cleaning (strips non-digits, keeps +)
-        val normalized = PhoneNumberUtils.normalizeNumber(number)
+        // 1. Normalize (strips non-digits, preserves +)
+        // Manual implementation to avoid Android dependency in unit tests
+        val normalized = number.filter { it.isDigit() || it == '+' }
         
-        // Strip leading zeros or '+' for global matching of suffix
-        return normalized.trimStart('+', '0')
+        // 2. Remove leading + and 0
+        var clean = normalized.trimStart('+', '0')
+        
+        // 3. Strip Malaysian country code (60) if present to match local 0... format
+        if (clean.startsWith("60")) {
+            clean = clean.substring(2)
+        }
+        
+        return clean
     }
 
     fun isUssdCode(number: String): Boolean {

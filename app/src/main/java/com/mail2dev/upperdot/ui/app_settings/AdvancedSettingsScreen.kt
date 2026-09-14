@@ -7,7 +7,6 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -30,12 +29,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mail2dev.upperdot.ui.theme.*
 import com.mail2dev.upperdot.util.MiuiPermissionUtils
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdvancedSettingsScreen(
     onNavigateBack: () -> Unit,
+    onNavigate: (String) -> Unit,
     viewModel: AdvancedSettingsViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -48,6 +47,8 @@ fun AdvancedSettingsScreen(
     val showFrequencyDialog by viewModel.showFrequencyDialog.collectAsState()
     val showCurrencyDialog by viewModel.showCurrencyDialog.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+
+    var customCurrencyInput by remember(showCurrencyDialog) { mutableStateOf(currencySymbol) }
 
     LaunchedEffect(Unit) {
         viewModel.updateStorageDiagnostics(
@@ -65,9 +66,7 @@ fun AdvancedSettingsScreen(
                 is SettingsUiEvent.Error -> {
                     snackbarHostState.showSnackbar(event.message)
                 }
-                SettingsUiEvent.Loading -> {
-                    // Handled visually or via specific state if needed
-                }
+                SettingsUiEvent.Loading -> {}
             }
         }
     }
@@ -75,7 +74,7 @@ fun AdvancedSettingsScreen(
     if (showFrequencyDialog) {
         val options = listOf("1h", "6h", "12h", "24h", "Manual")
         AlertDialog(
-            onDismissRequest = { viewModel.dismissFrequencyDialog() },
+            onDismissRequest = { viewModel.dismissSyncFrequencyDialog() },
             title = { Text("Sync Frequency", color = Color.White) },
             text = {
                 Column {
@@ -83,13 +82,13 @@ fun AdvancedSettingsScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { viewModel.onSyncFrequencySelected(option) }
+                                .clickable { viewModel.updateSyncFrequency(option) }
                                 .padding(vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             RadioButton(
                                 selected = option == syncFrequency,
-                                onClick = { viewModel.onSyncFrequencySelected(option) },
+                                onClick = { viewModel.updateSyncFrequency(option) },
                                 colors = RadioButtonDefaults.colors(selectedColor = AccentCyan)
                             )
                             Text(text = option, color = Color.White, modifier = Modifier.padding(start = 8.dp))
@@ -103,31 +102,46 @@ fun AdvancedSettingsScreen(
     }
 
     if (showCurrencyDialog) {
-        val options = listOf("$", "RM", "€", "£", "¥")
         AlertDialog(
             onDismissRequest = { viewModel.dismissCurrencyDialog() },
             title = { Text("Currency Selection", color = Color.White) },
             text = {
                 Column {
-                    options.forEach { option ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { viewModel.onCurrencySelected(option) }
-                                .padding(vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = option == currencySymbol,
-                                onClick = { viewModel.onCurrencySelected(option) },
-                                colors = RadioButtonDefaults.colors(selectedColor = AccentCyan)
-                            )
-                            Text(text = option, color = Color.White, modifier = Modifier.padding(start = 8.dp))
-                        }
-                    }
+                    Text(
+                        text = "Enter your preferred currency symbol or code (e.g., $, USD, RM, €):",
+                        color = Color.LightGray,
+                        fontSize = 14.sp
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = customCurrencyInput,
+                        onValueChange = { customCurrencyInput = it },
+                        singleLine = true,
+                        label = { Text("Currency Symbol") },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = AccentCyan,
+                            focusedLabelColor = AccentCyan,
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             },
-            confirmButton = {},
+            confirmButton = {
+                TextButton(
+                    onClick = { viewModel.updateCurrencySymbol(customCurrencyInput) }
+                ) {
+                    Text("Save", color = AccentCyan)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { viewModel.dismissCurrencyDialog() }
+                ) {
+                    Text("Cancel", color = Color.Gray)
+                }
+            },
             containerColor = Surface
         )
     }
@@ -169,7 +183,7 @@ fun AdvancedSettingsScreen(
                 )
             )
         },
-        snackbarHost = { 
+        snackbarHost = {
             SnackbarHost(hostState = snackbarHostState) { data ->
                 Snackbar(
                     snackbarData = data,
@@ -263,11 +277,61 @@ fun AdvancedSettingsScreen(
                 }
             }
 
+            // Call Security & Privacy
+            item {
+                Text(
+                    text = "CALL SECURITY & PRIVACY",
+                    color = Color(0xFF9575CD),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp,
+                    modifier = Modifier.padding(top = 16.dp)
+                )
+            }
+
+            item {
+                val blockUnknown by viewModel.blockUnknownNumbers.collectAsState()
+                val strictPrivacy by viewModel.strictPrivacyMode.collectAsState()
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = Surface)
+                ) {
+                    Column {
+                        SettingsToggleItem(
+                            icon = Icons.Default.PersonOff,
+                            title = "Block Unknown Callers",
+                            subtitle = "Reject calls from unsaved numbers",
+                            checked = blockUnknown,
+                            onCheckedChange = { viewModel.toggleBlockUnknownNumbers(it) }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.DarkGray.copy(alpha = 0.3f))
+                        SettingsToggleItem(
+                            icon = Icons.Default.Block,
+                            title = "Strict Privacy Mode",
+                            subtitle = "Block all contacts except exceptions",
+                            checked = strictPrivacy,
+                            onCheckedChange = { viewModel.toggleStrictPrivacyMode(it) }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.DarkGray.copy(alpha = 0.3f))
+                        SettingsListItem(
+                            icon = Icons.Default.VerifiedUser,
+                            title = "Manage Whitelist",
+                            subtitle = "Select contacts allowed to call you",
+                            onClick = { 
+                                onNavigate("call_whitelist")
+                            }
+                        )
+                    }
+                }
+            }
+
             // Storage & Data Management
             item {
                 Text(
                     text = "STORAGE & DATA MANAGEMENT",
-                    color = Color(0xFF9575CD), // Purple as per SRS
+                    color = Color(0xFF9575CD),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp
@@ -331,7 +395,7 @@ fun AdvancedSettingsScreen(
                             icon = Icons.Default.Sync,
                             title = "Sync Frequency",
                             value = syncFrequency,
-                            onClick = { viewModel.requestFrequencyChange() }
+                            onClick = { viewModel.showSyncFrequencyDialog() }
                         )
                     }
                 }
@@ -359,7 +423,7 @@ fun AdvancedSettingsScreen(
                         icon = Icons.Default.Language,
                         title = "Currency Selection",
                         value = currencySymbol,
-                        onClick = { viewModel.requestCurrencyChange() }
+                        onClick = { viewModel.showCurrencyDialog() }
                     )
                 }
             }
@@ -387,6 +451,7 @@ fun AdvancedSettingsScreen(
                     DiagnosticRow(label = "Total Attachment Usage", value = diagnostics.totalAttachmentUsage)
                     DiagnosticRow(label = "Total Contacts Count", value = diagnostics.totalContactsCount.toString())
                     DiagnosticRow(label = "Wallet Cards Count", value = diagnostics.walletCardsCount.toString())
+                    DiagnosticRow(label = "Last Successful Sync", value = diagnostics.lastSyncTime)
                 }
             }
         }

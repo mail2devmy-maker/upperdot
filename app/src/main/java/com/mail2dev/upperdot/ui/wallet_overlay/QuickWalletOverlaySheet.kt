@@ -3,7 +3,6 @@ package com.mail2dev.upperdot.ui.wallet_overlay
 import android.app.Activity
 import android.content.Intent
 import android.widget.Toast
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -49,16 +48,18 @@ fun QuickWalletOverlaySheet(
     onNavigateToManagement: () -> Unit,
     onNavigateToPlans: () -> Unit,
     bankCards: List<BankCard>,
-    isPremium: Boolean
+    isPremium: Boolean,
 ) {
-    val pagerState = rememberPagerState(pageCount = { 
-        if (isPremium) bankCards.size else minOf(bankCards.size, 1) + 1 
-    })
+    val pagerState = rememberPagerState {
+        if (isPremium) bankCards.size else minOf(bankCards.size, 1) + 1
+    }
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
+        sheetState = sheetState,
         containerColor = Surface,
         dragHandle = { BottomSheetDefaults.DragHandle(color = Color.DarkGray) },
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
@@ -66,8 +67,8 @@ fun QuickWalletOverlaySheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(24.dp)
-                .padding(bottom = 32.dp),
+                .padding(horizontal = 24.dp)
+                .padding(top = 8.dp, bottom = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Row(
@@ -91,7 +92,7 @@ fun QuickWalletOverlaySheet(
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             HorizontalPager(
                 state = pagerState,
@@ -136,7 +137,7 @@ fun QuickCardDisplay(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp)
+            .padding(horizontal = 4.dp, vertical = 8.dp)
             .border(
                 width = 2.dp,
                 color = bankColor.copy(alpha = 0.30f),
@@ -166,13 +167,14 @@ fun QuickCardDisplay(
                 fontWeight = FontWeight.Medium
             )
             
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // White QR Card Template
             Surface(
                 modifier = Modifier
                     .fillMaxWidth(0.85f)
-                    .height(200.dp)
+                    .heightIn(max = 240.dp)
+                    .aspectRatio(1f)
                     .clipToBounds()
                     .clickable { showFullScreenQr = true },
                 shape = RoundedCornerShape(12.dp),
@@ -193,13 +195,13 @@ fun QuickCardDisplay(
                             imageVector = Icons.Default.QrCode2,
                             contentDescription = null,
                             tint = Color.Black,
-                            modifier = Modifier.size(120.dp)
+                            modifier = Modifier.size(100.dp)
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Unified Action Bottom Row
             Row(
@@ -257,7 +259,7 @@ fun QuickCardDisplay(
                                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                         }
                                         context.startActivity(Intent.createChooser(intent, "Share Payment QR"))
-                                    } catch (e: Exception) {
+                                    } catch (_: Exception) {
                                         Toast.makeText(context, "Failed to share QR code", Toast.LENGTH_SHORT).show()
                                     }
                                 } else {

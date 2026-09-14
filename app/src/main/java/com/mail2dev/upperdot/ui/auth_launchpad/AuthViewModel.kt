@@ -7,10 +7,12 @@ import androidx.lifecycle.viewModelScope
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
 import com.mail2dev.upperdot.data.network.GoogleAuthService
+import com.mail2dev.upperdot.data.repository.PreferenceRepository
 import com.mail2dev.upperdot.data.sync.SyncManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 sealed class AuthState {
@@ -22,7 +24,8 @@ sealed class AuthState {
 class AuthViewModel(
     application: Application,
     private val authService: GoogleAuthService,
-    private val syncManager: SyncManager
+    private val syncManager: SyncManager,
+    private val preferenceRepository: PreferenceRepository
 ) : AndroidViewModel(application) {
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Loading)
@@ -64,7 +67,10 @@ class AuthViewModel(
 
             if (account != null) {
                 // Success: Trigger sync and navigate
-                syncManager.startImmediateSync()
+                viewModelScope.launch {
+                    val prefs = preferenceRepository.preferences.first()
+                    syncManager.startImmediateSync(wifiOnly = prefs.syncOverWifi)
+                }
                 _authState.value = AuthState.Authenticated
                 onSuccess()
             } else {

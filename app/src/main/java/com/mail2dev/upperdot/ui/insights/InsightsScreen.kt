@@ -2,7 +2,6 @@ package com.mail2dev.upperdot.ui.insights
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -189,20 +188,15 @@ fun InsightsScreen(
                 )
             },
             floatingActionButton = {
-                FloatingActionButton(
+                StitchDesignSystem.FAB(
+                    icon = Icons.Default.Add,
+                    contentDescription = "Add",
                     onClick = {
                         if (selectedTab == InsightTab.NOTES) viewModel.onAddNoteClicked()
                         else viewModel.onAddTransactionClicked()
                     },
-                    containerColor = Color.Black,
-                    contentColor = AccentCyan,
-                    shape = CircleShape,
-                    modifier = Modifier
-                        .padding(bottom = 16.dp, end = 8.dp)
-                        .border(1.dp, AccentCyan, CircleShape)
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add")
-                }
+                    modifier = Modifier.padding(bottom = 16.dp, end = 8.dp)
+                )
             },
             containerColor = Color.Transparent
         ) { innerPadding ->

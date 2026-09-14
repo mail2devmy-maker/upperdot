@@ -26,6 +26,35 @@ data class BankAccount(
     val accountNumber: String = ""
 )
 
+data class AddContactUiState(
+    val fullName: String = "",
+    val nicknames: String = "",
+    val phoneNumbers: List<String> = listOf(""),
+    val remark: String = "",
+    val emails: List<String> = listOf(""),
+    val socialProfiles: List<SocialProfile> = listOf(SocialProfile()),
+    val groupName: String = "",
+    val tagName: String = "",
+    val companyName: String = "",
+    val businessCategory: String = "Services",
+    val officeAddress: String = "",
+    val bankAccounts: List<BankAccount> = listOf(BankAccount()),
+    val avatarPath: String? = null,
+    
+    // UI states
+    val isIdentityExpanded: Boolean = false,
+    val isCorporateExpanded: Boolean = false,
+    val isFinancialExpanded: Boolean = false,
+    val isSaving: Boolean = false,
+    val showDiscardDialog: Boolean = false,
+    val nameError: String? = null
+)
+
+sealed class AddContactEvent {
+    object SaveSuccess : AddContactEvent()
+    data class ValidationError(val message: String) : AddContactEvent()
+}
+
 class AddContactViewModel(
     private val repository: ContactRepository,
     private val hierarchyRepository: HierarchyRepository,
@@ -33,270 +62,309 @@ class AddContactViewModel(
 ) : ViewModel() {
 
     private var editingContactId: Long? = null
+    val isEditMode: Boolean get() = editingContactId != null
+    
+    private var originalContactState: ContactEntity? = null
 
-    // Step 1: Core Info
-    private val _fullName = MutableStateFlow("")
-    val fullName: StateFlow<String> = _fullName.asStateFlow()
+    private val _uiState = MutableStateFlow(AddContactUiState())
+    val uiState: StateFlow<AddContactUiState> = _uiState.asStateFlow()
 
-    private val _nicknames = MutableStateFlow("")
-    val nicknames: StateFlow<String> = _nicknames.asStateFlow()
-
-    private val _phoneNumbers = MutableStateFlow(listOf(""))
-    val phoneNumbers: StateFlow<List<String>> = _phoneNumbers.asStateFlow()
-
-    // Step 2: Identity
-    private val _emails = MutableStateFlow(listOf(""))
-    val emails: StateFlow<List<String>> = _emails.asStateFlow()
-
-    private val _socialProfiles = MutableStateFlow(listOf(SocialProfile()))
-    val socialProfiles: StateFlow<List<SocialProfile>> = _socialProfiles.asStateFlow()
-
-    private val _groupName = MutableStateFlow("")
-    val groupName: StateFlow<String> = _groupName.asStateFlow()
-
-    private val _tagName = MutableStateFlow("")
-    val tagName: StateFlow<String> = _tagName.asStateFlow()
+    private val _eventFlow = MutableSharedFlow<AddContactEvent>()
+    val eventFlow = _eventFlow.asSharedFlow()
 
     val availableGroups: StateFlow<List<HierarchyGroup>> = hierarchyRepository.groups
-
-    // Step 3: Corporate
-    private val _companyName = MutableStateFlow("")
-    val companyName: StateFlow<String> = _companyName.asStateFlow()
-
-    private val _businessCategory = MutableStateFlow("Services")
-    val businessCategory: StateFlow<String> = _businessCategory.asStateFlow()
-
-    private val _officeAddress = MutableStateFlow("")
-    val officeAddress: StateFlow<String> = _officeAddress.asStateFlow()
-
-    // Step 4: Financial
-    private val _bankAccounts = MutableStateFlow(listOf(BankAccount()))
-    val bankAccounts: StateFlow<List<BankAccount>> = _bankAccounts.asStateFlow()
 
     val savedBanks: StateFlow<List<String>> = bankSuggestionRepository.savedBanks
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // UI State
-    private val _currentStep = MutableStateFlow(0)
-    val currentStep: StateFlow<Int> = _currentStep.asStateFlow()
-
-    private val _showDiscardDialog = MutableStateFlow(false)
-    val showDiscardDialog: StateFlow<Boolean> = _showDiscardDialog.asStateFlow()
-
-    fun loadContact(id: Long) {
-        viewModelScope.launch {
-            repository.getContactById(id)?.let { contact ->
-                editingContactId = contact.id
-                _fullName.value = contact.fullName
-                _nicknames.value = contact.nicknames.joinToString(", ")
-                _phoneNumbers.value = contact.phoneNumbers.ifEmpty { listOf("") }
-                _emails.value = contact.emails.ifEmpty { listOf("") }
-                _socialProfiles.value = contact.socialProfiles.ifEmpty { listOf(SocialProfile()) }
-                _groupName.value = contact.groupName
-                _tagName.value = contact.tagName ?: ""
-                _companyName.value = contact.companyName ?: ""
-                _businessCategory.value = contact.businessCategory
-                _officeAddress.value = contact.physicalAddress ?: ""
-                _bankAccounts.value = contact.bankAccounts.ifEmpty { listOf(BankAccount()) }
-            }
-        }
+    fun onFullNameChange(value: String) {
+        _uiState.update { it.copy(fullName = value, nameError = if (value.isNotBlank()) null else it.nameError) }
     }
 
-    fun prefillPhoneNumber(phone: String) {
-        _phoneNumbers.value = listOf(phone)
+    fun onNicknamesChange(value: String) {
+        _uiState.update { it.copy(nicknames = value) }
     }
 
-    // Update methods
-    fun onFullNameChange(value: String) { _fullName.value = value }
-    fun onNicknamesChange(value: String) { _nicknames.value = value }
-    
+    fun onRemarkChange(value: String) {
+        _uiState.update { it.copy(remark = value) }
+    }
+
     fun onPhoneNumberChange(index: Int, value: String) {
-        val list = _phoneNumbers.value.toMutableList()
+        val list = _uiState.value.phoneNumbers.toMutableList()
         if (index < list.size) {
             list[index] = value
-            _phoneNumbers.value = list
+            _uiState.update { it.copy(phoneNumbers = list) }
         }
     }
 
     fun addPhoneNumber() {
-        _phoneNumbers.value = _phoneNumbers.value + ""
+        _uiState.update { it.copy(phoneNumbers = it.phoneNumbers + "") }
     }
 
     fun removePhoneNumber(index: Int) {
-        val list = _phoneNumbers.value.toMutableList()
+        val list = _uiState.value.phoneNumbers.toMutableList()
         if (index < list.size && list.size > 1) {
             list.removeAt(index)
-            _phoneNumbers.value = list
+            _uiState.update { it.copy(phoneNumbers = list) }
         }
     }
 
-    // Identity Updates
     fun onEmailChange(index: Int, value: String) {
-        val list = _emails.value.toMutableList()
+        val list = _uiState.value.emails.toMutableList()
         if (index < list.size) {
             list[index] = value
-            _emails.value = list
+            _uiState.update { it.copy(emails = list) }
         }
     }
 
     fun addEmailField() {
-        _emails.value = _emails.value + ""
+        _uiState.update { it.copy(emails = it.emails + "") }
     }
 
     fun removeEmailField(index: Int) {
-        val list = _emails.value.toMutableList()
+        val list = _uiState.value.emails.toMutableList()
         if (index < list.size && list.size > 1) {
             list.removeAt(index)
-            _emails.value = list
+            _uiState.update { it.copy(emails = list) }
         }
     }
-    fun onGroupNameChange(value: String) { 
-        _groupName.value = value 
-        _tagName.value = "" // Reset tag when group changes
+
+    fun onGroupNameChange(value: String) {
+        _uiState.update { it.copy(groupName = value, tagName = "") }
     }
-    fun onTagNameChange(value: String) { _tagName.value = value }
+
+    fun onTagNameChange(value: String) {
+        _uiState.update { it.copy(tagName = value) }
+    }
 
     fun onCreateNewGroup(name: String) {
         hierarchyRepository.addGroup(name)
-        _groupName.value = name
-        _tagName.value = ""
+        _uiState.update { it.copy(groupName = name, tagName = "") }
     }
-    
+
     fun onSocialPlatformChange(index: Int, platform: String) {
-        val list = _socialProfiles.value.toMutableList()
+        val list = _uiState.value.socialProfiles.toMutableList()
         if (index < list.size) {
             list[index] = list[index].copy(platform = platform)
-            _socialProfiles.value = list
+            _uiState.update { it.copy(socialProfiles = list) }
         }
     }
 
     fun onSocialHandleChange(index: Int, handle: String) {
-        val list = _socialProfiles.value.toMutableList()
+        val list = _uiState.value.socialProfiles.toMutableList()
         if (index < list.size) {
             list[index] = list[index].copy(handle = handle)
-            _socialProfiles.value = list
+            _uiState.update { it.copy(socialProfiles = list) }
         }
     }
 
     fun addSocialProfile() {
-        _socialProfiles.value = _socialProfiles.value + SocialProfile()
+        _uiState.update { it.copy(socialProfiles = it.socialProfiles + SocialProfile()) }
     }
 
-    // Bank Suggestion Management
-    fun onAddCustomBank(name: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            bankSuggestionRepository.saveBankName(name)
-        }
+    fun onCompanyNameChange(value: String) {
+        _uiState.update { it.copy(companyName = value) }
     }
 
-    fun onRenameBank(oldName: String, newName: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            bankSuggestionRepository.renameBank(oldName, newName)
-        }
+    fun onBusinessCategoryChange(value: String) {
+        _uiState.update { it.copy(businessCategory = value) }
     }
 
-    fun onDeleteBank(name: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            bankSuggestionRepository.deleteBank(name)
-        }
+    fun onOfficeAddressChange(value: String) {
+        _uiState.update { it.copy(officeAddress = value) }
     }
 
-    // Corporate Updates
-    fun onCompanyNameChange(value: String) { _companyName.value = value }
-    fun onBusinessCategoryChange(value: String) { _businessCategory.value = value }
-    fun onOfficeAddressChange(value: String) { _officeAddress.value = value }
-
-    // Financial Updates
     fun onBankNameChange(index: Int, value: String) {
-        val list = _bankAccounts.value.toMutableList()
+        val list = _uiState.value.bankAccounts.toMutableList()
         if (index < list.size) {
             list[index] = list[index].copy(bankName = value)
-            _bankAccounts.value = list
+            _uiState.update { it.copy(bankAccounts = list) }
         }
     }
 
     fun onBankHolderNameChange(index: Int, value: String) {
-        val list = _bankAccounts.value.toMutableList()
+        val list = _uiState.value.bankAccounts.toMutableList()
         if (index < list.size) {
             list[index] = list[index].copy(holderName = value)
-            _bankAccounts.value = list
+            _uiState.update { it.copy(bankAccounts = list) }
         }
     }
 
     fun onBankAccountNumberChange(index: Int, value: String) {
-        val list = _bankAccounts.value.toMutableList()
+        val list = _uiState.value.bankAccounts.toMutableList()
         if (index < list.size) {
             list[index] = list[index].copy(accountNumber = value)
-            _bankAccounts.value = list
+            _uiState.update { it.copy(bankAccounts = list) }
         }
     }
 
     fun addBankAccount() {
-        _bankAccounts.value = _bankAccounts.value + BankAccount()
+        _uiState.update { it.copy(bankAccounts = it.bankAccounts + BankAccount()) }
     }
 
     fun removeBankAccount(index: Int) {
-        val list = _bankAccounts.value.toMutableList()
+        val list = _uiState.value.bankAccounts.toMutableList()
         if (index < list.size && list.size > 1) {
             list.removeAt(index)
-            _bankAccounts.value = list
+            _uiState.update { it.copy(bankAccounts = list) }
         }
     }
 
-    fun onStepSelected(step: Int) {
-        _currentStep.value = step
+    fun toggleIdentityExpanded() {
+        _uiState.update { it.copy(isIdentityExpanded = !it.isIdentityExpanded) }
     }
 
-    fun onDiscardRequest() {
-        _showDiscardDialog.value = true
+    fun toggleCorporateExpanded() {
+        _uiState.update { it.copy(isCorporateExpanded = !it.isCorporateExpanded) }
+    }
+
+    fun toggleFinancialExpanded() {
+        _uiState.update { it.copy(isFinancialExpanded = !it.isFinancialExpanded) }
+    }
+
+    fun onAvatarChanged(path: String?) {
+        _uiState.update { it.copy(avatarPath = path) }
+    }
+
+    val hasUnsavedChanges: Boolean get() {
+        val state = _uiState.value
+        val currentPhoneNumbers = state.phoneNumbers.filter { it.isNotEmpty() }
+        val currentEmails = state.emails.filter { it.isNotEmpty() }
+        val currentSocial = state.socialProfiles.filter { it.handle.isNotEmpty() }
+        val currentBanks = state.bankAccounts.filter { it.accountNumber.isNotEmpty() }
+        val currentNicknames = state.nicknames.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+
+        if (originalContactState == null) {
+            return state.fullName.isNotEmpty() ||
+                    currentNicknames.isNotEmpty() ||
+                    currentPhoneNumbers.isNotEmpty() ||
+                    state.remark.isNotEmpty() ||
+                    currentEmails.isNotEmpty() ||
+                    state.officeAddress.isNotEmpty() ||
+                    state.companyName.isNotEmpty()
+        }
+
+        return state.fullName != originalContactState!!.fullName ||
+                currentNicknames != originalContactState!!.nicknames ||
+                currentPhoneNumbers != originalContactState!!.phoneNumbers ||
+                state.remark != (originalContactState!!.remark ?: "") ||
+                currentEmails != originalContactState!!.emails ||
+                state.groupName != originalContactState!!.groupName ||
+                state.tagName != (originalContactState!!.tagName ?: "") ||
+                state.companyName != (originalContactState!!.companyName ?: "") ||
+                state.businessCategory != originalContactState!!.businessCategory ||
+                state.officeAddress != (originalContactState!!.physicalAddress ?: "") ||
+                currentSocial != originalContactState!!.socialProfiles ||
+                currentBanks != originalContactState!!.bankAccounts ||
+                state.avatarPath != originalContactState!!.avatarPath
+    }
+
+    fun loadContact(id: Long) {
+        if (id <= 0L) return
+        viewModelScope.launch {
+            repository.getContactById(id)?.let { contact ->
+                editingContactId = contact.id
+                originalContactState = contact
+                _uiState.update { it.copy(
+                    fullName = contact.fullName,
+                    nicknames = contact.nicknames.joinToString(", "),
+                    phoneNumbers = contact.phoneNumbers.ifEmpty { listOf("") },
+                    remark = contact.remark ?: "",
+                    emails = contact.emails.ifEmpty { listOf("") },
+                    socialProfiles = contact.socialProfiles.ifEmpty { listOf(SocialProfile()) },
+                    groupName = contact.groupName,
+                    tagName = contact.tagName ?: "",
+                    companyName = contact.companyName ?: "",
+                    businessCategory = contact.businessCategory,
+                    officeAddress = contact.physicalAddress ?: "",
+                    bankAccounts = contact.bankAccounts.ifEmpty { listOf(BankAccount()) },
+                    avatarPath = contact.avatarPath,
+                    showDiscardDialog = false
+                ) }
+            }
+        }
+    }
+
+    fun resetForm() {
+        editingContactId = null
+        originalContactState = null
+        _uiState.value = AddContactUiState()
+    }
+
+    fun prefillPhoneNumber(phone: String) {
+        _uiState.update { it.copy(phoneNumbers = listOf(phone)) }
+    }
+
+    fun onDiscardRequest(onConfirmImmediately: () -> Unit) {
+        if (hasUnsavedChanges) {
+            _uiState.update { it.copy(showDiscardDialog = true) }
+        } else {
+            onConfirmImmediately()
+        }
     }
 
     fun dismissDiscardDialog() {
-        _showDiscardDialog.value = false
+        _uiState.update { it.copy(showDiscardDialog = false) }
     }
 
     fun saveContact(onSuccess: () -> Unit) {
-        if (_fullName.value.isBlank()) {
-            _currentStep.value = 0
-            // TODO: Show error state for full name
+        val state = _uiState.value
+        if (state.fullName.isBlank()) {
+            _uiState.update { it.copy(nameError = "Full Name is required") }
+            viewModelScope.launch {
+                _eventFlow.emit(AddContactEvent.ValidationError("Please provide a name for this contact"))
+            }
             return
         }
+
+        if (state.isSaving) return
+        _uiState.update { it.copy(isSaving = true) }
         
         viewModelScope.launch(Dispatchers.IO) {
-            val primaryPhone = _phoneNumbers.value.firstOrNull() ?: ""
-            val sanitized = com.mail2dev.upperdot.util.ContactUtils.smartSanitize(primaryPhone)
-            
-            val entity = ContactEntity(
-                id = editingContactId ?: 0L,
-                fullName = _fullName.value,
-                nicknames = _nicknames.value.split(",").map { it.trim() }.filter { it.isNotEmpty() },
-                phoneNumbers = _phoneNumbers.value.filter { it.isNotEmpty() },
-                sanitizedPrimaryPhone = sanitized,
-                emails = _emails.value.filter { it.isNotEmpty() },
-                groupName = _groupName.value.ifEmpty { "Unassigned" },
-                tagName = _tagName.value.ifEmpty { null },
-                socialProfiles = _socialProfiles.value.filter { it.handle.isNotEmpty() },
-                companyName = _companyName.value,
-                businessCategory = _businessCategory.value,
-                physicalAddress = _officeAddress.value,
-                bankAccounts = _bankAccounts.value.filter { it.accountNumber.isNotEmpty() }
-            )
-            
-            if (editingContactId != null) {
-                repository.updateContact(entity)
-            } else {
-                repository.insertContact(entity)
-            }
-
-            // Learning: Save new bank names to suggestions
-            _bankAccounts.value.forEach { account ->
-                if (account.bankName.isNotBlank()) {
-                    bankSuggestionRepository.saveBankName(account.bankName)
+            try {
+                val primaryPhone = state.phoneNumbers.firstOrNull() ?: ""
+                val sanitized = com.mail2dev.upperdot.util.ContactUtils.smartSanitize(primaryPhone)
+                
+                val entity = ContactEntity(
+                    id = editingContactId ?: 0L,
+                    fullName = state.fullName,
+                    nicknames = state.nicknames.split(",").map { it.trim() }.filter { it.isNotEmpty() },
+                    phoneNumbers = state.phoneNumbers.filter { it.isNotEmpty() },
+                    sanitizedPrimaryPhone = sanitized,
+                    remark = state.remark.ifBlank { null },
+                    emails = state.emails.filter { it.isNotEmpty() },
+                    groupName = state.groupName.ifEmpty { "Unassigned" },
+                    tagName = state.tagName.ifEmpty { null },
+                    socialProfiles = state.socialProfiles.filter { it.handle.isNotEmpty() },
+                    companyName = state.companyName,
+                    businessCategory = state.businessCategory,
+                    physicalAddress = state.officeAddress,
+                    bankAccounts = state.bankAccounts.filter { it.accountNumber.isNotEmpty() },
+                    avatarPath = state.avatarPath
+                )
+                
+                if (editingContactId != null) {
+                    repository.updateContact(entity)
+                } else {
+                    val newId = repository.insertContact(entity)
+                    editingContactId = newId
                 }
-            }
 
-            withContext(Dispatchers.Main) {
-                onSuccess()
+                state.bankAccounts.forEach { account ->
+                    if (account.bankName.isNotBlank()) {
+                        bankSuggestionRepository.saveBankName(account.bankName)
+                    }
+                }
+
+                _eventFlow.emit(AddContactEvent.SaveSuccess)
+                withContext(Dispatchers.Main) {
+                    onSuccess()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _eventFlow.emit(AddContactEvent.ValidationError("Failed to save contact: ${e.message}"))
+            } finally {
+                _uiState.update { it.copy(isSaving = false) }
             }
         }
     }

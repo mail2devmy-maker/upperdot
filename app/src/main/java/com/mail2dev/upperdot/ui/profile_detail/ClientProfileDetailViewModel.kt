@@ -26,7 +26,9 @@ data class FullContactProfile(
     val companyName: String = "",
     val businessCategory: String = "",
     val officeAddress: String = "",
-    val bankAccounts: List<BankAccount> = emptyList()
+    val bankAccounts: List<BankAccount> = emptyList(),
+    val remark: String? = null,
+    val isFavorite: Boolean = false
 )
 
 class ClientProfileDetailViewModel(
@@ -42,25 +44,24 @@ class ClientProfileDetailViewModel(
     val contactProfile: StateFlow<FullContactProfile?> = _contactId
         .filterNotNull()
         .flatMapLatest { id ->
-            flow {
-                val contact = contactRepository.getContactById(id)
-                if (contact != null) {
-                    emit(FullContactProfile(
-                        id = contact.id,
-                        fullName = contact.fullName,
-                        nicknames = contact.nicknames.joinToString(", "),
-                        phoneNumbers = contact.phoneNumbers,
-                        emails = contact.emails,
-                        socialProfiles = contact.socialProfiles,
-                        group = contact.groupName,
-                        tag = contact.tagName ?: "",
-                        companyName = contact.companyName ?: "",
-                        businessCategory = contact.businessCategory,
-                        officeAddress = contact.physicalAddress ?: "",
-                        bankAccounts = contact.bankAccounts
-                    ))
-                } else {
-                    emit(null)
+            contactRepository.getContactByIdFlow(id).map { contact ->
+                contact?.let {
+                    FullContactProfile(
+                        id = it.id,
+                        fullName = it.fullName,
+                        nicknames = it.nicknames.joinToString(", "),
+                        phoneNumbers = it.phoneNumbers,
+                        emails = it.emails,
+                        socialProfiles = it.socialProfiles,
+                        group = it.groupName,
+                        tag = it.tagName ?: "",
+                        companyName = it.companyName ?: "",
+                        businessCategory = it.businessCategory,
+                        officeAddress = it.physicalAddress ?: "",
+                        bankAccounts = it.bankAccounts,
+                        remark = it.remark,
+                        isFavorite = it.groupName == "Favorites"
+                    )
                 }
             }
         }
@@ -222,6 +223,17 @@ class ClientProfileDetailViewModel(
             if (contact != null) {
                 contactRepository.deleteContact(contact)
                 onSuccess()
+            }
+        }
+    }
+
+    fun toggleFavorite() {
+        val id = _contactId.value ?: return
+        viewModelScope.launch {
+            val contact = contactRepository.getContactById(id)
+            if (contact != null) {
+                val newGroup = if (contact.groupName == "Favorites") "Unassigned" else "Favorites"
+                contactRepository.updateContact(contact.copy(groupName = newGroup))
             }
         }
     }

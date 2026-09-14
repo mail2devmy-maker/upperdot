@@ -17,7 +17,8 @@ data class DatabaseDiagnostics(
     val vaultSize: String = "0.00 MB",
     val totalAttachmentUsage: String = "0.00 MB",
     val totalContactsCount: Int = 0,
-    val walletCardsCount: Int = 0
+    val walletCardsCount: Int = 0,
+    val lastSyncTime: String = "Never"
 )
 
 sealed class SettingsUiEvent {
@@ -29,6 +30,8 @@ sealed class SettingsUiEvent {
 class AdvancedSettingsViewModel(
     private val contactRepository: ContactRepository,
     private val bankCardRepository: BankCardRepository,
+    private val noteRepository: NoteRepository,
+    private val transactionRepository: TransactionRepository,
     private val syncManager: SyncManager,
     private val preferenceRepository: PreferenceRepository
 ) : ViewModel() {
@@ -45,40 +48,16 @@ class AdvancedSettingsViewModel(
     private val _currencySymbol = MutableStateFlow("$")
     val currencySymbol: StateFlow<String> = _currencySymbol.asStateFlow()
 
+    private val _lastSyncTime = MutableStateFlow(0L)
+
+    private val _blockUnknownNumbers = MutableStateFlow(false)
+    val blockUnknownNumbers: StateFlow<Boolean> = _blockUnknownNumbers.asStateFlow()
+
+    private val _strictPrivacyMode = MutableStateFlow(false)
+    val strictPrivacyMode: StateFlow<Boolean> = _strictPrivacyMode.asStateFlow()
+
     private val _vaultSize = MutableStateFlow("0.00 MB")
     private val _attachmentUsage = MutableStateFlow("0.00 MB")
-
-    init {
-        viewModelScope.launch {
-            preferenceRepository.preferences.collectLatest { prefs ->
-                _syncOverWifi.value = prefs.syncOverWifi
-                _syncFrequency.value = prefs.syncFrequency
-                _currencySymbol.value = prefs.currencySymbol
-                _isMediaCompressionEnabled.value = prefs.isMediaCompressionEnabled
-            }
-        }
-        // Force set to false for first launch if preference has not been updated
-        viewModelScope.launch(Dispatchers.IO) {
-            val currentPrefs = preferenceRepository.preferences.first()
-            if (currentPrefs.syncOverWifi) {
-                preferenceRepository.savePreferences(currentPrefs.copy(syncOverWifi = false))
-            }
-        }
-    }
-
-    val diagnostics: StateFlow<DatabaseDiagnostics> = combine(
-        contactRepository.contactCount,
-        bankCardRepository.cardCount,
-        _vaultSize,
-        _attachmentUsage
-    ) { contactCount, cardCount, vaultSize, attachmentUsage ->
-        DatabaseDiagnostics(
-            totalContactsCount = contactCount,
-            walletCardsCount = cardCount,
-            vaultSize = vaultSize,
-            totalAttachmentUsage = attachmentUsage
-        )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DatabaseDiagnostics())
 
     private val _showClearCacheDialog = MutableStateFlow(false)
     val showClearCacheDialog: StateFlow<Boolean> = _showClearCacheDialog.asStateFlow()
@@ -92,22 +71,111 @@ class AdvancedSettingsViewModel(
     private val _eventFlow = MutableSharedFlow<SettingsUiEvent>()
     val eventFlow = _eventFlow.asSharedFlow()
 
+    init {
+        viewModelScope.launch {
+            preferenceRepository.preferences.collectLatest { prefs ->
+                _syncOverWifi.value = prefs.syncOverWifi
+                _syncFrequency.value = prefs.syncFrequency
+                _currencySymbol.value = prefs.currencySymbol
+                _isMediaCompressionEnabled.value = prefs.isMediaCompressionEnabled
+                _blockUnknownNumbers.value = prefs.blockUnknownNumbers
+                _strictPrivacyMode.value = prefs.strictPrivacyMode
+                _lastSyncTime.value = prefs.lastSyncTime
+            }
+        }
+    }
+
+    val diagnostics: StateFlow<DatabaseDiagnostics> = combine(
+        contactRepository.contactCount,
+        bankCardRepository.cardCount,
+        _vaultSize,
+        _attachmentUsage,
+        _lastSyncTime
+    ) { contactCount, cardCount, vaultSize, attachmentUsage, lastSync ->
+        val syncStr = if (lastSync == 0L) "Never" else {
+            java.text.SimpleDateFormat("MMM dd, HH:mm", java.util.Locale.getDefault()).format(java.util.Date(lastSync))
+        }
+        DatabaseDiagnostics(
+            totalContactsCount = contactCount,
+            walletCardsCount = cardCount,
+            vaultSize = vaultSize,
+            totalAttachmentUsage = attachmentUsage,
+            lastSyncTime = syncStr
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DatabaseDiagnostics())
+
+    // Currency Dialog Controls
+    fun showCurrencyDialog() {
+        _showCurrencyDialog.value = true
+    }
+
+    fun dismissCurrencyDialog() {
+        _showCurrencyDialog.value = false
+    }
+
+    fun updateCurrencySymbol(symbol: String) {
+        val formattedSymbol = symbol.trim()
+        if (formattedSymbol.isNotEmpty()) {
+            _currencySymbol.value = formattedSymbol
+            dismissCurrencyDialog()
+            savePreferences()
+        }
+    }
+
+    // Sync Frequency Dialog Controls
+    fun showSyncFrequencyDialog() {
+        _showFrequencyDialog.value = true
+    }
+
+    fun dismissSyncFrequencyDialog() {
+        _showFrequencyDialog.value = false
+    }
+
+    fun updateSyncFrequency(frequency: String) {
+        _syncFrequency.value = frequency
+        dismissSyncFrequencyDialog()
+        savePreferences()
+        updateSyncSchedule()
+    }
+
     fun updateStorageDiagnostics(filesDir: File, dbFile: File) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                // Calculate Vault Size (DB)
                 val dbSize = if (dbFile.exists()) dbFile.length() else 0L
                 val vaultSizeMB = String.format(Locale.getDefault(), "%.2f MB", dbSize.toDouble() / (1024 * 1024))
 
-                // Calculate Total Attachment Usage (Scan filesDir tree)
+                val activeNotes = noteRepository.allNotes.firstOrNull() ?: emptyList()
+                val activeTransactions = transactionRepository.allTransactions.firstOrNull() ?: emptyList()
+                val activeCards = bankCardRepository.allCards.firstOrNull() ?: emptyList()
+                val activeContacts = contactRepository.allContacts.firstOrNull() ?: emptyList()
+
+                val activePaths = mutableSetOf<String>()
+
+                activeNotes.forEach { note ->
+                    activePaths.addAll(note.attachmentPaths)
+                    note.voiceRecordingPath?.let { activePaths.add(it) }
+                }
+                activeTransactions.forEach { tx ->
+                    activePaths.addAll(tx.receiptPaths)
+                    tx.voiceRecordingPath?.let { activePaths.add(it) }
+                }
+                activeCards.forEach { card ->
+                    card.qrImagePath?.let { activePaths.add(it) }
+                }
+                activeContacts.forEach { contact ->
+                    contact.avatarPath?.let { activePaths.add(it) }
+                }
+
                 var totalBytes = 0L
-                if (filesDir.exists()) {
-                    filesDir.walkTopDown().forEach { file ->
-                        if (file.isFile) {
+                activePaths.forEach { path ->
+                    if (path.isNotBlank()) {
+                        val file = File(path)
+                        if (file.exists() && file.isFile) {
                             totalBytes += file.length()
                         }
                     }
                 }
+
                 val attachmentMB = String.format(Locale.getDefault(), "%.2f MB", totalBytes.toDouble() / (1024 * 1024))
 
                 _vaultSize.value = vaultSizeMB
@@ -129,11 +197,14 @@ class AdvancedSettingsViewModel(
         savePreferences()
     }
 
-    fun onSyncFrequencySelected(frequency: String) {
-        _syncFrequency.value = frequency
-        _showFrequencyDialog.value = false
+    fun toggleBlockUnknownNumbers(enabled: Boolean) {
+        _blockUnknownNumbers.value = enabled
         savePreferences()
-        updateSyncSchedule()
+    }
+
+    fun toggleStrictPrivacyMode(enabled: Boolean) {
+        _strictPrivacyMode.value = enabled
+        savePreferences()
     }
 
     private fun savePreferences() {
@@ -142,7 +213,9 @@ class AdvancedSettingsViewModel(
                 syncOverWifi = _syncOverWifi.value,
                 syncFrequency = _syncFrequency.value,
                 currencySymbol = _currencySymbol.value,
-                isMediaCompressionEnabled = _isMediaCompressionEnabled.value
+                isMediaCompressionEnabled = _isMediaCompressionEnabled.value,
+                blockUnknownNumbers = _blockUnknownNumbers.value,
+                strictPrivacyMode = _strictPrivacyMode.value
             )
             preferenceRepository.savePreferences(prefs)
         }
@@ -163,12 +236,6 @@ class AdvancedSettingsViewModel(
         syncManager.schedulePeriodicSync(interval, _syncOverWifi.value)
     }
 
-    fun onCurrencySelected(symbol: String) {
-        _currencySymbol.value = symbol
-        _showCurrencyDialog.value = false
-        savePreferences()
-    }
-
     fun requestClearCache() {
         _showClearCacheDialog.value = true
     }
@@ -177,27 +244,51 @@ class AdvancedSettingsViewModel(
         _showClearCacheDialog.value = false
     }
 
-    fun requestFrequencyChange() {
-        _showFrequencyDialog.value = true
-    }
-
-    fun dismissFrequencyDialog() {
-        _showFrequencyDialog.value = false
-    }
-
-    fun requestCurrencyChange() {
-        _showCurrencyDialog.value = true
-    }
-
-    fun dismissCurrencyDialog() {
-        _showCurrencyDialog.value = false
-    }
-
     fun confirmClearCache(filesDir: File, dbFile: File) {
         viewModelScope.launch(Dispatchers.IO) {
-            updateStorageDiagnostics(filesDir, dbFile)
-            withContext(Dispatchers.Main) {
-                _showClearCacheDialog.value = false
+            try {
+                val activeNotes = noteRepository.allNotes.firstOrNull() ?: emptyList()
+                val activeTransactions = transactionRepository.allTransactions.firstOrNull() ?: emptyList()
+                val activeCards = bankCardRepository.allCards.firstOrNull() ?: emptyList()
+                val activeContacts = contactRepository.allContacts.firstOrNull() ?: emptyList()
+
+                val activePaths = mutableSetOf<String>()
+
+                activeNotes.forEach { note ->
+                    activePaths.addAll(note.attachmentPaths)
+                    note.voiceRecordingPath?.let { activePaths.add(it) }
+                }
+                activeTransactions.forEach { tx ->
+                    activePaths.addAll(tx.receiptPaths)
+                    tx.voiceRecordingPath?.let { activePaths.add(it) }
+                }
+                activeCards.forEach { card ->
+                    card.qrImagePath?.let { activePaths.add(it) }
+                }
+                activeContacts.forEach { contact ->
+                    contact.avatarPath?.let { activePaths.add(it) }
+                }
+
+                if (filesDir.exists()) {
+                    filesDir.walkTopDown().forEach { file ->
+                        if (file.isFile && !activePaths.contains(file.absolutePath)) {
+                            file.delete()
+                        }
+                    }
+                }
+
+                updateStorageDiagnostics(filesDir, dbFile)
+
+                withContext(Dispatchers.Main) {
+                    _showClearCacheDialog.value = false
+                    _eventFlow.emit(SettingsUiEvent.Success("Cache cleared successfully"))
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    _showClearCacheDialog.value = false
+                    _eventFlow.emit(SettingsUiEvent.Error("Failed to clear cache"))
+                }
             }
         }
     }

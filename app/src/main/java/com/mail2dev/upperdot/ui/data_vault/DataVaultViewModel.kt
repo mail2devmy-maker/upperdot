@@ -13,6 +13,7 @@ import com.mail2dev.upperdot.data.repository.NoteRepository
 import com.mail2dev.upperdot.data.repository.PreferenceRepository
 import com.mail2dev.upperdot.data.repository.TransactionRepository
 import com.mail2dev.upperdot.data.worker.DriveSyncWorker
+import com.mail2dev.upperdot.ui.add_contact.SocialProfile
 import com.mail2dev.upperdot.util.ContactUtils
 import com.mail2dev.upperdot.utils.BackupUtils
 import kotlinx.coroutines.Dispatchers
@@ -250,7 +251,14 @@ class DataVaultViewModel(
                 when (strategy) {
                     "OVERWRITE" -> {
                         for ((existing, incoming) in currentState.conflicts) {
-                            val updated = incoming.copy(id = existing.id)
+                            val updated = incoming.copy(
+                                id = existing.id,
+                                isWhitelisted = existing.isWhitelisted,
+                                avatarPath = existing.avatarPath,
+                                createdAt = existing.createdAt,
+                                lastModifiedAt = System.currentTimeMillis(),
+                                isSynced = false // Trigger re-sync
+                            )
                             contactRepository.updateContact(updated)
                         }
                     }
@@ -282,19 +290,63 @@ class DataVaultViewModel(
             var name = ""
             val phones = mutableListOf<String>()
             val emails = mutableListOf<String>()
+            var remark: String? = null
+            val socialProfiles = mutableListOf<SocialProfile>()
 
-            vcard.lines().forEach { line ->
+            val lines = vcard.lines()
+            var i = 0
+            while (i < lines.size) {
+                var line = lines[i].trim()
+                if (line.isEmpty()) { i++; continue }
+
+                // Handle multi-line folded values (standard in VCF)
+                while (i + 1 < lines.size && (lines[i+1].startsWith(" ") || lines[i+1].startsWith("\t"))) {
+                    line += lines[++i].substring(1)
+                }
+
                 when {
-                    line.startsWith("FN:") || line.startsWith("FN;") -> {
+                    line.startsWith("FN:", ignoreCase = true) || line.startsWith("FN;", ignoreCase = true) -> {
                         name = line.substringAfter(":").trim()
                     }
-                    line.startsWith("TEL") -> {
+                    line.startsWith("TEL", ignoreCase = true) -> {
                         phones.add(line.substringAfter(":").trim())
                     }
-                    line.startsWith("EMAIL") -> {
+                    line.startsWith("EMAIL", ignoreCase = true) -> {
                         emails.add(line.substringAfter(":").trim())
                     }
+                    line.startsWith("NOTE", ignoreCase = true) -> {
+                        val isQuotedPrintable = line.contains("ENCODING=QUOTED-PRINTABLE", ignoreCase = true)
+                        var rawNote = line.substringAfter(":")
+                        
+                        // Handle multi-line Quoted-Printable notes (ending with =)
+                        if (isQuotedPrintable) {
+                            while (rawNote.endsWith("=") && i + 1 < lines.size) {
+                                rawNote = rawNote.dropLast(1) + lines[++i].trim()
+                            }
+                            remark = decodeQuotedPrintable(rawNote)
+                        } else {
+                            remark = rawNote.trim()
+                        }
+                    }
+                    line.startsWith("URL", ignoreCase = true) -> {
+                        val url = line.substringAfter(":").trim()
+                        if (url.isNotEmpty()) {
+                            val platform = when {
+                                url.contains("facebook.com", true) -> "Facebook"
+                                url.contains("instagram.com", true) -> "Instagram"
+                                url.contains("twitter.com", true) || url.contains("x.com", true) -> "X"
+                                url.contains("tiktok.com", true) -> "TikTok"
+                                url.contains("youtube.com", true) -> "YouTube"
+                                url.contains("linkedin.com", true) -> "LinkedIn"
+                                url.contains("wa.me", true) || url.contains("whatsapp.com", true) -> "WhatsApp"
+                                url.contains("t.me", true) || url.contains("telegram.org", true) -> "Telegram"
+                                else -> "Custom"
+                            }
+                            socialProfiles.add(SocialProfile(platform = platform, handle = url))
+                        }
+                    }
                 }
+                i++
             }
 
             if (name.isNotEmpty()) {
@@ -306,12 +358,34 @@ class DataVaultViewModel(
                         phoneNumbers = phones,
                         sanitizedPrimaryPhone = phones.firstOrNull()?.let { ContactUtils.smartSanitize(it) } ?: "",
                         emails = emails,
-                        socialProfiles = emptyList(),
+                        remark = remark,
+                        socialProfiles = socialProfiles,
                         bankAccounts = emptyList()
                     )
                 )
             }
         }
         return contacts
+    }
+
+    private fun decodeQuotedPrintable(input: String): String {
+        return try {
+            val bytes = mutableListOf<Byte>()
+            var j = 0
+            while (j < input.length) {
+                val c = input[j]
+                if (c == '=' && j + 2 < input.length) {
+                    val hex = input.substring(j + 1, j + 3)
+                    bytes.add(hex.toInt(16).toByte())
+                    j += 3
+                } else {
+                    bytes.add(c.code.toByte())
+                    j++
+                }
+            }
+            String(bytes.toByteArray(), Charsets.UTF_8)
+        } catch (e: Exception) {
+            input // Fallback to raw if decoding fails
+        }
     }
 }

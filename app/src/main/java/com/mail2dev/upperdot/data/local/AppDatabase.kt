@@ -3,16 +3,14 @@ package com.mail2dev.upperdot.data.local
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
 import com.mail2dev.upperdot.data.local.converter.ComplexTypeConverters
 import com.mail2dev.upperdot.data.local.converter.ListConverter
 import com.mail2dev.upperdot.data.local.dao.BankCardDao
 import com.mail2dev.upperdot.data.local.dao.ContactDao
 import com.mail2dev.upperdot.data.local.dao.NoteDao
 import com.mail2dev.upperdot.data.local.dao.PreferenceDao
-import com.mail2dev.upperdot.data.local.dao.TransactionDao
 import com.mail2dev.upperdot.data.local.dao.SavedBankDao
+import com.mail2dev.upperdot.data.local.dao.TransactionDao
 import com.mail2dev.upperdot.data.local.entity.BankCardEntity
 import com.mail2dev.upperdot.data.local.entity.ContactEntity
 import com.mail2dev.upperdot.data.local.entity.NoteEntity
@@ -29,7 +27,7 @@ import com.mail2dev.upperdot.data.local.entity.TransactionEntity
         PreferenceEntity::class,
         SavedBankEntity::class
     ],
-    version = 2,
+    version = 1,
     exportSchema = false
 )
 @TypeConverters(ListConverter::class, ComplexTypeConverters::class)
@@ -42,10 +40,6 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun savedBankDao(): SavedBankDao
 
     companion object {
-        val MIGRATION_1_2 = object : Migration(1, 2) {
-            override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("ALTER TABLE app_preferences ADD COLUMN isMediaCompressionEnabled INTEGER NOT NULL DEFAULT 1")
-            }
-        }
+        // Legacy development migrations have been completely removed for the V1 Production release baseline.
     }
 }

@@ -10,12 +10,20 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import java.io.File
+import androidx.room.withTransaction
+import kotlinx.serialization.encodeToString
 import java.util.*
 
 class DriveSyncWorker(
     context: Context,
-    params: WorkerParameters
+    params: WorkerParameters,
 ) : CoroutineWorker(context, params) {
+
+    private val jsonSerializer = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+        encodeDefaults = true
+    }
 
     companion object {
         const val EXTRA_SYNC_ACTION = "sync_action"
@@ -77,20 +85,33 @@ class DriveSyncWorker(
             
             setProgress(workDataOf("progress_msg" to "🗜️ Extracting media files..."))
             tempFile.inputStream().use { input ->
-                val json = BackupUtils.restoreZipBackup(app.filesDir, input)
-                if (json != null) {
-                    val backup = Json.decodeFromString<DatabaseBackup>(json)
-                    // Clear existing
-                    app.contactRepository.deleteAll()
-                    app.noteRepository.deleteAll()
-                    app.transactionRepository.deleteAll()
-                    app.bankCardRepository.deleteAll()
+                val jsonStr = BackupUtils.restoreZipBackup(app.filesDir, input)
+                if (jsonStr != null) {
+                    val backup = jsonSerializer.decodeFromString<DatabaseBackup>(jsonStr)
+                    
+                    app.database.withTransaction {
+                        // Clear existing
+                        app.contactRepository.deleteAll()
+                        app.noteRepository.deleteAll()
+                        app.transactionRepository.deleteAll()
+                        app.bankCardRepository.deleteAll()
 
-                    // Restore
-                    app.contactRepository.insertContacts(backup.contacts)
-                    app.noteRepository.insertNotes(backup.notes)
-                    app.transactionRepository.insertTransactions(backup.transactions)
-                    app.bankCardRepository.insertCards(backup.bankCards)
+                        // Restore Contacts (Preserves PKs)
+                        app.contactRepository.insertContacts(backup.contacts)
+                        
+                        // Create a set of valid contact IDs for orphan guarding
+                        val contactIds = backup.contacts.map { contact -> contact.id }.toSet()
+
+                        // Restore Notes (Filtering orphans to prevent FK failures)
+                        val validNotes = backup.notes.filter { note -> contactIds.contains(note.contactId) }
+                        app.noteRepository.insertNotes(validNotes)
+
+                        // Restore Transactions (Filtering orphans to prevent FK failures)
+                        val validTransactions = backup.transactions.filter { trans -> contactIds.contains(trans.contactId) }
+                        app.transactionRepository.insertTransactions(validTransactions)
+
+                        app.bankCardRepository.insertCards(backup.bankCards)
+                    }
                     
                     // Update last sync time
                     val prefs = app.preferenceRepository.preferences.first()
@@ -111,11 +132,11 @@ class DriveSyncWorker(
             bankCards = app.bankCardRepository.allCards.first(),
             preferences = app.preferenceRepository.preferences.first()
         )
-        val json = Json.encodeToString(backup)
+        val jsonStr = jsonSerializer.encodeToString(backup)
         val tempFile = File(app.cacheDir, "upload_backup.zip")
         try {
             tempFile.outputStream().use { 
-                BackupUtils.createZipBackup(app.filesDir, json, it)
+                BackupUtils.createZipBackup(app.filesDir, jsonStr, it)
             }
             
             setProgress(workDataOf("progress_msg" to "⬆️ Uploading to Google Drive..."))

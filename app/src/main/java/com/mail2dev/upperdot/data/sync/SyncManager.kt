@@ -34,9 +34,10 @@ class SyncManager(private val context: Context) {
         )
     }
 
-    fun startImmediateSync() {
+    fun startImmediateSync(wifiOnly: Boolean = false) {
+        // Enforce UNMETERED (Wi-Fi) if wifiOnly preference is enabled
         val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .setRequiredNetworkType(if (wifiOnly) NetworkType.UNMETERED else NetworkType.CONNECTED)
             .build()
 
         val syncRequest = OneTimeWorkRequestBuilder<DriveSyncWorker>()

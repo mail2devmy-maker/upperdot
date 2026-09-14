@@ -7,11 +7,15 @@ import kotlinx.coroutines.flow.Flow
 class ContactRepository(private val contactDao: ContactDao) {
 
     val allContacts: Flow<List<ContactEntity>> = contactDao.getAllContacts()
+    val favoriteContacts: Flow<List<ContactEntity>> = contactDao.getFavoriteContacts()
+    val whitelistedContacts: Flow<List<ContactEntity>> = contactDao.getWhitelistedContacts()
     val contactCount: Flow<Int> = contactDao.getContactCount()
 
     suspend fun getAllContactsList(): List<ContactEntity> = contactDao.getAllContactsList()
 
     suspend fun getContactById(id: Long): ContactEntity? = contactDao.getContactById(id)
+
+    fun getContactByIdFlow(id: Long): Flow<ContactEntity?> = contactDao.getContactByIdFlow(id)
     
     suspend fun getContactByPhone(sanitizedPhone: String): ContactEntity? = contactDao.getContactByPhone(sanitizedPhone)
 
@@ -21,8 +25,8 @@ class ContactRepository(private val contactDao: ContactDao) {
         return contactDao.getContactByPhone(sanitized)
     }
 
-    suspend fun insertContact(contact: ContactEntity) {
-        contactDao.insertContact(contact)
+    suspend fun insertContact(contact: ContactEntity): Long {
+        return contactDao.insertContact(contact)
     }
 
     suspend fun insertContacts(contacts: List<ContactEntity>) {
@@ -31,6 +35,10 @@ class ContactRepository(private val contactDao: ContactDao) {
 
     suspend fun updateContact(contact: ContactEntity) {
         contactDao.updateContact(contact)
+    }
+
+    suspend fun updateWhitelistStatus(contactId: Long, isWhitelisted: Boolean) {
+        contactDao.updateWhitelistStatus(contactId, isWhitelisted)
     }
 
     suspend fun deleteContact(contact: ContactEntity) {

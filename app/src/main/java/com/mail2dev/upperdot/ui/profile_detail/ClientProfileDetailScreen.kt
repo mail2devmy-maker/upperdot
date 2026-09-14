@@ -172,6 +172,13 @@ fun ClientProfileDetailScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { viewModel.toggleFavorite() }) {
+                        Icon(
+                            imageVector = if (contact?.group == "Favorites") Icons.Default.Star else Icons.Default.StarOutline,
+                            contentDescription = "Favorite",
+                            tint = if (contact?.group == "Favorites") AccentCyan else Color.White
+                        )
+                    }
                     IconButton(onClick = { showDeleteDialog = true }) {
                         Icon(Icons.Default.Delete, contentDescription = "Delete", tint = NegativeRed)
                     }
@@ -229,7 +236,7 @@ fun ClientProfileDetailScreen(
                     
                     if (profile.nicknames.isNotEmpty()) {
                         Text(
-                            text = "(${profile.nicknames})",
+                            text = "(" + profile.nicknames + ")",
                             color = TextSecondary,
                             fontSize = 14.sp
                         )
@@ -275,6 +282,21 @@ fun ClientProfileDetailScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                 }
 
+                // REMARK / NOTE
+                if (!profile.remark.isNullOrBlank()) {
+                    item {
+                        ProfileCard(title = "REMARK / NOTE") {
+                            Text(
+                                text = profile.remark,
+                                color = Color.White,
+                                fontSize = 14.sp,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                }
+
                 // BUSINESS INFO
                 item {
                     ProfileCard(title = "BUSINESS INFO") {
@@ -313,7 +335,7 @@ fun ClientProfileDetailScreen(
                 // RELATIONSHIP NOTES
                 item {
                     CollapsibleSection(
-                        title = "RELATIONSHIP NOTES (${notes.size})",
+                        title = "RELATIONSHIP NOTES (" + notes.size + ")",
                         isExpanded = isNotesExpanded,
                         onToggle = viewModel::toggleNotes
                     ) {
@@ -333,7 +355,7 @@ fun ClientProfileDetailScreen(
                 // TRANSACTION LEDGER
                 item {
                     CollapsibleSection(
-                        title = "TRANSACTION LEDGER (${transactions.size})",
+                        title = "TRANSACTION LEDGER (" + transactions.size + ")",
                         isExpanded = isTransactionsExpanded,
                         onToggle = viewModel::toggleTransactions
                     ) {
@@ -449,11 +471,7 @@ fun TransactionRow(
                 )
             }
 
-            val amountText = if (transaction.isRevenue) {
-                "+$currencySymbol${String.format(Locale.getDefault(), "%.2f", transaction.amount)}"
-            } else {
-                "-$currencySymbol${String.format(Locale.getDefault(), "%.2f", transaction.amount)}"
-            }
+            val amountText = (if (transaction.isRevenue) "+" else "-") + currencySymbol + String.format(Locale.getDefault(), "%.2f", transaction.amount)
             val amountColor = if (transaction.isRevenue) PositiveGreen else NegativeRed
 
             Text(
