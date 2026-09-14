@@ -331,7 +331,7 @@ class AddContactViewModel(
                     nicknames = state.nicknames.split(",").map { it.trim() }.filter { it.isNotEmpty() },
                     phoneNumbers = state.phoneNumbers.filter { it.isNotEmpty() },
                     sanitizedPrimaryPhone = sanitized,
-                    remark = state.remark.ifBlank { null },
+                    remark = state.remark,
                     emails = state.emails.filter { it.isNotEmpty() },
                     groupName = state.groupName.ifEmpty { "Unassigned" },
                     tagName = state.tagName.ifEmpty { null },

@@ -97,7 +97,6 @@ fun AddContactScreen(
     }
 
     Scaffold(
-        modifier = Modifier.imePadding(),
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
@@ -126,23 +125,25 @@ fun AddContactScreen(
                 color = Color.Black,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Button(
-                    onClick = { viewModel.saveContact(onNavigateBack) },
-                    enabled = uiState.fullName.isNotBlank() && !uiState.isSaving,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp)
-                        .height(56.dp),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = AccentCyan,
-                        contentColor = Color.Black
-                    )
-                ) {
-                    if (uiState.isSaving) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.Black, strokeWidth = 2.dp)
-                    } else {
-                        Text("Save Contact Record", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Box(modifier = Modifier.windowInsetsPadding(WindowInsets.ime)) {
+                    Button(
+                        onClick = { viewModel.saveContact(onNavigateBack) },
+                        enabled = uiState.fullName.isNotBlank() && !uiState.isSaving,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp)
+                            .height(56.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AccentCyan,
+                            contentColor = Color.Black
+                        )
+                    ) {
+                        if (uiState.isSaving) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.Black, strokeWidth = 2.dp)
+                        } else {
+                            Text("Save Contact Record", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }
@@ -153,6 +154,7 @@ fun AddContactScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .padding(bottom = 8.dp) // Extra spacing to prevent overlap with button
                 .verticalScroll(scrollState)
                 .padding(horizontal = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)

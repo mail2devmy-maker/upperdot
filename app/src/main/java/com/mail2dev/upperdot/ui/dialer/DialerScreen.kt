@@ -201,7 +201,7 @@ fun DialerScreen(
                         shape = CircleShape,
                         modifier = Modifier.size(80.dp)
                     ) {
-                        Icon(Icons.Default.Call, "Dial", modifier = Modifier.size(32.dp))
+                        Icon(Icons.Default.Call, "Dial", modifier = Modifier.size(24.dp))
                     }
 
                     // Backspace - Transparent and aligned

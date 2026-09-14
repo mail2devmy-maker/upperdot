@@ -68,22 +68,17 @@ fun DigitalWalletScreen(
             )
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
+            StitchDesignSystem.FAB(
+                icon = Icons.Default.Add,
+                contentDescription = "Add New Card",
                 onClick = {
                     viewModel.onAddCardClicked(
                         onSuccess = { /* No-op, sheet handled by VM state */ },
                         onLimitExceeded = onNavigateToPlans
                     )
                 },
-                containerColor = AccentCyan,
-                contentColor = Color.Black,
-                shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.padding(bottom = 16.dp, end = 8.dp)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(text = "Add New Card", fontWeight = FontWeight.Bold)
-            }
+            )
         },
         containerColor = Color.Black
     ) { innerPadding ->
