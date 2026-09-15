@@ -209,11 +209,24 @@ class DataVaultViewModel(
 
                 for (incoming in incomingContacts) {
                     val existing = allExisting.find { ex ->
-                        incoming.phoneNumbers.any { inPh ->
+                        // 1. Phone Match
+                        val phoneMatch = incoming.phoneNumbers.any { inPh ->
                             ex.phoneNumbers.any { exPh ->
                                 ContactUtils.isSamePhoneNumber(inPh, exPh)
                             }
                         }
+                        if (phoneMatch) return@find true
+
+                        // 2. Email Match (Exact, case-insensitive)
+                        val emailMatch = incoming.emails.any { inEm ->
+                            ex.emails.any { exEm ->
+                                inEm.equals(exEm, ignoreCase = true)
+                            }
+                        }
+                        if (emailMatch) return@find true
+
+                        // 3. Exact Name Match (case-insensitive)
+                        ex.fullName.equals(incoming.fullName, ignoreCase = true)
                     }
                     if (existing != null) {
                         conflicts.add(existing to incoming)

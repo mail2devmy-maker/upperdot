@@ -96,6 +96,48 @@ fun AddContactScreen(
         )
     }
 
+    if (uiState.showDuplicateWarning) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissDuplicateWarning() },
+            title = { Text("Duplicate Detected") },
+            text = { 
+                Text("A contact named '${uiState.duplicateConflict?.fullName}' already exists. Would you like to update that record or save this as a separate entry?") 
+            },
+            confirmButton = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = { 
+                            // Update existing by loading it first
+                            uiState.duplicateConflict?.let { 
+                                viewModel.loadContact(it.id)
+                                viewModel.dismissDuplicateWarning()
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = AccentCyan, contentColor = Color.Black)
+                    ) {
+                        Text("Update Existing")
+                    }
+                    Button(
+                        onClick = { viewModel.saveContact(onNavigateBack, forceSave = true) },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Surface, contentColor = Color.White)
+                    ) {
+                        Text("Save as Duplicate")
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissDuplicateWarning() }) {
+                    Text("Cancel", color = Color.Gray)
+                }
+            },
+            containerColor = Surface,
+            titleContentColor = Color.White,
+            textContentColor = Color.White
+        )
+    }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(

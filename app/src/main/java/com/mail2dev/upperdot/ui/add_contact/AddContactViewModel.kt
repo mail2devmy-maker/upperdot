@@ -47,6 +47,8 @@ data class AddContactUiState(
     val isFinancialExpanded: Boolean = false,
     val isSaving: Boolean = false,
     val showDiscardDialog: Boolean = false,
+    val showDuplicateWarning: Boolean = false,
+    val duplicateConflict: ContactEntity? = null,
     val nameError: String? = null
 )
 
@@ -307,7 +309,11 @@ class AddContactViewModel(
         _uiState.update { it.copy(showDiscardDialog = false) }
     }
 
-    fun saveContact(onSuccess: () -> Unit) {
+    fun dismissDuplicateWarning() {
+        _uiState.update { it.copy(showDuplicateWarning = false, duplicateConflict = null) }
+    }
+
+    fun saveContact(onSuccess: () -> Unit, forceSave: Boolean = false) {
         val state = _uiState.value
         if (state.fullName.isBlank()) {
             _uiState.update { it.copy(nameError = "Full Name is required") }
@@ -318,7 +324,39 @@ class AddContactViewModel(
         }
 
         if (state.isSaving) return
-        _uiState.update { it.copy(isSaving = true) }
+
+        // Duplicate Check (only for new contacts)
+        if (editingContactId == null && !forceSave) {
+            viewModelScope.launch(Dispatchers.IO) {
+                val existing = repository.allContacts.first().find { ex ->
+                    // Match Name exactly
+                    val nameMatch = ex.fullName.equals(state.fullName, ignoreCase = true)
+                    
+                    // Match any Phone
+                    val phoneMatch = state.phoneNumbers.any { inPh ->
+                        ex.phoneNumbers.any { exPh ->
+                            com.mail2dev.upperdot.util.ContactUtils.isSamePhoneNumber(inPh, exPh)
+                        }
+                    }
+
+                    nameMatch || (phoneMatch && state.phoneNumbers.any { it.isNotBlank() })
+                }
+
+                if (existing != null) {
+                    _uiState.update { it.copy(showDuplicateWarning = true, duplicateConflict = existing) }
+                    return@launch
+                }
+                
+                performSave(onSuccess)
+            }
+        } else {
+            performSave(onSuccess)
+        }
+    }
+
+    private fun performSave(onSuccess: () -> Unit) {
+        val state = _uiState.value
+        _uiState.update { it.copy(isSaving = true, showDuplicateWarning = false) }
         
         viewModelScope.launch(Dispatchers.IO) {
             try {
