@@ -456,8 +456,8 @@ fun ContactCard(
                 .offset { IntOffset(offsetX.value.roundToInt(), 0) }
                 .pointerInput(Unit) {
                     detectTapGestures(
-                        onTap = { onClick() },
-                        onLongPress = { isExpanded = !isExpanded }
+                        onTap = { isExpanded = !isExpanded },
+                        onLongPress = { isExpanded = !isExpanded } // Keep both as requested or just standard tap
                     )
                 }
                 .pointerInput(Unit) {
