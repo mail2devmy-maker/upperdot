@@ -345,48 +345,49 @@ fun EmptyConnectionsView(
     
     Box(
         modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = if (isSearch) Alignment.TopCenter else Alignment.Center
     ) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 64.dp),
+                .padding(bottom = if (isSearch) 0.dp else 64.dp)
+                .padding(top = if (isSearch) 16.dp else 0.dp),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = Surface)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(32.dp),
+                    .padding(if (isSearch) 24.dp else 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
                 Surface(
                     shape = CircleShape,
                     color = AccentCyan.copy(alpha = 0.1f),
-                    modifier = Modifier.size(64.dp)
+                    modifier = Modifier.size(if (isSearch) 48.dp else 64.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = if (isSearch) Icons.Default.SearchOff else Icons.Default.Person,
                             contentDescription = null,
                             tint = AccentCyan,
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(if (isSearch) 24.dp else 32.dp)
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(if (isSearch) 16.dp else 24.dp))
                 Text(
                     text = if (isSearch) "No Contacts Found" else "No All Contacts",
-                    fontSize = 20.sp,
+                    fontSize = if (isSearch) 18.sp else 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
                     textAlign = TextAlign.Center
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(if (isSearch) 8.dp else 12.dp))
                 Text(
                     text = if (isSearch) 
-                        "We couldn't find any results matching '$searchQuery'. Try checking for typos or different terms."
+                        "We couldn't find any results matching '$searchQuery'."
                     else 
                         "Your directory is currently empty. Start building your secure network by adding new profile keys.",
                     fontSize = 14.sp,
@@ -396,14 +397,15 @@ fun EmptyConnectionsView(
                 )
                 
                 if (isSearch) {
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
                     Button(
                         onClick = onAddContact,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = AccentCyan,
                             contentColor = Color.Black
                         ),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.height(48.dp)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
