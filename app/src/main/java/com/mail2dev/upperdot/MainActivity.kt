@@ -288,81 +288,90 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        // 7. Data Vault Management
-                        composable("data_vault") {
-                            val vm: DataVaultViewModel = viewModel(
-                                factory = object : ViewModelProvider.Factory {
-                                    @Suppress("UNCHECKED_CAST")
-                                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                        return DataVaultViewModel(
-                                            contactRepository = app.contactRepository,
-                                            noteRepository = app.noteRepository,
-                                            transactionRepository = app.transactionRepository,
-                                            bankCardRepository = app.bankCardRepository,
-                                            preferenceRepository = app.preferenceRepository,
-                                            driveService = app.googleDriveService,
-                                            context = applicationContext
-                                        ) as T
+                            // 7. Data Vault Management
+                            composable("data_vault") {
+                                val vm: DataVaultViewModel = viewModel(
+                                    factory = object : ViewModelProvider.Factory {
+                                        @Suppress("UNCHECKED_CAST")
+                                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                            return DataVaultViewModel(
+                                                contactRepository = app.contactRepository,
+                                                noteRepository = app.noteRepository,
+                                                transactionRepository = app.transactionRepository,
+                                                bankCardRepository = app.bankCardRepository,
+                                                preferenceRepository = app.preferenceRepository,
+                                                driveService = app.googleDriveService,
+                                                context = applicationContext
+                                            ) as T
+                                        }
                                     }
-                                }
-                            )
-                            DataVaultManagementScreen(
-                                navController = navController,
-                                viewModel = vm
-                            )
-                        }
+                                )
+                                DataVaultManagementScreen(
+                                    navController = navController,
+                                    viewModel = vm
+                                )
+                            }
 
-                        // 8. Advanced Settings
-                        composable("app_settings") {
-                            val vm: AdvancedSettingsViewModel = viewModel(
-                                factory = object : ViewModelProvider.Factory {
-                                    @Suppress("UNCHECKED_CAST")
-                                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                        return AdvancedSettingsViewModel(
-                                            contactRepository = app.contactRepository,
-                                            bankCardRepository = app.bankCardRepository,
-                                            noteRepository = app.noteRepository,
-                                            transactionRepository = app.transactionRepository,
-                                            syncManager = app.syncManager,
-                                            preferenceRepository = app.preferenceRepository
-                                        ) as T
+                            // 8. Advanced Settings
+                            composable("app_settings") {
+                                val vm: AdvancedSettingsViewModel = viewModel(
+                                    factory = object : ViewModelProvider.Factory {
+                                        @Suppress("UNCHECKED_CAST")
+                                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                            return AdvancedSettingsViewModel(
+                                                contactRepository = app.contactRepository,
+                                                bankCardRepository = app.bankCardRepository,
+                                                noteRepository = app.noteRepository,
+                                                transactionRepository = app.transactionRepository,
+                                                syncManager = app.syncManager,
+                                                preferenceRepository = app.preferenceRepository
+                                            ) as T
+                                        }
                                     }
-                                }
-                            )
-                            AdvancedSettingsScreen(
-                                onNavigateBack = { navController.popBackStack() },
-                                onNavigate = { route -> navController.navigate(route) },
-                                viewModel = vm
-                            )
-                        }
+                                )
+                                AdvancedSettingsScreen(
+                                    onNavigateBack = { navController.popBackStack() },
+                                    onNavigate = { route -> navController.navigate(route) },
+                                    viewModel = vm
+                                )
+                            }
 
-                        composable("call_whitelist") {
-                            val vm: CallWhitelistViewModel = viewModel(
-                                factory = object : ViewModelProvider.Factory {
-                                    @Suppress("UNCHECKED_CAST")
-                                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                        return CallWhitelistViewModel(
-                                            contactRepository = app.contactRepository
-                                        ) as T
+                            composable("call_whitelist") {
+                                val vm: CallWhitelistViewModel = viewModel(
+                                    factory = object : ViewModelProvider.Factory {
+                                        @Suppress("UNCHECKED_CAST")
+                                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                            return CallWhitelistViewModel(
+                                                contactRepository = app.contactRepository
+                                            ) as T
+                                        }
                                     }
-                                }
-                            )
-                            CallWhitelistScreen(
-                                onNavigateBack = { navController.popBackStack() },
-                                viewModel = vm
-                            )
-                        }
+                                )
+                                CallWhitelistScreen(
+                                    onNavigateBack = { navController.popBackStack() },
+                                    viewModel = vm
+                                )
+                            }
 
-                        // 9. Digital Wallet
-                        composable("digital_wallet") {
-                            DigitalWalletScreen(
-                                onNavigateBack = { navController.popBackStack() },
-                                onNavigateToPlans = { navController.navigate("profile_settings") },
-                                viewModel = digitalWalletViewModel
-                            )
-                        }
+                            // 9. Digital Wallet
+                            composable("digital_wallet") {
+                                DigitalWalletScreen(
+                                    onNavigateBack = { navController.popBackStack() },
+                                    onNavigateToPlans = { navController.navigate("profile_settings") },
+                                    viewModel = digitalWalletViewModel
+                                )
+                            }
 
-                        // 10. Insights
+                            // Add Alias for Digital Wallet Management to prevent crashes
+                            composable("digital_wallet_management") {
+                                DigitalWalletScreen(
+                                    onNavigateBack = { navController.popBackStack() },
+                                    onNavigateToPlans = { navController.navigate("profile_settings") },
+                                    viewModel = digitalWalletViewModel
+                                )
+                            }
+
+                            // 10. Insights
                         composable("insights") {
                             val vm: InsightsViewModel = viewModel(
                                 factory = object : ViewModelProvider.Factory {
