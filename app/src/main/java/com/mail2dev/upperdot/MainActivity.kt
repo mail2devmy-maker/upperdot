@@ -127,7 +127,8 @@ class MainActivity : ComponentActivity() {
                                 return AddContactViewModel(
                                     repository = app.contactRepository,
                                     hierarchyRepository = app.hierarchyRepository,
-                                    bankSuggestionRepository = app.bankSuggestionRepository
+                                    bankSuggestionRepository = app.bankSuggestionRepository,
+                                    application = app
                                 ) as T
                             }
                         }

@@ -22,6 +22,8 @@ data class ContactSummary(
     val nicknames: List<String>,
     val primaryPhone: String,
     val phoneNumbers: List<String> = emptyList(),
+    val avatarPath: String? = null,
+    val thumbnailPath: String? = null,
     val socialProfiles: List<com.mail2dev.upperdot.ui.add_contact.SocialProfile> = emptyList(),
     val group: String? = null,
     val tag: String? = null
@@ -263,6 +265,8 @@ private fun ContactEntity.toSummary() = ContactSummary(
     nicknames = nicknames,
     primaryPhone = sanitizedPrimaryPhone,
     phoneNumbers = phoneNumbers,
+    avatarPath = avatarPath,
+    thumbnailPath = thumbnailPath,
     socialProfiles = socialProfiles,
     group = groupName,
     tag = tagName

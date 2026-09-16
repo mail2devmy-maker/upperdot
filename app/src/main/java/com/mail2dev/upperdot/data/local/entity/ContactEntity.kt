@@ -16,6 +16,7 @@ data class ContactEntity(
     val sanitizedPrimaryPhone: String, // For duplicate prevention
     val emails: List<String>,
     val avatarPath: String? = null,
+    val thumbnailPath: String? = null,
     
     // Step 2: Identity / Relational
     val groupName: String = "Unassigned",

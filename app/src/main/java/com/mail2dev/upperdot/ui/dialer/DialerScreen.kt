@@ -268,9 +268,10 @@ fun ReconstructedResultsArea(
                         border = androidx.compose.foundation.BorderStroke(2.dp, AccentCyan),
                         modifier = Modifier.size(80.dp)
                     ) {
-                        if (contact.avatarPath != null) {
+                        val displayPath = contact.thumbnailPath ?: contact.avatarPath
+                        if (displayPath != null) {
                             AsyncImage(
-                                model = File(contact.avatarPath),
+                                model = File(displayPath),
                                 contentDescription = null,
                                 modifier = Modifier.fillMaxSize().clip(CircleShape),
                                 contentScale = ContentScale.Crop
@@ -390,9 +391,10 @@ fun FavoriteCarousel(
                             color = Surface,
                             border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
                         ) {
-                            if (contact.avatarPath != null) {
+                            val displayPath = contact.thumbnailPath ?: contact.avatarPath
+                            if (displayPath != null) {
                                 AsyncImage(
-                                    model = File(contact.avatarPath),
+                                    model = File(displayPath),
                                     contentDescription = null,
                                     modifier = Modifier.fillMaxSize().clip(CircleShape),
                                     contentScale = ContentScale.Crop

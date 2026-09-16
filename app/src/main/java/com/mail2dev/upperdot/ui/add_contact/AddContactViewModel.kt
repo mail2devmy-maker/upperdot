@@ -1,5 +1,7 @@
 package com.mail2dev.upperdot.ui.add_contact
 
+import android.app.Application
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mail2dev.upperdot.data.local.entity.ContactEntity
@@ -7,6 +9,7 @@ import com.mail2dev.upperdot.data.repository.BankSuggestionRepository
 import com.mail2dev.upperdot.data.repository.ContactRepository
 import com.mail2dev.upperdot.data.repository.HierarchyRepository
 import com.mail2dev.upperdot.ui.relationship_hierarchy.HierarchyGroup
+import com.mail2dev.upperdot.util.ImageCompressor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -40,6 +43,7 @@ data class AddContactUiState(
     val officeAddress: String = "",
     val bankAccounts: List<BankAccount> = listOf(BankAccount()),
     val avatarPath: String? = null,
+    val thumbnailPath: String? = null,
     
     // UI states
     val isIdentityExpanded: Boolean = false,
@@ -60,7 +64,8 @@ sealed class AddContactEvent {
 class AddContactViewModel(
     private val repository: ContactRepository,
     private val hierarchyRepository: HierarchyRepository,
-    private val bankSuggestionRepository: BankSuggestionRepository
+    private val bankSuggestionRepository: BankSuggestionRepository,
+    private val application: Application
 ) : ViewModel() {
 
     private var editingContactId: Long? = null
@@ -281,6 +286,7 @@ class AddContactViewModel(
                     officeAddress = contact.physicalAddress ?: "",
                     bankAccounts = contact.bankAccounts.ifEmpty { listOf(BankAccount()) },
                     avatarPath = contact.avatarPath,
+                    thumbnailPath = contact.thumbnailPath,
                     showDiscardDialog = false
                 ) }
             }
@@ -363,6 +369,20 @@ class AddContactViewModel(
                 val primaryPhone = state.phoneNumbers.firstOrNull() ?: ""
                 val sanitized = com.mail2dev.upperdot.util.ContactUtils.smartSanitize(primaryPhone)
                 
+                var finalAvatarPath = state.avatarPath
+                var finalThumbnailPath = state.thumbnailPath
+
+                // Generate thumbnail if a new avatar was picked and it's a URI
+                if (state.avatarPath != null && state.avatarPath.startsWith("content://")) {
+                    val uri = Uri.parse(state.avatarPath)
+                    val thumbFile = ImageCompressor.createThumbnail(application, uri)
+                    finalThumbnailPath = thumbFile?.absolutePath
+                    
+                    // Also compress the main image for storage optimization
+                    val compressedFile = ImageCompressor.compressImage(application, uri)
+                    finalAvatarPath = compressedFile?.absolutePath ?: state.avatarPath
+                }
+
                 val entity = ContactEntity(
                     id = editingContactId ?: 0L,
                     fullName = state.fullName,
@@ -378,7 +398,8 @@ class AddContactViewModel(
                     businessCategory = state.businessCategory,
                     physicalAddress = state.officeAddress,
                     bankAccounts = state.bankAccounts.filter { it.accountNumber.isNotEmpty() },
-                    avatarPath = state.avatarPath
+                    avatarPath = finalAvatarPath,
+                    thumbnailPath = finalThumbnailPath
                 )
                 
                 if (editingContactId != null) {

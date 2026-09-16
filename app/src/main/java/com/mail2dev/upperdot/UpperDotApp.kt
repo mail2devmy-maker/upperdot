@@ -2,6 +2,11 @@ package com.mail2dev.upperdot
 
 import android.app.Application
 import androidx.room.Room
+import coil.ImageLoader
+import coil.ImageLoaderFactory
+import coil.disk.DiskCache
+import coil.memory.MemoryCache
+import coil.util.DebugLogger
 import com.mail2dev.upperdot.data.local.AppDatabase
 import com.mail2dev.upperdot.data.repository.BankSuggestionRepository
 import com.mail2dev.upperdot.data.repository.ContactRepository
@@ -12,9 +17,27 @@ import kotlinx.coroutines.launch
 import com.mail2dev.upperdot.data.repository.NoteRepository
 import com.mail2dev.upperdot.data.repository.TransactionRepository
 
-class UpperDotApp : Application() {
+class UpperDotApp : Application(), ImageLoaderFactory {
 
     private val applicationScope = CoroutineScope(SupervisorJob())
+
+    override fun newImageLoader(): ImageLoader {
+        return ImageLoader.Builder(this)
+            .memoryCache {
+                MemoryCache.Builder(this)
+                    .maxSizePercent(0.25) // Use 25% of the app's available memory
+                    .build()
+            }
+            .diskCache {
+                DiskCache.Builder()
+                    .directory(cacheDir.resolve("image_cache"))
+                    .maxSizePercent(0.02) // Use 2% of the disk's available space
+                    .build()
+            }
+            .crossfade(true) // Smooth image transitions
+            .respectCacheHeaders(false) // Cache images even if headers say otherwise (good for local files)
+            .build()
+    }
 
     val database: AppDatabase by lazy {
         Room.databaseBuilder(

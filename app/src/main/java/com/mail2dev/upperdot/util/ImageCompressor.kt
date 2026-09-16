@@ -14,7 +14,49 @@ import kotlin.math.min
 object ImageCompressor {
 
     private const val MAX_DIMENSION = 1920
+    private const val THUMBNAIL_SIZE = 120 // Small size for lists
     private const val COMPRESSION_QUALITY = 80
+
+    suspend fun createThumbnail(context: Context, uri: Uri): File? = withContext(Dispatchers.IO) {
+        try {
+            val options = BitmapFactory.Options().apply {
+                inJustDecodeBounds = true
+            }
+            
+            context.contentResolver.openInputStream(uri)?.use { tempStream ->
+                BitmapFactory.decodeStream(tempStream, null, options)
+            }
+
+            options.inSampleSize = calculateInSampleSize(options, THUMBNAIL_SIZE, THUMBNAIL_SIZE)
+            options.inJustDecodeBounds = false
+            
+            val inputStream: InputStream = context.contentResolver.openInputStream(uri) ?: return@withContext null
+            val bitmap = BitmapFactory.decodeStream(inputStream, null, options)
+            inputStream.close()
+
+            if (bitmap == null) return@withContext null
+
+            // Scale to exact thumbnail size
+            val scaledBitmap = Bitmap.createScaledBitmap(bitmap, THUMBNAIL_SIZE, THUMBNAIL_SIZE, true)
+            
+            val outputFile = File(context.filesDir, "thumb_${System.currentTimeMillis()}.jpg")
+            val outputStream = FileOutputStream(outputFile)
+            
+            scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 70, outputStream) // Lower quality for thumbs
+            outputStream.flush()
+            outputStream.close()
+            
+            if (scaledBitmap != bitmap) {
+                scaledBitmap.recycle()
+            }
+            bitmap.recycle()
+
+            outputFile
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
 
     suspend fun compressImage(context: Context, uri: Uri): File? = withContext(Dispatchers.IO) {
         try {

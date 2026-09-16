@@ -40,6 +40,8 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
 import com.mail2dev.upperdot.R
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -571,13 +573,22 @@ fun ContactCard(
                             .size(48.dp)
                             .then(avatarModifier)
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                text = contact.fullName.take(1).uppercase(),
-                                color = AccentCyan,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 20.sp
+                        if (contact.thumbnailPath != null) {
+                            AsyncImage(
+                                model = contact.thumbnailPath,
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                contentScale = ContentScale.Crop
                             )
+                        } else {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = contact.fullName.take(1).uppercase(),
+                                    color = AccentCyan,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 20.sp
+                                )
+                            }
                         }
                     }
                     Spacer(modifier = Modifier.width(16.dp))
