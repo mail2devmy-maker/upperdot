@@ -17,6 +17,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -140,45 +141,69 @@ fun QuickCardDisplay(
             .padding(horizontal = 4.dp, vertical = 8.dp)
             .border(
                 width = 2.dp,
-                color = bankColor.copy(alpha = 0.30f),
-                shape = RoundedCornerShape(20.dp)
+                color = bankColor, // Stronger Glow Border
+                shape = RoundedCornerShape(24.dp)
             ),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Surface)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(bankColor.copy(alpha = 0.20f))
-                .padding(16.dp),
+                .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = card.bankName.uppercase(),
-                color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 1.sp
-            )
-            Text(
-                text = card.cardHolderName,
-                color = TextSecondary,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium
-            )
+            // Header: Bank & Holder info
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = card.bankName.uppercase(),
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.sp
+                    )
+                    Text(
+                        text = "ACCOUNT HOLDER",
+                        color = bankColor.copy(alpha = 0.7f),
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
+                    Text(
+                        text = if (card.cardHolderName.isNotBlank()) card.cardHolderName else "—",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+                
+                Surface(
+                    shape = CircleShape,
+                    color = Color.White.copy(alpha = 0.05f),
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.AccountBalance, null, tint = bankColor, modifier = Modifier.size(20.dp))
+                    }
+                }
+            }
             
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            // White QR Card Template
+            // White QR Card Template with Rounded Corners
             Surface(
                 modifier = Modifier
-                    .fillMaxWidth(0.85f)
-                    .heightIn(max = 240.dp)
+                    .fillMaxWidth(0.9f)
                     .aspectRatio(1f)
-                    .clipToBounds()
+                    .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(20.dp))
                     .clickable { showFullScreenQr = true },
-                shape = RoundedCornerShape(12.dp),
-                color = Color.White
+                shape = RoundedCornerShape(20.dp),
+                color = Color.White.copy(alpha = 0.95f) // Slight off-white for contrast
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     if (card.qrImagePath != null) {
@@ -187,21 +212,22 @@ fun QuickCardDisplay(
                             contentDescription = "QR Code",
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(16.dp),
+                                .padding(12.dp)
+                                .clip(RoundedCornerShape(16.dp)), // CLIP THE IMAGE CORNERS
                             contentScale = ContentScale.Fit
                         )
                     } else {
                         Icon(
                             imageVector = Icons.Default.QrCode2,
                             contentDescription = null,
-                            tint = Color.Black,
-                            modifier = Modifier.size(100.dp)
+                            tint = Color.Black.copy(alpha = 0.5f),
+                            modifier = Modifier.size(120.dp)
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Unified Action Bottom Row
             Row(
@@ -212,36 +238,45 @@ fun QuickCardDisplay(
                 // Clipboard Copy Pill
                 Surface(
                     onClick = onCopy,
-                    shape = RoundedCornerShape(20.dp),
-                    color = Color.Black.copy(alpha = 0.3f),
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.Black.copy(alpha = 0.5f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
                     modifier = Modifier
                         .weight(1f)
-                        .height(48.dp)
+                        .height(52.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Icon(Icons.Default.ContentCopy, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = formatAccountNumber(card.accountNumber),
-                            color = Color.White,
-                            fontSize = 14.sp,
+                            text = "ACCOUNT NUMBER",
+                            color = TextSecondary,
+                            fontSize = 8.sp,
                             fontWeight = FontWeight.Bold,
-                            maxLines = 1
+                            letterSpacing = 1.sp
                         )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.ContentCopy, null, tint = AccentCyan, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = formatAccountNumber(card.accountNumber),
+                                color = Color.White,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Black,
+                                maxLines = 1
+                            )
+                        }
                     }
                 }
 
                 // Share Action Button
                 Surface(
                     shape = CircleShape,
-                    color = Color.White.copy(alpha = 0.15f),
+                    color = AccentCyan,
                     modifier = Modifier
-                        .size(48.dp)
-                        .border(1.dp, Color.White.copy(alpha = 0.3f), CircleShape)
+                        .size(52.dp)
                         .clickable { 
                             if (card.qrImagePath != null) {
                                 val file = File(card.qrImagePath)
@@ -274,8 +309,8 @@ fun QuickCardDisplay(
                         Icon(
                             imageVector = Icons.Default.Share,
                             contentDescription = "Share",
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
+                            tint = Color.Black,
+                            modifier = Modifier.size(22.dp)
                         )
                     }
                 }
