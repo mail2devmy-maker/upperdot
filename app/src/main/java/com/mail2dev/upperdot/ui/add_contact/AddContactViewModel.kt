@@ -53,7 +53,8 @@ data class AddContactUiState(
     val showDiscardDialog: Boolean = false,
     val showDuplicateWarning: Boolean = false,
     val duplicateConflict: ContactEntity? = null,
-    val nameError: String? = null
+    val nameError: String? = null,
+    val emailErrors: List<String?> = listOf(null)
 )
 
 sealed class AddContactEvent {
@@ -85,7 +86,10 @@ class AddContactViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun onFullNameChange(value: String) {
-        _uiState.update { it.copy(fullName = value, nameError = if (value.isNotBlank()) null else it.nameError) }
+        _uiState.update { it.copy(
+            fullName = value,
+            nameError = if (value.isBlank()) "Full Name is required" else null
+        ) }
     }
 
     fun onNicknamesChange(value: String) {
@@ -118,21 +122,30 @@ class AddContactViewModel(
 
     fun onEmailChange(index: Int, value: String) {
         val list = _uiState.value.emails.toMutableList()
+        val errorList = _uiState.value.emailErrors.toMutableList()
         if (index < list.size) {
             list[index] = value
-            _uiState.update { it.copy(emails = list) }
+            errorList[index] = if (value.isNotEmpty() && !android.util.Patterns.EMAIL_ADDRESS.matcher(value).matches()) {
+                "Invalid email format"
+            } else null
+            _uiState.update { it.copy(emails = list, emailErrors = errorList) }
         }
     }
 
     fun addEmailField() {
-        _uiState.update { it.copy(emails = it.emails + "") }
+        _uiState.update { it.copy(
+            emails = it.emails + "",
+            emailErrors = it.emailErrors + null
+        ) }
     }
 
     fun removeEmailField(index: Int) {
         val list = _uiState.value.emails.toMutableList()
+        val errorList = _uiState.value.emailErrors.toMutableList()
         if (index < list.size && list.size > 1) {
             list.removeAt(index)
-            _uiState.update { it.copy(emails = list) }
+            errorList.removeAt(index)
+            _uiState.update { it.copy(emails = list, emailErrors = errorList) }
         }
     }
 

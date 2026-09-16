@@ -305,7 +305,9 @@ fun AddContactScreen(
                                 placeholder = if (index == 0) "Primary Email" else "Additional Email",
                                 leadingIcon = Icons.Default.Email,
                                 modifier = Modifier.weight(1f),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                                isError = uiState.emailErrors.getOrNull(index) != null,
+                                supportingText = uiState.emailErrors.getOrNull(index)
                             )
                             if (index > 0) {
                                 IconButton(onClick = { viewModel.removeEmailField(index) }) {
