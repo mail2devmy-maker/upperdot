@@ -5,6 +5,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -61,6 +63,7 @@ import com.mail2dev.upperdot.ui.theme.UpperDotTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 class MainActivity : ComponentActivity() {
     private var internalNavController: NavController? = null
 
@@ -130,76 +133,81 @@ class MainActivity : ComponentActivity() {
                         }
                     )
 
-                    NavHost(
-                        navController = navController,
-                        startDestination = "splash"
-                    ) {
-                        // 0. Route Dispatcher (Splash)
-                        composable("splash") {
-                            SplashDispatcher(
-                                authViewModel = authViewModel,
-                                preferenceRepository = app.preferenceRepository,
-                                onNavigate = { route ->
-                                    navController.navigate(route) {
-                                        popUpTo("splash") { inclusive = true }
+                    SharedTransitionLayout {
+                        NavHost(
+                            navController = navController,
+                            startDestination = "splash"
+                        ) {
+                            // 0. Route Dispatcher (Splash)
+                            composable("splash") {
+                                SplashDispatcher(
+                                    authViewModel = authViewModel,
+                                    preferenceRepository = app.preferenceRepository,
+                                    onNavigate = { route ->
+                                        navController.navigate(route) {
+                                            popUpTo("splash") { inclusive = true }
+                                        }
                                     }
-                                }
-                            )
-                        }
+                                )
+                            }
 
-                        // 1. Connections List (Dashboard)
-                        composable("connections_list") {
-                            val vm: ConnectionsListViewModel = viewModel(
-                                factory = object : ViewModelProvider.Factory {
-                                    @Suppress("UNCHECKED_CAST")
-                                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                        return ConnectionsListViewModel(
-                                            repository = app.contactRepository,
-                                            noteRepository = app.noteRepository,
-                                            transactionRepository = app.transactionRepository,
-                                            preferenceRepository = app.preferenceRepository
-                                        ) as T
+                            // 1. Connections List (Dashboard)
+                            composable("connections_list") {
+                                val vm: ConnectionsListViewModel = viewModel(
+                                    factory = object : ViewModelProvider.Factory {
+                                        @Suppress("UNCHECKED_CAST")
+                                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                            return ConnectionsListViewModel(
+                                                repository = app.contactRepository,
+                                                noteRepository = app.noteRepository,
+                                                transactionRepository = app.transactionRepository,
+                                                preferenceRepository = app.preferenceRepository
+                                            ) as T
+                                        }
                                     }
-                                }
-                            )
-                            ConnectionsListScreen(
-                                onNavigate = { route -> navController.navigate(route) },
-                                onNavigateToContact = { id -> navController.navigate("profile_detail/$id") },
-                                onNavigateToAddContact = { 
-                                    addContactViewModel.resetForm()
-                                    navController.navigate("add_contact") 
-                                },
-                                viewModel = vm
-                            )
-                        }
+                                )
+                                ConnectionsListScreen(
+                                    onNavigate = { route -> navController.navigate(route) },
+                                    onNavigateToContact = { id -> navController.navigate("profile_detail/$id") },
+                                    onNavigateToAddContact = { 
+                                        addContactViewModel.resetForm()
+                                        navController.navigate("add_contact") 
+                                    },
+                                    viewModel = vm,
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedContentScope = this@composable
+                                )
+                            }
 
-                        // 2. Client Profile Detail
-                        composable(
-                            route = "profile_detail/{contactId}",
-                            arguments = listOf(navArgument("contactId") { type = NavType.LongType }),
-                            deepLinks = listOf(navDeepLink { uriPattern = "upperdot://profile_detail/{contactId}" })
-                        ) { backStackEntry ->
-                            val contactId = backStackEntry.arguments?.getLong("contactId") ?: 0L
-                            val vm: ClientProfileDetailViewModel = viewModel(
-                                factory = object : ViewModelProvider.Factory {
-                                    @Suppress("UNCHECKED_CAST")
-                                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                        return ClientProfileDetailViewModel(
-                                            contactRepository = app.contactRepository,
-                                            noteRepository = app.noteRepository,
-                                            transactionRepository = app.transactionRepository,
-                                            preferenceRepository = app.preferenceRepository
-                                        ) as T
+                            // 2. Client Profile Detail
+                            composable(
+                                route = "profile_detail/{contactId}",
+                                arguments = listOf(navArgument("contactId") { type = NavType.LongType }),
+                                deepLinks = listOf(navDeepLink { uriPattern = "upperdot://profile_detail/{contactId}" })
+                            ) { backStackEntry ->
+                                val contactId = backStackEntry.arguments?.getLong("contactId") ?: 0L
+                                val vm: ClientProfileDetailViewModel = viewModel(
+                                    factory = object : ViewModelProvider.Factory {
+                                        @Suppress("UNCHECKED_CAST")
+                                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                            return ClientProfileDetailViewModel(
+                                                contactRepository = app.contactRepository,
+                                                noteRepository = app.noteRepository,
+                                                transactionRepository = app.transactionRepository,
+                                                preferenceRepository = app.preferenceRepository
+                                            ) as T
+                                        }
                                     }
-                                }
-                            )
-                            ClientProfileDetailScreen(
-                                contactId = contactId,
-                                onNavigateBack = { navController.popBackStack() },
-                                onEditContact = { id -> navController.navigate("add_contact?editId=$id") },
-                                viewModel = vm
-                            )
-                        }
+                                )
+                                ClientProfileDetailScreen(
+                                    contactId = contactId,
+                                    onNavigateBack = { navController.popBackStack() },
+                                    onEditContact = { id -> navController.navigate("add_contact?editId=$id") },
+                                    viewModel = vm,
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedContentScope = this@composable
+                                )
+                            }
 
                         // 3. Add Contact Wizard
                         composable(
@@ -432,6 +440,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+}
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)

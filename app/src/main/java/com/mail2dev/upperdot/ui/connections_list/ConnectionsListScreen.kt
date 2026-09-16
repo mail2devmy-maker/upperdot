@@ -53,13 +53,16 @@ import com.mail2dev.upperdot.ui.theme.StitchDesignSystem
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun ConnectionsListScreen(
     onNavigate: (String) -> Unit,
     onNavigateToContact: (Long) -> Unit,
     onNavigateToAddContact: () -> Unit,
     viewModel: ConnectionsListViewModel = viewModel(),
-    initialPhone: String? = null
+    initialPhone: String? = null,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedContentScope: AnimatedContentScope? = null
 ) {
     val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedFilter by viewModel.selectedFilter.collectAsState()
@@ -287,7 +290,9 @@ fun ConnectionsListScreen(
                                 onAddTransaction = viewModel::onAddTransaction,
                                 onWhatsAppClick = { contact ->
                                     whatsappTargetContact = contact
-                                }
+                                },
+                                sharedTransitionScope = sharedTransitionScope,
+                                animatedContentScope = animatedContentScope
                             )
                         }
                         is ConnectionsUIState.Loading -> {
@@ -414,7 +419,9 @@ fun ConnectionsList(
     onContactClick: (Long) -> Unit,
     onAddNote: (Long) -> Unit,
     onAddTransaction: (Long) -> Unit,
-    onWhatsAppClick: (ContactSummary) -> Unit
+    onWhatsAppClick: (ContactSummary) -> Unit,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedContentScope: AnimatedContentScope? = null
 ) {
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -427,7 +434,9 @@ fun ConnectionsList(
                 onClick = { onContactClick(contact.id) },
                 onAddNote = { onAddNote(contact.id) },
                 onAddTransaction = { onAddTransaction(contact.id) },
-                onWhatsAppClick = { onWhatsAppClick(contact) }
+                onWhatsAppClick = { onWhatsAppClick(contact) },
+                sharedTransitionScope = sharedTransitionScope,
+                animatedContentScope = animatedContentScope
             )
         }
     }
@@ -439,7 +448,9 @@ fun ContactCard(
     onClick: () -> Unit,
     onAddNote: () -> Unit,
     onAddTransaction: () -> Unit,
-    onWhatsAppClick: () -> Unit
+    onWhatsAppClick: () -> Unit,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedContentScope: AnimatedContentScope? = null
 ) {
     var isExpanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -541,10 +552,24 @@ fun ContactCard(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
                 ) {
+                    val avatarModifier = if (sharedTransitionScope != null && animatedContentScope != null) {
+                        with(sharedTransitionScope) {
+                            Modifier
+                                .sharedElement(
+                                    rememberSharedContentState(key = "avatar_${contact.id}"),
+                                    animatedVisibilityScope = animatedContentScope
+                                )
+                        }
+                    } else {
+                        Modifier
+                    }
+
                     Surface(
                         shape = CircleShape,
                         color = Color.DarkGray,
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier
+                            .size(48.dp)
+                            .then(avatarModifier)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Text(

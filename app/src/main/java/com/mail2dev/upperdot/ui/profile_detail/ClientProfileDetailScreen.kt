@@ -34,13 +34,15 @@ import com.mail2dev.upperdot.util.ContactUtils
 import com.mail2dev.upperdot.utils.toFormattedDate
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun ClientProfileDetailScreen(
     contactId: Long,
     onNavigateBack: () -> Unit,
     onEditContact: (Long) -> Unit,
-    viewModel: ClientProfileDetailViewModel
+    viewModel: ClientProfileDetailViewModel,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedContentScope: AnimatedContentScope? = null
 ) {
     val contact by viewModel.contactProfile.collectAsState()
     val notes by viewModel.notes.collectAsState()
@@ -206,6 +208,18 @@ fun ClientProfileDetailScreen(
                 item {
                     Spacer(modifier = Modifier.height(24.dp))
                     
+                    val avatarModifier = if (sharedTransitionScope != null && animatedContentScope != null) {
+                        with(sharedTransitionScope) {
+                            Modifier
+                                .sharedElement(
+                                    rememberSharedContentState(key = "avatar_${contactId}"),
+                                    animatedVisibilityScope = animatedContentScope
+                                )
+                        }
+                    } else {
+                        Modifier
+                    }
+
                     // Profile Avatar
                     Surface(
                         shape = CircleShape,
@@ -214,6 +228,7 @@ fun ClientProfileDetailScreen(
                             .size(100.dp)
                             .border(2.dp, AccentCyan, CircleShape)
                             .padding(4.dp)
+                            .then(avatarModifier)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Text(
