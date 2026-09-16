@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -352,15 +353,88 @@ fun InsightsScreen(
 
                 // Content
                 if (selectedTab == InsightTab.NOTES) {
-                    NotesList(notes = notes, onContactClick = viewModel::onContactFilterSelected, onNoteClick = viewModel::selectNote)
+                    if (notes.isEmpty()) {
+                        EmptyInsightsView(
+                            searchQuery = searchQuery,
+                            type = "Notes"
+                        )
+                    } else {
+                        NotesList(notes = notes, onContactClick = viewModel::onContactFilterSelected, onNoteClick = viewModel::selectNote)
+                    }
                 } else {
-                    TransactionsList(
-                        transactions = transactions,
-                        currencySymbol = currencySymbol,
-                        onContactClick = viewModel::onContactFilterSelected,
-                        onTransactionClick = viewModel::selectTransaction
-                    )
+                    if (transactions.isEmpty()) {
+                        EmptyInsightsView(
+                            searchQuery = searchQuery,
+                            type = "Transactions"
+                        )
+                    } else {
+                        TransactionsList(
+                            transactions = transactions,
+                            currencySymbol = currencySymbol,
+                            onContactClick = viewModel::onContactFilterSelected,
+                            onTransactionClick = viewModel::selectTransaction
+                        )
+                    }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun EmptyInsightsView(
+    searchQuery: String,
+    type: String
+) {
+    val isSearch = searchQuery.isNotEmpty()
+    
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Card(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 64.dp),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Surface)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = AccentCyan.copy(alpha = 0.1f),
+                    modifier = Modifier.size(64.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = if (isSearch) Icons.Default.SearchOff else Icons.Default.History,
+                            contentDescription = null,
+                            tint = AccentCyan,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+                Text(
+                    text = if (isSearch) "No $type Found" else "No $type Recorded",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = if (isSearch) 
+                        "We couldn't find any $type matching '$searchQuery'."
+                    else 
+                        "You haven't recorded any $type yet. Start by adding notes or transactions to your contacts.",
+                    fontSize = 14.sp,
+                    color = TextSecondary,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 20.sp
+                )
             }
         }
     }

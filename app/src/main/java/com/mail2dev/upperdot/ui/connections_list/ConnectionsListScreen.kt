@@ -272,7 +272,12 @@ fun ConnectionsListScreen(
                     // Content
                     when (val state = uiState) {
                         is ConnectionsUIState.Empty -> {
-                            EmptyConnectionsView()
+                            EmptyConnectionsView(
+                                searchQuery = searchQuery,
+                                onAddContact = {
+                                    onNavigateToAddContact()
+                                }
+                            )
                         }
                         is ConnectionsUIState.Success -> {
                             ConnectionsList(
@@ -325,7 +330,12 @@ fun FilterCapsule(
 }
 
 @Composable
-fun EmptyConnectionsView() {
+fun EmptyConnectionsView(
+    searchQuery: String = "",
+    onAddContact: () -> Unit = {}
+) {
+    val isSearch = searchQuery.isNotEmpty()
+    
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -351,7 +361,7 @@ fun EmptyConnectionsView() {
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            imageVector = Icons.Default.Person,
+                            imageVector = if (isSearch) Icons.Default.SearchOff else Icons.Default.Person,
                             contentDescription = null,
                             tint = AccentCyan,
                             modifier = Modifier.size(32.dp)
@@ -360,7 +370,7 @@ fun EmptyConnectionsView() {
                 }
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(
-                    text = "No All Contacts",
+                    text = if (isSearch) "No Contacts Found" else "No All Contacts",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
@@ -368,12 +378,31 @@ fun EmptyConnectionsView() {
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = "Your directory is currently empty. Start building your secure network by adding new profile keys.",
+                    text = if (isSearch) 
+                        "We couldn't find any results matching '$searchQuery'. Try checking for typos or different terms."
+                    else 
+                        "Your directory is currently empty. Start building your secure network by adding new profile keys.",
                     fontSize = 14.sp,
                     color = TextSecondary,
                     textAlign = TextAlign.Center,
                     lineHeight = 20.sp
                 )
+                
+                if (isSearch) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Button(
+                        onClick = onAddContact,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AccentCyan,
+                            contentColor = Color.Black
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Add '$searchQuery'?", fontWeight = FontWeight.Bold)
+                    }
+                }
             }
         }
     }
