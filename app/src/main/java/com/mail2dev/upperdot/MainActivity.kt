@@ -114,7 +114,8 @@ class MainActivity : ComponentActivity() {
                             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                                 return DigitalWalletViewModel(
                                     repository = app.bankCardRepository,
-                                    preferenceRepository = app.preferenceRepository
+                                    preferenceRepository = app.preferenceRepository,
+                                    billingRepository = app.billingRepository
                                 ) as T
                             }
                         }
@@ -162,7 +163,8 @@ class MainActivity : ComponentActivity() {
                                                 repository = app.contactRepository,
                                                 noteRepository = app.noteRepository,
                                                 transactionRepository = app.transactionRepository,
-                                                preferenceRepository = app.preferenceRepository
+                                                preferenceRepository = app.preferenceRepository,
+                                                billingRepository = app.billingRepository
                                             ) as T
                                         }
                                     }
@@ -382,6 +384,7 @@ class MainActivity : ComponentActivity() {
                                             noteRepository = app.noteRepository,
                                             transactionRepository = app.transactionRepository,
                                             preferenceRepository = app.preferenceRepository,
+                                            billingRepository = app.billingRepository,
                                             audioHandler = app.audioHandler
                                         ) as T
                                     }
@@ -406,6 +409,7 @@ class MainActivity : ComponentActivity() {
                                             transactionRepository = app.transactionRepository,
                                             preferenceRepository = app.preferenceRepository,
                                             syncManager = app.syncManager,
+                                            billingRepository = app.billingRepository,
                                             context = applicationContext
                                         ) as T
                                     }

@@ -193,8 +193,11 @@ fun InsightsScreen(
                     icon = Icons.Default.Add,
                     contentDescription = "Add",
                     onClick = {
-                        if (selectedTab == InsightTab.NOTES) viewModel.onAddNoteClicked()
-                        else viewModel.onAddTransactionClicked()
+                        if (selectedTab == InsightTab.NOTES) {
+                            viewModel.onAddNoteClicked(onLimitExceeded = { onNavigate("my_profile") })
+                        } else {
+                            viewModel.onAddTransactionClicked(onLimitExceeded = { onNavigate("my_profile") })
+                        }
                     },
                     modifier = Modifier.padding(bottom = 16.dp, end = 8.dp)
                 )

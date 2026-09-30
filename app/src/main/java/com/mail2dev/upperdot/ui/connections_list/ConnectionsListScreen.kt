@@ -147,7 +147,7 @@ fun ConnectionsListScreen(
 
     LaunchedEffect(initialPhone) {
         if (!initialPhone.isNullOrEmpty()) {
-            viewModel.onAddNoteByPhone(initialPhone)
+            viewModel.onAddNoteByPhone(initialPhone, onLimitExceeded = { onNavigate("my_profile") })
         }
     }
 
@@ -288,8 +288,8 @@ fun ConnectionsListScreen(
                             ConnectionsList(
                                 contacts = state.contacts,
                                 onContactClick = onNavigateToContact,
-                                onAddNote = viewModel::onAddNote,
-                                onAddTransaction = viewModel::onAddTransaction,
+                                onAddNote = { id -> viewModel.onAddNote(id, onLimitExceeded = { onNavigate("my_profile") }) },
+                                onAddTransaction = { id -> viewModel.onAddTransaction(id, onLimitExceeded = { onNavigate("my_profile") }) },
                                 onWhatsAppClick = { contact ->
                                     whatsappTargetContact = contact
                                 },

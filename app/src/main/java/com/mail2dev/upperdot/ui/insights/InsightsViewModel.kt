@@ -50,6 +50,7 @@ class InsightsViewModel(
     private val noteRepository: NoteRepository,
     private val transactionRepository: TransactionRepository,
     private val preferenceRepository: PreferenceRepository,
+    private val billingRepository: com.mail2dev.upperdot.data.repository.BillingRepository,
     val audioHandler: com.mail2dev.upperdot.util.AudioHandler
 ) : ViewModel() {
 
@@ -203,16 +204,32 @@ class InsightsViewModel(
         _selectedContactFilter.value = null
     }
 
-    fun onAddNoteClicked() {
-        _showAddNoteSheet.value = true
+    fun onAddNoteClicked(onLimitExceeded: () -> Unit) {
+        viewModelScope.launch {
+            val isPremiumUser = billingRepository.isPremium.value
+            val count = noteRepository.noteCount.first()
+            if (!isPremiumUser && count >= 20) {
+                onLimitExceeded()
+            } else {
+                _showAddNoteSheet.value = true
+            }
+        }
     }
 
     fun dismissAddNoteSheet() {
         _showAddNoteSheet.value = false
     }
 
-    fun onAddTransactionClicked() {
-        _showAddTransactionSheet.value = true
+    fun onAddTransactionClicked(onLimitExceeded: () -> Unit) {
+        viewModelScope.launch {
+            val isPremiumUser = billingRepository.isPremium.value
+            val count = transactionRepository.transactionCount.first()
+            if (!isPremiumUser && count >= 20) {
+                onLimitExceeded()
+            } else {
+                _showAddTransactionSheet.value = true
+            }
+        }
     }
 
     fun dismissAddTransactionSheet() {

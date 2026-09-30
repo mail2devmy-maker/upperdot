@@ -33,6 +33,7 @@ class ProfileSettingsViewModel(
     private val transactionRepository: TransactionRepository,
     private val preferenceRepository: PreferenceRepository,
     private val syncManager: SyncManager,
+    private val billingRepository: com.mail2dev.upperdot.data.repository.BillingRepository,
     context: Context
 ) : ViewModel() {
 
@@ -49,16 +50,26 @@ class ProfileSettingsViewModel(
 
         viewModelScope.launch {
             combine(
-                contactRepository.contactCount,
-                noteRepository.noteCount,
-                transactionRepository.transactionCount,
-                preferenceRepository.preferences,
-                syncManager.syncStatus
-            ) { contacts, notes, trans, prefs, isSyncing ->
+                listOf(
+                    contactRepository.contactCount,
+                    noteRepository.noteCount,
+                    transactionRepository.transactionCount,
+                    preferenceRepository.preferences,
+                    syncManager.syncStatus,
+                    billingRepository.isPremium
+                )
+            ) { array ->
+                val contacts = array[0] as Int
+                val notes = array[1] as Int
+                val trans = array[2] as Int
+                val prefs = array[3] as com.mail2dev.upperdot.data.local.entity.PreferenceEntity
+                val isSyncing = array[4] as Boolean
+                val premium = array[5] as Boolean
+
                 UserSummary(
                     name = account?.displayName ?: "",
                     email = account?.email ?: "",
-                    isPremium = true,
+                    isPremium = premium,
                     lastSync = if (prefs.lastSyncTime > 0) dateFormatter.format(Date(prefs.lastSyncTime)) else "Not Synced",
                     contactCount = contacts,
                     noteCount = notes,

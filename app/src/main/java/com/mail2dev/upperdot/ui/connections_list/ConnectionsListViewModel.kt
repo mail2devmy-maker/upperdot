@@ -40,7 +40,8 @@ class ConnectionsListViewModel(
     private val repository: ContactRepository,
     private val noteRepository: NoteRepository,
     private val transactionRepository: TransactionRepository,
-    private val preferenceRepository: PreferenceRepository
+    private val preferenceRepository: PreferenceRepository,
+    private val billingRepository: com.mail2dev.upperdot.data.repository.BillingRepository
 ) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
@@ -144,27 +145,45 @@ class ConnectionsListViewModel(
         // UI implementation
     }
 
-    fun onAddNote(contactId: Long) {
+    fun onAddNote(contactId: Long, onLimitExceeded: () -> Unit) {
         viewModelScope.launch {
-            val contact = repository.getContactById(contactId)?.toSummary()
-            _preSelectedContact.value = contact
-            _showAddNoteSheet.value = true
+            val isPremiumUser = billingRepository.isPremium.value
+            val count = noteRepository.noteCount.first()
+            if (!isPremiumUser && count >= 20) {
+                onLimitExceeded()
+            } else {
+                val contact = repository.getContactById(contactId)?.toSummary()
+                _preSelectedContact.value = contact
+                _showAddNoteSheet.value = true
+            }
         }
     }
 
-    fun onAddNoteByPhone(phone: String) {
+    fun onAddNoteByPhone(phone: String, onLimitExceeded: () -> Unit) {
         viewModelScope.launch {
-            val contact = repository.findContactByPhone(phone)?.toSummary()
-            _preSelectedContact.value = contact
-            _showAddNoteSheet.value = true
+            val isPremiumUser = billingRepository.isPremium.value
+            val count = noteRepository.noteCount.first()
+            if (!isPremiumUser && count >= 20) {
+                onLimitExceeded()
+            } else {
+                val contact = repository.findContactByPhone(phone)?.toSummary()
+                _preSelectedContact.value = contact
+                _showAddNoteSheet.value = true
+            }
         }
     }
 
-    fun onAddTransaction(contactId: Long) {
+    fun onAddTransaction(contactId: Long, onLimitExceeded: () -> Unit) {
         viewModelScope.launch {
-            val contact = repository.getContactById(contactId)?.toSummary()
-            _preSelectedContact.value = contact
-            _showAddTransactionSheet.value = true
+            val isPremiumUser = billingRepository.isPremium.value
+            val count = transactionRepository.transactionCount.first()
+            if (!isPremiumUser && count >= 20) {
+                onLimitExceeded()
+            } else {
+                val contact = repository.getContactById(contactId)?.toSummary()
+                _preSelectedContact.value = contact
+                _showAddTransactionSheet.value = true
+            }
         }
     }
 

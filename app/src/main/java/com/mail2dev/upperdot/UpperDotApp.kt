@@ -95,6 +95,10 @@ class UpperDotApp : Application(), ImageLoaderFactory {
         com.mail2dev.upperdot.data.repository.BankCardRepository(database.bankCardDao())
     }
 
+    val billingRepository: com.mail2dev.upperdot.data.repository.BillingRepository by lazy {
+        com.mail2dev.upperdot.data.repository.BillingRepository(this)
+    }
+
     val preferenceRepository: com.mail2dev.upperdot.data.repository.PreferenceRepository by lazy {
         com.mail2dev.upperdot.data.repository.PreferenceRepository(database.preferenceDao())
     }

@@ -24,12 +24,12 @@ data class BankCard(
 )
 
 class DigitalWalletViewModel(
-    private val repository: BankCardRepository,
-    private val preferenceRepository: PreferenceRepository
+    private val repository: com.mail2dev.upperdot.data.repository.BankCardRepository,
+    private val preferenceRepository: com.mail2dev.upperdot.data.repository.PreferenceRepository,
+    private val billingRepository: com.mail2dev.upperdot.data.repository.BillingRepository
 ) : ViewModel() {
 
-    private val _isPremium = MutableStateFlow(true) // Placeholder
-    val isPremium: StateFlow<Boolean> = _isPremium.asStateFlow()
+    val isPremium: StateFlow<Boolean> = billingRepository.isPremium
 
     val isMediaCompressionEnabled: StateFlow<Boolean> = preferenceRepository.preferences
         .map { it.isMediaCompressionEnabled }
@@ -51,7 +51,7 @@ class DigitalWalletViewModel(
     fun onAddCardClicked(onSuccess: () -> Unit, onLimitExceeded: () -> Unit) {
         viewModelScope.launch {
             val count = repository.cardCount.first()
-            if (!_isPremium.value && count >= 1) {
+            if (!isPremium.value && count >= 1) {
                 onLimitExceeded()
             } else {
                 _showAddCardSheet.value = true
