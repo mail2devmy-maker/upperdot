@@ -1,0 +1,32 @@
+package com.mail2dev.upperdot.data.local.entity
+
+import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.Index
+import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
+
+@Entity(
+    tableName = "notes",
+    foreignKeys = [
+        ForeignKey(
+            entity = ContactEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["contactId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index(value = ["contactId"])]
+)
+@Serializable
+data class NoteEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val contactId: Long,
+    val title: String,
+    val content: String,
+    val attachmentPaths: List<String> = emptyList(), // Stored as JSON string via TypeConverter
+    val voiceRecordingPath: String? = null,
+    val createdAt: Long = System.currentTimeMillis(),
+    val lastModifiedAt: Long = System.currentTimeMillis(),
+    val isSynced: Boolean = false
+)

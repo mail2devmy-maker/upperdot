@@ -1,0 +1,28 @@
+# Gradle & Build
+.gradle/
+build/
+**/build/
+
+# IDE & Settings
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/usage.statistics.xml
+.idea/dictionary.xml
+.idea/shelf/
+.idea/caches/
+*.iml
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Output binaries
+*.apk
+*.aab
+*.dex
+*.class
+
+# OS & Logs
+.DS_Store
+Thumbs.db
+*.log
